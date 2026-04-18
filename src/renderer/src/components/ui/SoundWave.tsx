@@ -8,11 +8,11 @@ interface SoundWaveProps {
 
 const sizeConfig = {
   md: { height: 'h-4', barWidth: 'w-[3px]', gap: 'gap-[2px]' },
-  lg: { height: 'h-10', barWidth: 'w-[4px]', gap: 'gap-[3px]' }
+  lg: { height: 'h-8', barWidth: 'w-[4px]', gap: 'gap-[3px]' }
 }
 
 const smallBars = [0.6, 0.9, 0.5, 0.8, 0.4]
-const bigBars = [0.6, 0.9, 0.5, 0.8, 0.4, 0.6, 0.9, 0.5]
+const bigBars = [0.6, 0.9, 0.5, 0.8, 0.4, 0.6]
 
 export const SoundWave = ({ isPlaying = false, size = 'md', className = '' }: SoundWaveProps) => {
   const { height, barWidth, gap } = sizeConfig[size]

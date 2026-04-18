@@ -71,7 +71,7 @@ export default function MarqueeText({
         className={shouldScroll ? 'marquee-scroll' : ''}
         style={shouldScroll ? animStyle : undefined}
       >
-        <span ref={textRef} className="inline-block shrink-0">
+        <span ref={textRef} className="inline-block shrink-0 py-1">
           {text}
         </span>
         {shouldScroll && (

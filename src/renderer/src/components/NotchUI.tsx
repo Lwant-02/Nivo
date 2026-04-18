@@ -1,11 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, Transition } from 'framer-motion'
-import { Play, Pause, Shuffle, Rewind, FastForward, Monitor, Volume, Volume2 } from 'lucide-react'
-
+import {
+  Play,
+  Pause,
+  Shuffle,
+  Rewind,
+  FastForward,
+  Monitor,
+  Volume,
+  Volume2,
+  Disc3
+} from 'lucide-react'
 import cn from 'clsx'
+
 import MarqueeText from './ui/MarqueeText'
 import { SoundWave } from './ui/SoundWave'
-import defaultArt from '../assets/electron.svg'
+import { useMedia } from '../hooks/useMedia'
 
 const bounceTransition: Transition = { type: 'spring', stiffness: 400, damping: 28, mass: 0.8 }
 
@@ -18,18 +28,46 @@ function formatTime(seconds: number): string {
 
 export default function NotchUI() {
   const [isExpanded, setIsExpanded] = useState(false)
-  const [isPlaying, setIsPlaying] = useState(false)
   const [showVolume, setShowVolume] = useState(false)
   const [volumeLevel, setVolumeLevel] = useState(50)
-  const [title, setTitle] = useState('')
-  const [artist, setArtist] = useState('')
-  const [albumArt, setAlbumArt] = useState<string | null>(null)
+
+  const {
+    title,
+    artist,
+    isPlaying,
+    progress,
+    volume,
+    albumArt,
+    duration,
+    position: initialPosition
+  } = useMedia()
+
   const [position, setPosition] = useState(0)
-  const [duration, setDuration] = useState(0)
+  const [displayArt, setDisplayArt] = useState<string | null>(null)
+
+  // Sync position and volume when media updates
+  useEffect(() => {
+    setPosition(initialPosition)
+    setVolumeLevel(volume)
+
+    // Auto-expand/collapse
+    const isActuallyPlaying = title && title !== 'Not Playing' && title !== ''
+    setIsExpanded(!!isActuallyPlaying)
+  }, [initialPosition, volume, title])
+
+  // Optimization: Keep previous artwork if incoming is null (delta update)
+  useEffect(() => {
+    if (albumArt) {
+      setDisplayArt(albumArt)
+    } else if (!title || title === 'Not Playing' || title === '') {
+      setDisplayArt(null)
+    }
+  }, [albumArt, title])
+
   const isPlayingRef = useRef(isPlaying)
   isPlayingRef.current = isPlaying
 
-  // Smooth position increment between polls
+  // Smooth position increment between backend ticks
   useEffect(() => {
     let last = performance.now()
     let rafId: number
@@ -45,28 +83,7 @@ export default function NotchUI() {
     return () => cancelAnimationFrame(rafId)
   }, [])
 
-  useEffect(() => {
-    const fetchState = async () => {
-      try {
-        const state = await window.api.getMediaState()
-        setIsPlaying(state.isPlaying)
-        setTitle(state.title)
-        setArtist(state.artist)
-        setPosition(state.position)
-        setDuration(state.duration)
-        setAlbumArt(state.albumArt)
-      } catch {}
-    }
-
-    fetchState()
-    const interval = setInterval(fetchState, 3000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const handlePlayPause = async () => {
-    await window.api.playPause()
-    setIsPlaying((p) => !p)
-  }
+  const handlePlayPause = () => window.api.playPause()
 
   const handleNext = () => window.api.mediaNext()
   const handlePrev = () => window.api.mediaPrevious()
@@ -77,18 +94,10 @@ export default function NotchUI() {
     window.api.setVolume(level)
   }
 
-  const handleShowVolume = async () => {
-    setShowVolume((v) => !v)
-    if (!showVolume) {
-      try {
-        const level = await window.api.getVolume()
-        setVolumeLevel(level)
-      } catch {}
-    }
-  }
+  const handleShowVolume = () => setShowVolume((v) => !v)
 
-  const progressPct = duration > 0 ? Math.min((position / duration) * 100, 100) : 0
-  const artSrc = albumArt || defaultArt
+  const progressPct = progress > 0 ? progress : 0
+  const isDefaultArt = 'https://img.icons8.com/ios-filled/100/ffffff/music-record.png'
 
   return (
     <motion.div
@@ -128,8 +137,15 @@ export default function NotchUI() {
             exit={{ opacity: 0 }}
             className="flex items-center justify-between p-10 h-full"
           >
-            <img src={artSrc} alt="album art" className="w-6 h-3.5 overflow-hidden object-cover" />
-
+            {displayArt && displayArt !== isDefaultArt ? (
+              <img
+                src={displayArt}
+                alt={title}
+                className="w-6 h-3.5 overflow-hidden object-cover"
+              />
+            ) : (
+              <Disc3 className="text-purple size-5 animate-spin [animation-duration:2s]" />
+            )}
             <SoundWave isPlaying={isPlaying} />
           </motion.div>
         ) : (
@@ -137,13 +153,27 @@ export default function NotchUI() {
             key="expanded"
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            style={{ paddingTop: '10px' }}
+            style={{ paddingTop: '12px' }}
             className="flex flex-col h-full p-[22px] justify-between relative backdrop-blur-2xl shadow-inner"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="size-[54px] bg-gray rounded-xl flex items-center justify-center shadow-inner overflow-hidden">
-                  <img src={artSrc} alt="album art" className="w-full h-full object-cover" />
+                <div className="w-12 h-10 bg-gray rounded-lg flex items-center justify-center overflow-hidden shadow-lg border border-white/5">
+                  {displayArt && displayArt !== isDefaultArt ? (
+                    <img
+                      src={displayArt}
+                      alt={title}
+                      className="size-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                        e.currentTarget.parentElement?.classList.add('bg-purple/20')
+                      }}
+                    />
+                  ) : (
+                    <div className="size-full bg-purple/20 flex items-center justify-center">
+                      <Disc3 className="text-purple size-8 animate-spin [animation-duration:2s]" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col justify-start items-start min-w-0 flex-1">
                   <MarqueeText
@@ -151,9 +181,11 @@ export default function NotchUI() {
                     className="text-text font-bold text-base tracking-wide max-w-[160px]"
                     speed={25}
                   />
-                  <span className="text-text-dim text-center font-semibold text-sm tracking-wide">
-                    {artist || '—'}
-                  </span>
+                  <MarqueeText
+                    text={artist || '—'}
+                    className="text-text-dim text-center font-semibold text-sm tracking-wide max-w-[160px]"
+                    speed={25}
+                  />
                 </div>
               </div>
               <div className="w-full flex justify-end items-center">
@@ -169,7 +201,9 @@ export default function NotchUI() {
                   style={{ width: `${progressPct}%` }}
                 />
               </div>
-              <span>{formatTime(duration)}</span>
+              {duration > 0 && (
+                <span className="min-w-[40px] text-right">{formatTime(duration)}</span>
+              )}
             </div>
 
             <div className="flex items-center justify-center relative mt-1">

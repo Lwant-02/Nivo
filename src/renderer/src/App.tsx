@@ -3,11 +3,13 @@ import OnboardingUI from './components/OnboardingUI'
 import SettingsUI from './components/SettingsUI'
 
 export default function App() {
-  if (window.location.hash === '#settings') {
+  const hash = window.location.hash || '#/'
+
+  if (hash.includes('settings')) {
     return <SettingsUI />
   }
 
-  if (window.location.hash === '#onboarding') {
+  if (hash.includes('onboarding')) {
     return <OnboardingUI />
   }
 
