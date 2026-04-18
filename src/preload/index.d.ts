@@ -20,6 +20,7 @@ declare global {
           albumArt: string | null
           duration: number
           position: number
+          source: string
         }) => void
       ) => () => void
     }

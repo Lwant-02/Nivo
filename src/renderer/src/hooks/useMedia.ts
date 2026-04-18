@@ -9,6 +9,7 @@ export interface MediaUpdate {
   albumArt: string | null
   duration: number
   position: number
+  source: string
 }
 
 const DEFAULT_STATE: MediaUpdate = {
@@ -19,7 +20,8 @@ const DEFAULT_STATE: MediaUpdate = {
   volume: 0,
   albumArt: null,
   duration: 0,
-  position: 0
+  position: 0,
+  source: 'system'
 }
 
 export function useMedia() {

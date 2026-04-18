@@ -1,21 +1,22 @@
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, Transition } from 'framer-motion'
 import {
   Play,
   Pause,
-  Shuffle,
   Rewind,
   FastForward,
   Monitor,
   Volume,
   Volume2,
-  Disc3
+  Disc3,
+  Headphones
 } from 'lucide-react'
 import cn from 'clsx'
 
 import MarqueeText from './ui/MarqueeText'
 import { SoundWave } from './ui/SoundWave'
 import { useMedia } from '../hooks/useMedia'
+import { SourceBadge } from './ui/SourceBadge'
 
 const bounceTransition: Transition = { type: 'spring', stiffness: 400, damping: 28, mass: 0.8 }
 
@@ -39,7 +40,8 @@ export default function NotchUI() {
     volume,
     albumArt,
     duration,
-    position: initialPosition
+    position: initialPosition,
+    source
   } = useMedia()
 
   const [position, setPosition] = useState(0)
@@ -137,15 +139,17 @@ export default function NotchUI() {
             exit={{ opacity: 0 }}
             className="flex items-center justify-between p-10 h-full"
           >
-            {displayArt && displayArt !== isDefaultArt ? (
-              <img
-                src={displayArt}
-                alt={title}
-                className="w-6 h-3.5 overflow-hidden object-cover"
-              />
-            ) : (
-              <Disc3 className="text-purple size-5 animate-spin [animation-duration:2s]" />
-            )}
+            <div className="relative">
+              {displayArt && displayArt !== isDefaultArt ? (
+                <img
+                  src={displayArt}
+                  alt={title}
+                  className="w-6 h-3.5 overflow-hidden rounded-sm object-cover"
+                />
+              ) : (
+                <Disc3 className="text-purple size-5 animate-spin [animation-duration:2s]" />
+              )}
+            </div>
             <SoundWave isPlaying={isPlaying} />
           </motion.div>
         ) : (
@@ -158,37 +162,46 @@ export default function NotchUI() {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-10 bg-gray rounded-lg flex items-center justify-center overflow-hidden shadow-lg border border-white/5">
-                  {displayArt && displayArt !== isDefaultArt ? (
-                    <img
-                      src={displayArt}
-                      alt={title}
-                      className="size-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none'
-                        e.currentTarget.parentElement?.classList.add('bg-purple/20')
-                      }}
-                    />
-                  ) : (
-                    <div className="size-full bg-purple/20 flex items-center justify-center">
-                      <Disc3 className="text-purple size-8 animate-spin [animation-duration:2s]" />
+                <div className="relative">
+                  <div className="w-12 h-10 bg-gray rounded-lg flex items-center justify-center overflow-hidden shadow-lg border border-white/5 relative">
+                    {displayArt && displayArt !== isDefaultArt ? (
+                      <img
+                        src={displayArt}
+                        alt={title}
+                        className="size-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                          e.currentTarget.parentElement?.classList.add('bg-purple/20')
+                        }}
+                      />
+                    ) : (
+                      <div className="size-full bg-purple/20 flex items-center justify-center">
+                        <Disc3 className="text-purple size-8 animate-spin [animation-duration:2s]" />
+                      </div>
+                    )}
+                  </div>
+                  {source && (
+                    <div className="absolute -bottom-1 right-0 flex items-center justify-center p-1">
+                      <div className="size-full flex items-center justify-center">
+                        <SourceBadge source={source} />
+                      </div>
                     </div>
                   )}
                 </div>
                 <div className="flex flex-col justify-start items-start min-w-0 flex-1">
                   <MarqueeText
                     text={title || 'Nothing Playing'}
-                    className="text-text font-bold text-base tracking-wide max-w-[160px]"
+                    className="text-text font-bold text-base tracking-wide max-w-[190px]"
                     speed={25}
                   />
                   <MarqueeText
                     text={artist || '—'}
-                    className="text-text-dim text-center font-semibold text-sm tracking-wide max-w-[160px]"
+                    className="text-text-dim text-center font-semibold text-sm tracking-wide max-w-[190px]"
                     speed={25}
                   />
                 </div>
               </div>
-              <div className="w-full flex justify-end items-center">
+              <div className="w-fit flex justify-end items-center">
                 <SoundWave isPlaying={isPlaying} size="lg" />
               </div>
             </div>
@@ -207,8 +220,8 @@ export default function NotchUI() {
             </div>
 
             <div className="flex items-center justify-center relative mt-1">
-              <div className="absolute text-white left-2 size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20">
-                <Shuffle size={20} fill="currentColor" />
+              <div className="absolute text-white size-[40px] left-2 rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20">
+                <Headphones size={20} />
               </div>
 
               <div className="flex items-center gap-4 text-white">
@@ -216,23 +229,19 @@ export default function NotchUI() {
                   onClick={handlePrev}
                   className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
                 >
-                  <Rewind size={20} fill="currentColor" />
+                  <Rewind size={20} />
                 </button>
                 <button
                   onClick={handlePlayPause}
                   className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
                 >
-                  {isPlaying ? (
-                    <Pause size={20} fill="currentColor" />
-                  ) : (
-                    <Play size={20} fill="currentColor" />
-                  )}
+                  {isPlaying ? <Pause size={20} /> : <Play size={20} />}
                 </button>
                 <button
                   onClick={handleNext}
                   className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
                 >
-                  <FastForward size={20} fill="currentColor" />
+                  <FastForward size={20} />
                 </button>
               </div>
 

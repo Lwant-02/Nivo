@@ -17,6 +17,7 @@ export interface MediaState {
   albumArt: string | null
   duration: number
   position: number
+  source: string
 }
 
 const EMPTY_STATE: MediaState = {
@@ -27,7 +28,8 @@ const EMPTY_STATE: MediaState = {
   volume: 0,
   albumArt: null,
   duration: 0,
-  position: 0
+  position: 0,
+  source: 'system'
 }
 
 export class MediaService {
@@ -109,6 +111,15 @@ export class MediaService {
       if (isJunk) {
         const fallback = await this.getFallbackState()
         if (fallback) {
+          // Stitch system timing! Even if it didn't know the title,
+          // the CLI often knows the timing data for the active media.
+          const duration = parseFloat(val(lines[3])) || 0
+          const elapsed = parseFloat(val(lines[4])) || 0
+
+          fallback.duration = duration
+          fallback.position = elapsed
+          fallback.progress = duration > 0 ? (elapsed / duration) * 100 : 0
+
           finalState = fallback
         } else {
           finalState = { ...EMPTY_STATE, volume: await this.getVolume() }
@@ -129,6 +140,9 @@ export class MediaService {
         let source = 'system'
         if (bundleId.includes('music')) source = 'music'
         else if (bundleId.includes('spotify')) source = 'spotify'
+        else if (bundleId.includes('brave')) source = 'brave'
+        else if (bundleId.includes('chrome')) source = 'chrome'
+        else if (bundleId.includes('safari')) source = 'safari'
 
         let albumArt: string | null = null
         if (artworkData) {
@@ -147,7 +161,8 @@ export class MediaService {
           volume,
           albumArt,
           duration,
-          position: elapsed
+          position: elapsed,
+          source
         }
       }
 
@@ -199,15 +214,32 @@ end if
 if braveRunning then
   tell application "Brave Browser"
     try
-      set t to title of active tab of front window
-      set u to URL of active tab of front window
-      set pState to "paused"
-      try
-        if audible of active tab of front window then set pState to "playing"
-      on error
-        set pState to "static"
-      end try
-      return "browser@@@" & pState & "@@@" & t & "@@@Web Browser@@@0@@@0@@@" & u
+      set mediaSites to {"youtube.com", "spotify.com", "soundcloud.com", "vimeo.com", "twitch.tv", "netflix.com", "music.apple.com", "bilibili.com"}
+
+      -- 1. Check current active tab first (high priority)
+      set t to active tab of front window
+      set u to URL of t
+      repeat with s in mediaSites
+        if u contains s then
+          set sName to "brave"
+          if u contains "youtube.com" then set sName to "youtube"
+          return sName & "@@@playing@@@" & (title of t) & "@@@Web Browser@@@0@@@0@@@" & u
+        end if
+      end repeat
+
+      -- 2. Scan all other windows/tabs
+      repeat with w in windows
+        repeat with t in tabs of w
+          set u to URL of t
+          repeat with s in mediaSites
+            if u contains s then
+              set sName to "brave"
+              if u contains "youtube.com" then set sName to "youtube"
+              return sName & "@@@playing@@@" & (title of t) & "@@@Web Browser@@@0@@@0@@@" & u
+            end if
+          end repeat
+        end repeat
+      end repeat
     on error
     end try
   end tell
@@ -216,15 +248,32 @@ end if
 if chromeRunning then
   tell application "Google Chrome"
     try
-      set t to title of active tab of front window
-      set u to URL of active tab of front window
-      set pState to "paused"
-      try
-        if audible of active tab of front window then set pState to "playing"
-      on error
-        set pState to "static"
-      end try
-      return "browser@@@" & pState & "@@@" & t & "@@@Web Browser@@@0@@@0@@@" & u
+      set mediaSites to {"youtube.com", "spotify.com", "soundcloud.com", "vimeo.com", "twitch.tv", "netflix.com", "music.apple.com", "bilibili.com"}
+
+      -- 1. Check current active tab first
+      set t to active tab of front window
+      set u to URL of t
+      repeat with s in mediaSites
+        if u contains s then
+          set sName to "chrome"
+          if u contains "youtube.com" then set sName to "youtube"
+          return sName & "@@@playing@@@" & (title of t) & "@@@Web Browser@@@0@@@0@@@" & u
+        end if
+      end repeat
+
+      -- 2. Scan all other windows/tabs
+      repeat with w in windows
+        repeat with t in tabs of w
+          set u to URL of t
+          repeat with s in mediaSites
+            if u contains s then
+              set sName to "chrome"
+              if u contains "youtube.com" then set sName to "youtube"
+              return sName & "@@@playing@@@" & (title of t) & "@@@Web Browser@@@0@@@0@@@" & u
+            end if
+          end repeat
+        end repeat
+      end repeat
     on error
     end try
   end tell
@@ -233,9 +282,19 @@ end if
 if safariRunning then
   tell application "Safari"
     try
-      set t to name of front document
-      set u to URL of front document
-      return "browser@@@static@@@" & t & "@@@Web Browser@@@0@@@0@@@" & u
+      set mediaSites to {"youtube.com", "spotify.com", "soundcloud.com", "vimeo.com", "twitch.tv", "netflix.com", "music.apple.com", "bilibili.com"}
+      repeat with w in windows
+        repeat with d in documents of w
+          set u to URL of d
+          repeat with s in mediaSites
+            if u contains s then
+              set sName to "safari"
+              if u contains "youtube.com" then set sName to "youtube"
+              return sName & "@@@playing@@@" & (name of d) & "@@@Web Browser@@@0@@@0@@@" & u
+            end if
+          end repeat
+        end repeat
+      end repeat
     on error
     end try
   end tell
@@ -251,7 +310,8 @@ return "none"`
       let [source, pState, title, artist, pos, dur, url] = result.split('@@@')
 
       // Clean browser titles: "(326) Artist - Title - YouTube" -> "Artist - Title"
-      if (source === 'browser') {
+      const browserSources = ['brave', 'chrome', 'safari', 'youtube']
+      if (browserSources.includes(source)) {
         title = title.replace(/^\(\d+\)\s*/, '') // Remove (N) notification
         title = title.replace(/\s*-\s*YouTube$/i, '') // Remove YouTube suffix
 
@@ -280,7 +340,7 @@ return "none"`
       let albumArt: string | null = null
       if (source === 'music') albumArt = await this.getMusicAlbumArt(`${title}-${artist}`)
       else if (source === 'spotify') albumArt = await this.getSpotifyArtworkUrl()
-      else if (source === 'browser' && url) {
+      else if (browserSources.includes(source) && url) {
         // Intelligent YouTube Artwork
         const youtubeId = this.extractYouTubeId(url)
 
@@ -311,7 +371,8 @@ return "none"`
         volume,
         albumArt,
         duration,
-        position
+        position,
+        source
       }
     } catch {
       return null
