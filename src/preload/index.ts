@@ -3,8 +3,9 @@ import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
 const api = {
-  setIgnoreMouseEvents: (ignore: boolean, options?: any) => ipcRenderer.send('set-ignore-mouse-events', ignore, options),
-  
+  setIgnoreMouseEvents: (ignore: boolean, options?: any) =>
+    ipcRenderer.send('set-ignore-mouse-events', ignore, options),
+
   // System battery info
   getBatteryInfo: () => ipcRenderer.invoke('get-battery-info'),
 
@@ -17,10 +18,20 @@ const api = {
   // Media control
   getMediaState: () => ipcRenderer.invoke('get-media-state'),
   playPause: () => ipcRenderer.invoke('media-play-pause'),
+  mediaNext: () => ipcRenderer.invoke('media-next'),
+  mediaPrevious: () => ipcRenderer.invoke('media-previous'),
+
+  // Volume
+  getVolume: () => ipcRenderer.invoke('get-volume'),
+  setVolume: (level: number) => ipcRenderer.invoke('set-volume', level),
 
   // License management
   validateLicense: (key: string) => ipcRenderer.invoke('validate-license', key),
   getLicenseStatus: () => ipcRenderer.invoke('get-license-status'),
+
+  // Events & Windows
+  openSettings: () => ipcRenderer.invoke('open-settings'),
+  closeOnboarding: () => ipcRenderer.invoke('close-onboarding'),
 
   // Events
   onBatteryUpdate: (callback: (info: unknown) => void) => {
@@ -28,11 +39,15 @@ const api = {
   },
   onClipboardUpdate: (callback: (text: string) => void) => {
     ipcRenderer.on('clipboard-update', (_, text) => callback(text))
+  },
+
+  // Pill hover — renderer polls main for current hover state
+  getPillHover: () => ipcRenderer.invoke('get-pill-hover') as Promise<boolean>,
+  sendPillState: (expanded: boolean) => {
+    ipcRenderer.send('pill-state', expanded)
   }
 }
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)
