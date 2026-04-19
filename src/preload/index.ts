@@ -3,13 +3,13 @@ import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
 const api = {
-  // Media control
-  playPause: () => ipcRenderer.invoke('media-play-pause'),
-  mediaNext: () => ipcRenderer.invoke('media-next'),
-  mediaPrevious: () => ipcRenderer.invoke('media-previous'),
+  // Media control (routed through unified media-control channel)
+  playPause: () => ipcRenderer.invoke('media-control', 'playPause'),
+  mediaNext: () => ipcRenderer.invoke('media-control', 'next'),
+  mediaPrevious: () => ipcRenderer.invoke('media-control', 'previous'),
 
   // Volume
-  setVolume: (level: number) => ipcRenderer.invoke('set-volume', level),
+  setVolume: (level: number) => ipcRenderer.invoke('set-system-volume', level),
 
   // Events & Windows
   openSettings: () => ipcRenderer.invoke('open-settings'),

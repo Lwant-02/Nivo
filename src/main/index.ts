@@ -218,10 +218,24 @@ ipcMain.handle('close-onboarding', () => {
   }
 })
 
-ipcMain.handle('media-play-pause', () => mediaService?.playPause())
-ipcMain.handle('media-next', () => mediaService?.next())
-ipcMain.handle('media-previous', () => mediaService?.previous())
-ipcMain.handle('set-volume', (_event, level: number) => mediaService?.setVolume(level))
+type MediaCommand = 'playPause' | 'next' | 'previous'
+
+ipcMain.handle('media-control', (_event, command: MediaCommand) => {
+  if (!mediaService) return
+  switch (command) {
+    case 'playPause':
+      return mediaService.playPause()
+    case 'next':
+      return mediaService.next()
+    case 'previous':
+      return mediaService.previous()
+    default:
+      console.warn('[main] Unknown media-control command:', command)
+      return
+  }
+})
+
+ipcMain.handle('set-system-volume', (_event, level: number) => mediaService?.setVolume(level))
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

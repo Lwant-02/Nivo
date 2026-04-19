@@ -12,6 +12,7 @@ export interface MediaState {
   title: string
   artist: string
   isPlaying: boolean
+  playbackRate: number
   progress: number
   volume: number
   albumArt: string | null
@@ -24,6 +25,7 @@ const EMPTY_STATE: MediaState = {
   title: '',
   artist: '',
   isPlaying: false,
+  playbackRate: 0,
   progress: 0,
   volume: 0,
   albumArt: null,
@@ -36,11 +38,99 @@ export class MediaService {
   private binaryPath: string
   private pollingInterval: NodeJS.Timeout | null = null
   private lastState: MediaState = { ...EMPTY_STATE }
-  private lastArtKey: string = ''
   private cachedArt: string | null = null
   private mainWindow: BrowserWindow | null = null
   private lastInteractionTime: number = 0
   private browserArtCache = new Map<string, string>()
+  private musicArtCache = new Map<string, string>()
+  private spotifyArtCache = new Map<string, string>()
+  // For browser sources: track the last known playing state since AppleScript
+  // always returns 'unknown' — we toggle it ourselves on user interaction.
+  private lastBrowserIsPlaying: boolean = true
+  private readonly BROWSER_SOURCES = ['brave', 'chrome', 'safari', 'youtube']
+
+  private cleanBrowserTitle(title: string): { title: string; artist?: string } {
+    let cleanTitle = title
+      .replace(/^\(\d+\)\s*/, '') // Remove (N) notification
+      .replace(/\s*-\s*YouTube$/i, '') // Remove YouTube suffix
+      .replace(/\s*-\s*Google Chrome$/i, '')
+      .replace(/\s*-\s*Brave$/i, '')
+      .trim()
+
+    if (cleanTitle.includes(' - ')) {
+      const parts = cleanTitle.split(' - ')
+      const potentialArtist = parts[0].trim()
+      const potentialTitle = parts.slice(1).join(' - ').trim()
+      if (potentialTitle) {
+        return { title: potentialTitle, artist: potentialArtist }
+      }
+    }
+
+    return { title: cleanTitle }
+  }
+
+  private async getBrowserURL(source: string): Promise<string | null> {
+    const appName =
+      source === 'brave' ? 'Brave Browser' : source === 'chrome' ? 'Google Chrome' : 'Safari'
+    const script = `tell application "${appName}" to return URL of active tab of front window`
+    try {
+      return await this.runAppleScript(script)
+    } catch {
+      return null
+    }
+  }
+
+  private async getBetterBrowserArtwork(url: string): Promise<string | null> {
+    const youtubeId = this.extractYouTubeId(url)
+    const artQuery = youtubeId || new URL(url).hostname
+
+    if (this.browserArtCache.has(artQuery)) {
+      return this.browserArtCache.get(artQuery) || null
+    }
+
+    let artUrl: string | null = null
+    if (youtubeId) {
+      // Use higher quality thumbnail (hqdefault is 480x360, stable)
+      artUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`
+    } else {
+      const hostname = new URL(url).hostname
+      artUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`
+    }
+
+    if (artUrl) {
+      const b64 = await this.fetchImageAsBase64(artUrl)
+      if (b64) {
+        this.browserArtCache.set(artQuery, b64)
+        return b64
+      }
+    }
+
+    return 'https://img.icons8.com/ios-filled/100/ffffff/music-record.png'
+  }
+
+  private fetchImageAsBase64(url: string): Promise<string | null> {
+    return new Promise((resolve) => {
+      https
+        .get(url, (res) => {
+          if (res.statusCode !== 200) {
+            resolve(null)
+            return
+          }
+
+          const data: Buffer[] = []
+          res.on('data', (chunk) => data.push(chunk))
+          res.on('end', () => {
+            const buffer = Buffer.concat(data)
+            const type = res.headers['content-type'] || 'image/jpeg'
+            resolve(`data:${type};base64,${buffer.toString('base64')}`)
+          })
+        })
+        .on('error', (err) => {
+          console.error('[MediaService] Image fetch failed:', err.message)
+          resolve(null)
+        })
+    })
+  }
 
   constructor() {
     this.binaryPath = app.isPackaged
@@ -70,6 +160,7 @@ export class MediaService {
   public startPolling(window: BrowserWindow) {
     if (this.pollingInterval) clearInterval(this.pollingInterval)
     this.mainWindow = window
+    this.ensurePermissions()
 
     this.pollingInterval = setInterval(async () => {
       if (!window || window.isDestroyed()) return
@@ -77,8 +168,16 @@ export class MediaService {
       // Debounce: Skip polling if user just interacted (allow system to settle)
       if (Date.now() - this.lastInteractionTime < 2000) return
 
-      const state = await this.fetchState()
-      window.webContents.send('media-update', state)
+      const pollStart = Date.now()
+      const { payload, snapshot } = await this.fetchState()
+
+      // Discard stale in-flight polls: if an interaction happened after this
+      // poll started, its snapshot is older than the user's action.
+      if (this.lastInteractionTime > pollStart) return
+      if (!window || window.isDestroyed()) return
+
+      this.lastState = snapshot
+      window.webContents.send('media-update', payload)
     }, 1000)
   }
 
@@ -86,13 +185,28 @@ export class MediaService {
     this.lastInteractionTime = Date.now()
   }
 
-  private async fetchState(): Promise<MediaState> {
+  private async runCLI(): Promise<string> {
+    const cmd = `"${this.binaryPath}" get title artist playbackRate duration elapsedPlaybackTime bundleIdentifier artworkData volume`
+    const opts = { maxBuffer: 1024 * 1024, timeout: 500 }
+
+    const { stdout } = await execAsync(cmd, opts).catch(() => ({ stdout: '' }))
+    console.log('[MediaService] Raw CLI stdout:', JSON.stringify(stdout))
+
+    if (!stdout.trim()) {
+      console.log('[MediaService] CLI returned empty — retrying in 200ms')
+      await new Promise((r) => setTimeout(r, 200))
+      const { stdout: retry } = await execAsync(cmd, opts).catch(() => ({ stdout: '' }))
+      console.log('[MediaService] Raw CLI stdout (retry):', JSON.stringify(retry))
+      return retry
+    }
+
+    return stdout
+  }
+
+  private async fetchState(): Promise<{ payload: MediaState; snapshot: MediaState }> {
     try {
       // 1. Primary Engine: nowplaying-cli
-      const { stdout } = await execAsync(
-        `"${this.binaryPath}" get title artist playbackRate duration elapsedPlaybackTime bundleIdentifier artworkData`,
-        { maxBuffer: 10 * 1024 * 1024 }
-      ).catch(() => ({ stdout: '' }))
+      const stdout = await this.runCLI()
 
       const lines = stdout.trim().split('\n')
       const val = (s: string) => {
@@ -103,22 +217,72 @@ export class MediaService {
       }
 
       const title = val(lines[0])
+      const durationRaw = val(lines[3])
+      const elapsedRaw = val(lines[4])
+      const cliVolumeRaw = val(lines[7])
+
+      // Debugging: Log if duration is missing but we have a title
+      if (title && !durationRaw) {
+        console.log(`[MediaService] Missing duration for: ${title}. CLI Output:`, lines)
+      }
 
       // 2. Engine Selection: If CLI returns junk or nothing, try Fallback (Brave, Spotify, etc.)
       const isJunk = !title || title === '-' || title === 'null' || title === '(null)'
       let finalState: MediaState
 
+      const playbackRateStr = val(lines[2])
+      const playbackRate = playbackRateStr ? parseFloat(playbackRateStr) || 0 : 0
+      const duration = parseFloat(durationRaw) || 0
+      const elapsed = parseFloat(elapsedRaw) || 0
+      const isPlaying = playbackRate > 0
+      const progress = duration > 0 ? (elapsed / duration) * 100 : 0
+
       if (isJunk) {
         const fallback = await this.getFallbackState()
-        if (fallback) {
-          // Stitch system timing! Even if it didn't know the title,
-          // the CLI often knows the timing data for the active media.
-          const duration = parseFloat(val(lines[3])) || 0
-          const elapsed = parseFloat(val(lines[4])) || 0
+        console.log('[MediaService] CLI is junk. Fallback title:', fallback?.title)
 
-          fallback.duration = duration
-          fallback.position = elapsed
-          fallback.progress = duration > 0 ? (elapsed / duration) * 100 : 0
+        if (fallback) {
+          // 2a. Stitch system timing only if CLI reported any
+          if (duration > 0 || elapsed > 0) {
+            console.log('[MediaService] CLI has timing data:', { duration, elapsed, playbackRate })
+            fallback.duration = duration
+            fallback.position = elapsed
+            fallback.progress = progress
+          }
+
+          // 2b. Only trust CLI playback state when the CLI actually reported something.
+          // If stdout was empty, playbackRate=0 is a parsing default, not a real signal —
+          // so we'd wrongly flip Spotify/Music to paused.
+          const cliHasSignal = playbackRateStr !== '' || durationRaw !== '' || elapsedRaw !== ''
+          const isBrowserSource = this.BROWSER_SOURCES.includes(fallback.source)
+
+          if (isBrowserSource) {
+            // Browsers don't expose player state via AppleScript (always 'unknown').
+            // Use our tracked state, toggled only when user clicks play/pause in Lume.
+            const titleChanged = fallback.title && fallback.title !== this.lastState?.title
+            if (titleChanged) {
+              console.log('[MediaService] Browser: new title detected, resetting to playing')
+              this.lastBrowserIsPlaying = true
+            }
+            console.log(
+              '[MediaService] Browser: using tracked isPlaying:',
+              this.lastBrowserIsPlaying
+            )
+            fallback.isPlaying = this.lastBrowserIsPlaying
+            fallback.playbackRate = this.lastBrowserIsPlaying ? 1 : 0
+          } else if (cliHasSignal) {
+            console.log('[MediaService] CLI has playback signal — syncing:', {
+              playbackRate,
+              isPlaying
+            })
+            fallback.isPlaying = isPlaying
+            fallback.playbackRate = playbackRate
+          } else {
+            console.log(
+              '[MediaService] CLI empty — trusting fallback isPlaying:',
+              fallback.isPlaying
+            )
+          }
 
           finalState = fallback
         } else {
@@ -126,16 +290,11 @@ export class MediaService {
         }
       } else {
         const artist = val(lines[1])
-        const playbackRateStr = val(lines[2])
-        const playbackRate = playbackRateStr ? parseFloat(playbackRateStr) || 0 : 0
-        const duration = parseFloat(val(lines[3])) || 0
-        const elapsed = parseFloat(val(lines[4])) || 0
+        console.log('[MediaService] CLI found media:', title, 'isPlaying:', isPlaying)
         const bundleId = val(lines[5]).toLowerCase()
         const artworkData = val(lines[6])
 
-        const isPlaying = playbackRate > 0
-        const progress = duration > 0 ? (elapsed / duration) * 100 : 0
-        const volume = await this.getVolume()
+        const volume = cliVolumeRaw ? parseFloat(cliVolumeRaw) * 100 : await this.getVolume()
 
         let source = 'system'
         if (bundleId.includes('music')) source = 'music'
@@ -146,17 +305,28 @@ export class MediaService {
 
         let albumArt: string | null = null
         if (artworkData) {
+          console.log('[MediaService] Found system artwork (Base64)')
           albumArt = `data:image/png;base64,${artworkData}`
         } else if (source === 'music') {
+          console.log('[MediaService] Fetching Music artwork fallback...')
           albumArt = await this.getMusicAlbumArt(`${title}-${artist}`)
         } else if (source === 'spotify') {
-          albumArt = await this.getSpotifyArtworkUrl()
+          console.log('[MediaService] Fetching Spotify URL fallback...')
+          albumArt = await this.getSpotifyArtworkUrl(`${title}-${artist}`)
+        } else if (this.BROWSER_SOURCES.includes(source)) {
+          // If CLI finds browser media but no artwork (common), try to get URL and Artwork from fallback logic
+          const url = await this.getBrowserURL(source)
+          if (url) {
+            if (url.includes('youtube.com')) source = 'youtube'
+            albumArt = await this.getBetterBrowserArtwork(url)
+          }
         }
 
         finalState = {
           title,
           artist,
           isPlaying,
+          playbackRate,
           progress: Math.min(progress, 100),
           volume,
           albumArt,
@@ -166,8 +336,11 @@ export class MediaService {
         }
       }
 
+      // Remember the full state (with artwork) before delta-update strips it.
+      const snapshot = { ...finalState }
+
       // 3. Unified Artwork Caching (Delta Update)
-      // Only send the b64/url if it has changed to save bandwidth
+      // Only send the b64/url over IPC if it changed, to save bandwidth.
       if (finalState.albumArt === this.cachedArt) {
         finalState.albumArt = null
       } else if (finalState.albumArt) {
@@ -176,10 +349,10 @@ export class MediaService {
         this.cachedArt = null
       }
 
-      this.lastState = finalState
-      return finalState
+      return { payload: finalState, snapshot }
     } catch (err: any) {
-      return { ...EMPTY_STATE, volume: await this.getVolume() }
+      const fallback = { ...EMPTY_STATE, volume: await this.getVolume() }
+      return { payload: fallback, snapshot: fallback }
     }
   }
 
@@ -214,8 +387,8 @@ end if
 if braveRunning then
   tell application "Brave Browser"
     try
-      set mediaSites to {"youtube.com", "spotify.com", "soundcloud.com", "vimeo.com", "twitch.tv", "netflix.com", "music.apple.com", "bilibili.com"}
-
+      set mediaSites to {"youtube.com", "spotify.com", "soundcloud.com", "vimeo.com", "twitch.tv", "netflix.com", "music.apple.com", "bilibili.com", "music.amazon.com"}
+      
       -- 1. Check current active tab first (high priority)
       set t to active tab of front window
       set u to URL of t
@@ -223,7 +396,7 @@ if braveRunning then
         if u contains s then
           set sName to "brave"
           if u contains "youtube.com" then set sName to "youtube"
-          return sName & "@@@playing@@@" & (title of t) & "@@@Web Browser@@@0@@@0@@@" & u
+          return sName & "@@@unknown@@@" & (title of t) & "@@@Web Browser@@@0@@@0@@@" & u
         end if
       end repeat
 
@@ -235,7 +408,7 @@ if braveRunning then
             if u contains s then
               set sName to "brave"
               if u contains "youtube.com" then set sName to "youtube"
-              return sName & "@@@playing@@@" & (title of t) & "@@@Web Browser@@@0@@@0@@@" & u
+              return sName & "@@@unknown@@@" & (title of t) & "@@@Web Browser@@@0@@@0@@@" & u
             end if
           end repeat
         end repeat
@@ -248,7 +421,7 @@ end if
 if chromeRunning then
   tell application "Google Chrome"
     try
-      set mediaSites to {"youtube.com", "spotify.com", "soundcloud.com", "vimeo.com", "twitch.tv", "netflix.com", "music.apple.com", "bilibili.com"}
+      set mediaSites to {"youtube.com", "spotify.com", "soundcloud.com", "vimeo.com", "twitch.tv", "netflix.com", "music.apple.com", "bilibili.com", "music.amazon.com"}
 
       -- 1. Check current active tab first
       set t to active tab of front window
@@ -257,7 +430,7 @@ if chromeRunning then
         if u contains s then
           set sName to "chrome"
           if u contains "youtube.com" then set sName to "youtube"
-          return sName & "@@@playing@@@" & (title of t) & "@@@Web Browser@@@0@@@0@@@" & u
+          return sName & "@@@unknown@@@" & (title of t) & "@@@Web Browser@@@0@@@0@@@" & u
         end if
       end repeat
 
@@ -269,7 +442,7 @@ if chromeRunning then
             if u contains s then
               set sName to "chrome"
               if u contains "youtube.com" then set sName to "youtube"
-              return sName & "@@@playing@@@" & (title of t) & "@@@Web Browser@@@0@@@0@@@" & u
+              return sName & "@@@unknown@@@" & (title of t) & "@@@Web Browser@@@0@@@0@@@" & u
             end if
           end repeat
         end repeat
@@ -282,15 +455,15 @@ end if
 if safariRunning then
   tell application "Safari"
     try
-      set mediaSites to {"youtube.com", "spotify.com", "soundcloud.com", "vimeo.com", "twitch.tv", "netflix.com", "music.apple.com", "bilibili.com"}
+      set mediaSites to {"youtube.com", "spotify.com", "soundcloud.com", "vimeo.com", "twitch.tv", "netflix.com", "music.apple.com", "bilibili.com", "music.amazon.com"}
       repeat with w in windows
-        repeat with d in documents of w
-          set u to URL of d
+        repeat with t in tabs of w
+          set u to URL of t
           repeat with s in mediaSites
             if u contains s then
               set sName to "safari"
               if u contains "youtube.com" then set sName to "youtube"
-              return sName & "@@@playing@@@" & (name of d) & "@@@Web Browser@@@0@@@0@@@" & u
+              return sName & "@@@unknown@@@" & (name of t) & "@@@Web Browser@@@0@@@0@@@" & u
             end if
           end repeat
         end repeat
@@ -299,6 +472,7 @@ if safariRunning then
     end try
   end tell
 end if
+
 
 return "none"`
 
@@ -309,28 +483,15 @@ return "none"`
       // eslint-disable-next-line prefer-const
       let [source, pState, title, artist, pos, dur, url] = result.split('@@@')
 
-      // Clean browser titles: "(326) Artist - Title - YouTube" -> "Artist - Title"
-      const browserSources = ['brave', 'chrome', 'safari', 'youtube']
-      if (browserSources.includes(source)) {
-        title = title.replace(/^\(\d+\)\s*/, '') // Remove (N) notification
-        title = title.replace(/\s*-\s*YouTube$/i, '') // Remove YouTube suffix
-
-        // Try splitting by " - ", but keep whole title if split fails
-        if (title.includes(' - ')) {
-          const parts = title.split(' - ')
-          artist = parts[0].trim()
-          title = parts.slice(1).join(' - ').trim()
-        } else {
-          artist = 'Anonymous'
-        }
+      // Clean browser titles and map artist
+      if (this.BROWSER_SOURCES.includes(source)) {
+        const cleaned = this.cleanBrowserTitle(title)
+        title = cleaned.title
+        if (cleaned.artist) artist = cleaned.artist
       }
 
       // State Stability Logic:
-      // If pState is 'static', we trust the last known state instead of flipping it.
-      let isPlaying = pState.toLowerCase().includes('playing')
-      if (pState.toLowerCase() === 'static' && this.lastState) {
-        isPlaying = this.lastState.isPlaying
-      }
+      const isPlaying = pState.toLowerCase().includes('playing')
 
       const position = parseFloat(pos) || 0
       const duration = parseFloat(dur) || 0
@@ -339,34 +500,17 @@ return "none"`
 
       let albumArt: string | null = null
       if (source === 'music') albumArt = await this.getMusicAlbumArt(`${title}-${artist}`)
-      else if (source === 'spotify') albumArt = await this.getSpotifyArtworkUrl()
-      else if (browserSources.includes(source) && url) {
-        // Intelligent YouTube Artwork
-        const youtubeId = this.extractYouTubeId(url)
-
-        if (youtubeId) {
-          const thumbnailUrl = `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`
-
-          if (this.browserArtCache.has(youtubeId)) {
-            albumArt = this.browserArtCache.get(youtubeId) || null
-          } else {
-            const b64 = await this.fetchImageAsBase64(thumbnailUrl)
-            if (b64) {
-              albumArt = b64
-              this.browserArtCache.set(youtubeId, b64)
-            }
-          }
-        }
-
-        if (!albumArt) {
-          albumArt = 'https://img.icons8.com/ios-filled/100/ffffff/music-record.png'
-        }
+      else if (source === 'spotify')
+        albumArt = await this.getSpotifyArtworkUrl(`${title}-${artist}`)
+      else if (this.BROWSER_SOURCES.includes(source) && url) {
+        albumArt = await this.getBetterBrowserArtwork(url)
       }
 
       return {
         title: title || 'Unknown Title',
         artist: artist || 'Anonymous',
         isPlaying,
+        playbackRate: isPlaying ? 1 : 0,
         progress: Math.min(progress, 100),
         volume,
         albumArt,
@@ -403,6 +547,7 @@ return "none"`
   public async setVolume(level: number) {
     try {
       console.log(`[MediaService] Setting volume to: ${level}`)
+      this.setInteraction()
       await execAsync(`osascript -e "set volume output volume ${Math.round(level)}"`)
       if (this.lastState && this.mainWindow) {
         this.lastState.volume = level
@@ -415,8 +560,15 @@ return "none"`
 
   public async playPause() {
     try {
-      console.log('[MediaService] Triggering play/pause (Hybrid + Debounce)')
+      console.log('[MediaService] Triggering play/pause — source:', this.lastState?.source)
       this.setInteraction()
+
+      const isBrowser = this.BROWSER_SOURCES.includes(this.lastState?.source)
+
+      // For browser sources, track the toggle ourselves since AppleScript can't tell us
+      if (isBrowser) {
+        this.lastBrowserIsPlaying = !this.lastBrowserIsPlaying
+      }
 
       // Optimistic Update
       if (this.lastState && this.mainWindow) {
@@ -424,21 +576,7 @@ return "none"`
         this.mainWindow.webContents.send('media-update', this.lastState)
       }
 
-      await execAsync(`"${this.binaryPath}" togglePlayPause`).catch(() => {})
-
-      // Fallback Scripts
-      const fallbackScript = `
-        tell application "System Events"
-          if (count of (processes whose name is "Music")) > 0 then tell application "Music" to playpause
-          if (count of (processes whose name is "Spotify")) > 0 then tell application "Spotify" to playpause
-          if (count of (processes whose name is "Brave Browser")) > 0 then 
-            tell process "Brave Browser" to keystroke (ASCII character 32)
-          end if
-          if (count of (processes whose name is "Google Chrome")) > 0 then 
-            tell process "Google Chrome" to keystroke (ASCII character 32)
-          end if
-        end tell`
-      await execAsync(`osascript -e '${fallbackScript}'`).catch(() => {})
+      await this.dispatchControl('playpause')
     } catch (err: any) {
       console.error('[MediaService] Play/Pause failed:', err.message)
     }
@@ -446,16 +584,9 @@ return "none"`
 
   public async next() {
     try {
-      console.log('[MediaService] Triggering next (Hybrid + Debounce)')
+      console.log('[MediaService] Triggering next — source:', this.lastState?.source)
       this.setInteraction()
-
-      await execAsync(`"${this.binaryPath}" next`).catch(() => {})
-      const nextScript = `
-        tell application "System Events"
-          if (count of (processes whose name is "Music")) > 0 then tell application "Music" to next track
-          if (count of (processes whose name is "Spotify")) > 0 then tell application "Spotify" to next track
-        end tell`
-      await execAsync(`osascript -e '${nextScript}'`).catch(() => {})
+      await this.dispatchControl('next')
     } catch (err: any) {
       console.error('[MediaService] Next track failed:', err.message)
     }
@@ -463,29 +594,65 @@ return "none"`
 
   public async previous() {
     try {
+      console.log('[MediaService] Triggering previous — source:', this.lastState?.source)
       this.setInteraction()
-
-      await execAsync(`"${this.binaryPath}" previous`).catch(() => {})
-      const prevScript = `
-        tell application "System Events"
-          if (count of (processes whose name is "Music")) > 0 then tell application "Music" to previous track
-          if (count of (processes whose name is "Spotify")) > 0 then tell application "Spotify" to previous track
-        end tell`
-      await execAsync(`osascript -e '${prevScript}'`).catch(() => {})
+      await this.dispatchControl('previous')
     } catch (err: any) {
       console.error('[MediaService] Previous track failed:', err.message)
     }
   }
 
+  private async dispatchControl(action: 'playpause' | 'next' | 'previous') {
+    const source = this.lastState?.source
+
+    // App-specific: single authoritative command, no double-firing.
+    if (source === 'spotify' || source === 'music') {
+      const appName = source === 'spotify' ? 'Spotify' : 'Music'
+      const cmd =
+        action === 'playpause' ? 'playpause' : action === 'next' ? 'next track' : 'previous track'
+      await execAsync(`osascript -e 'tell application "${appName}" to ${cmd}'`).catch((err) =>
+        console.error(`[MediaService] ${appName} ${cmd} failed:`, err.message)
+      )
+      return
+    }
+
+    // Generic / browser path: try nowplaying-cli first, then system media key fallback.
+    const cliCmd =
+      action === 'playpause' ? 'togglePlayPause' : action === 'next' ? 'next' : 'previous'
+    try {
+      await execAsync(`"${this.binaryPath}" ${cliCmd}`)
+      console.log(`[MediaService] CLI ${cliCmd} succeeded`)
+    } catch {
+      console.log('[MediaService] CLI control failed, sending system media key')
+      const keyMap = { playpause: 16, next: 17, previous: 19 }
+      const keyCode = keyMap[action]
+      const mediaKeyScript = `
+tell application "System Events"
+  key code ${keyCode}
+end tell`
+      await execAsync(`osascript -e '${mediaKeyScript}'`).catch(() => {})
+    }
+  }
+
   private async runAppleScript(script: string): Promise<string> {
-    const tmpFile = join(os.tmpdir(), 'lume_service.applescript')
-    fs.writeFileSync(tmpFile, script)
-    const { stdout } = await execAsync(`osascript "${tmpFile}"`)
-    return stdout.trim()
+    const tmpFile = join(
+      os.tmpdir(),
+      `lume_service_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.applescript`
+    )
+    try {
+      fs.writeFileSync(tmpFile, script)
+      const { stdout } = await execAsync(`osascript "${tmpFile}"`)
+      return stdout.trim()
+    } finally {
+      try {
+        fs.unlinkSync(tmpFile)
+      } catch {}
+    }
   }
 
   private async getMusicAlbumArt(trackKey: string): Promise<string | null> {
-    if (trackKey === this.lastArtKey && this.cachedArt !== null) return this.cachedArt
+    if (this.musicArtCache.has(trackKey)) return this.musicArtCache.get(trackKey) || null
+
     const artPath = join(os.tmpdir(), 'lume_service_art.png')
     const script = `
 tell application "Music"
@@ -507,15 +674,20 @@ end tell`
       if (result && fs.existsSync(result)) {
         const data = fs.readFileSync(result)
         const art = `data:image/jpeg;base64,${data.toString('base64')}`
-        this.lastArtKey = trackKey
-        this.cachedArt = art
+        this.musicArtCache.set(trackKey, art)
         return art
       }
-    } catch {}
+    } catch (err: any) {
+      console.error('[MediaService] Music artwork fetch failed:', err.message)
+    }
     return null
   }
 
-  private async getSpotifyArtworkUrl(): Promise<string | null> {
+  private async getSpotifyArtworkUrl(trackKey?: string): Promise<string | null> {
+    if (trackKey && this.spotifyArtCache.has(trackKey)) {
+      return this.spotifyArtCache.get(trackKey) || null
+    }
+
     const script = `
 tell application "System Events"
   set spotifyRunning to (count of (processes whose name is "Spotify")) > 0
@@ -523,40 +695,37 @@ end tell
 if spotifyRunning then
   tell application "Spotify"
     try
-      return artwork url of current track
+      return (artwork url of current track) as string
     end try
   end tell
 end if
 return ""`
     try {
-      const result = await this.runAppleScript(script)
-      return result || null
-    } catch {
+      let url = await this.runAppleScript(script)
+      console.log('[MediaService] Spotify artwork raw:', JSON.stringify(url))
+
+      if (!url) return null
+
+      if (url.startsWith('spotify:image:')) {
+        const id = url.replace('spotify:image:', '')
+        url = `https://i.scdn.co/image/${id}`
+      }
+
+      if (!url.startsWith('http')) return null
+
+      // Pre-fetch to base64 — the renderer CSP (img-src 'self' data:) blocks
+      // direct https URLs, so we inline the artwork as a data URI.
+      const b64 = await this.fetchImageAsBase64(url)
+      if (!b64) {
+        console.log('[MediaService] Spotify artwork fetch returned no bytes for', url)
+        return null
+      }
+
+      if (trackKey) this.spotifyArtCache.set(trackKey, b64)
+      return b64
+    } catch (err: any) {
+      console.error('[MediaService] Spotify artwork fetch failed:', err.message)
       return null
     }
-  }
-
-  private fetchImageAsBase64(url: string): Promise<string | null> {
-    return new Promise((resolve) => {
-      https
-        .get(url, (res) => {
-          if (res.statusCode !== 200) {
-            resolve(null)
-            return
-          }
-
-          const data: Buffer[] = []
-          res.on('data', (chunk) => data.push(chunk))
-          res.on('end', () => {
-            const buffer = Buffer.concat(data)
-            const type = res.headers['content-type'] || 'image/jpeg'
-            resolve(`data:${type};base64,${buffer.toString('base64')}`)
-          })
-        })
-        .on('error', (err) => {
-          console.error('[MediaService] Image fetch failed:', err.message)
-          resolve(null)
-        })
-    })
   }
 }

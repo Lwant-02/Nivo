@@ -8,35 +8,43 @@ import {
   Monitor,
   Volume,
   Volume2,
-  Disc3,
   Headphones
 } from 'lucide-react'
 import cn from 'clsx'
 
 import MarqueeText from './ui/MarqueeText'
-import { SoundWave } from './ui/SoundWave'
+import { MusicVisualizer } from './ui/MusicVisualizer'
 import { useMedia } from '../hooks/useMedia'
 import { SourceBadge } from './ui/SourceBadge'
+import { Thumbnail } from './ui/Thumbnail'
 
 const bounceTransition: Transition = { type: 'spring', stiffness: 400, damping: 28, mass: 0.8 }
 
 function formatTime(seconds: number): string {
-  if (!seconds || isNaN(seconds)) return '-:--'
+  if (isNaN(seconds) || seconds < 0) return '-:--'
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
 export default function NotchUI() {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isHovering, setIsHovering] = useState(false)
+  const [isAutoExpanded, setIsAutoExpanded] = useState(false)
   const [showVolume, setShowVolume] = useState(false)
   const [volumeLevel, setVolumeLevel] = useState(50)
+
+  const isExpanded = isHovering || isAutoExpanded
+
+  const isHoveringRef = useRef(false)
+  const autoCollapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pendingCollapseRef = useRef(false)
+  const prevTitleRef = useRef('')
 
   const {
     title,
     artist,
     isPlaying,
-    progress,
+    playbackRate,
     volume,
     albumArt,
     duration,
@@ -51,11 +59,46 @@ export default function NotchUI() {
   useEffect(() => {
     setPosition(initialPosition)
     setVolumeLevel(volume)
+  }, [initialPosition, volume])
 
-    // Auto-expand/collapse
-    const isActuallyPlaying = title && title !== 'Not Playing' && title !== ''
-    setIsExpanded(!!isActuallyPlaying)
-  }, [initialPosition, volume, title])
+  // Auto-expand announcement on song change
+  useEffect(() => {
+    const isValidTitle = title && title !== 'Not Playing' && title !== ''
+
+    if (isValidTitle && title !== prevTitleRef.current) {
+      prevTitleRef.current = title
+
+      if (autoCollapseTimerRef.current) {
+        clearTimeout(autoCollapseTimerRef.current)
+        autoCollapseTimerRef.current = null
+      }
+      pendingCollapseRef.current = false
+      setIsAutoExpanded(true)
+
+      autoCollapseTimerRef.current = setTimeout(() => {
+        if (isHoveringRef.current) {
+          pendingCollapseRef.current = true
+        } else {
+          setIsAutoExpanded(false)
+        }
+      }, 3000)
+    } else if (!isValidTitle) {
+      prevTitleRef.current = ''
+      setIsAutoExpanded(false)
+      pendingCollapseRef.current = false
+      if (autoCollapseTimerRef.current) {
+        clearTimeout(autoCollapseTimerRef.current)
+        autoCollapseTimerRef.current = null
+      }
+    }
+  }, [title])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autoCollapseTimerRef.current) clearTimeout(autoCollapseTimerRef.current)
+    }
+  }, [])
 
   // Optimization: Keep previous artwork if incoming is null (delta update)
   useEffect(() => {
@@ -66,8 +109,8 @@ export default function NotchUI() {
     }
   }, [albumArt, title])
 
-  const isPlayingRef = useRef(isPlaying)
-  isPlayingRef.current = isPlaying
+  const playbackRateRef = useRef(playbackRate)
+  playbackRateRef.current = playbackRate
 
   // Smooth position increment between backend ticks
   useEffect(() => {
@@ -76,8 +119,8 @@ export default function NotchUI() {
     const tick = (now: number) => {
       const delta = (now - last) / 1000
       last = now
-      if (isPlayingRef.current) {
-        setPosition((p) => p + delta)
+      if (playbackRateRef.current > 0) {
+        setPosition((p) => p + delta * playbackRateRef.current)
       }
       rafId = requestAnimationFrame(tick)
     }
@@ -98,14 +141,21 @@ export default function NotchUI() {
 
   const handleShowVolume = () => setShowVolume((v) => !v)
 
-  const progressPct = progress > 0 ? progress : 0
-  const isDefaultArt = 'https://img.icons8.com/ios-filled/100/ffffff/music-record.png'
+  const progressPct = duration > 0 ? (position / duration) * 100 : 0
 
   return (
     <motion.div
-      onMouseEnter={() => setIsExpanded(true)}
+      onMouseEnter={() => {
+        setIsHovering(true)
+        isHoveringRef.current = true
+      }}
       onMouseLeave={() => {
-        setIsExpanded(false)
+        setIsHovering(false)
+        isHoveringRef.current = false
+        if (pendingCollapseRef.current) {
+          pendingCollapseRef.current = false
+          setIsAutoExpanded(false)
+        }
         setShowVolume(false)
       }}
       initial={false}
@@ -117,7 +167,7 @@ export default function NotchUI() {
       className={cn(
         'relative bg-black overflow-hidden origin-top transition-shadow duration-500',
         isExpanded
-          ? 'border border-white/10 shadow-[0_0_60px_rgba(0,0,0,0.8),0_0_30px_var(--color-purple-glow)]/30'
+          ? 'border border-white/10 shadow-[0_0_60px_rgba(0,0,0,0.8),0_0_30px_var(--color-purple-glow)]/10'
           : 'border-none shadow-none'
       )}
       style={{
@@ -140,17 +190,9 @@ export default function NotchUI() {
             className="flex items-center justify-between p-10 h-full"
           >
             <div className="relative">
-              {displayArt && displayArt !== isDefaultArt ? (
-                <img
-                  src={displayArt}
-                  alt={title}
-                  className="w-6 h-3.5 overflow-hidden rounded-sm object-cover"
-                />
-              ) : (
-                <Disc3 className="text-purple size-5 animate-spin [animation-duration:2s]" />
-              )}
+              <Thumbnail src={displayArt} alt={title} size="pill" />
             </div>
-            <SoundWave isPlaying={isPlaying} />
+            <MusicVisualizer isPlaying={isPlaying} />
           </motion.div>
         ) : (
           <motion.div
@@ -163,22 +205,8 @@ export default function NotchUI() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="relative">
-                  <div className="w-12 h-10 bg-gray rounded-lg flex items-center justify-center overflow-hidden shadow-lg border border-white/5 relative">
-                    {displayArt && displayArt !== isDefaultArt ? (
-                      <img
-                        src={displayArt}
-                        alt={title}
-                        className="size-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none'
-                          e.currentTarget.parentElement?.classList.add('bg-purple/20')
-                        }}
-                      />
-                    ) : (
-                      <div className="size-full bg-purple/20 flex items-center justify-center">
-                        <Disc3 className="text-purple size-8 animate-spin [animation-duration:2s]" />
-                      </div>
-                    )}
+                  <div className="w-12 h-10 bg-gray rounded-md flex items-center justify-center overflow-hidden shadow-lg border border-white/5 relative">
+                    <Thumbnail src={displayArt} alt={title} size="expanded" />
                   </div>
                   {source && (
                     <div className="absolute -bottom-1 right-0 flex items-center justify-center p-1">
@@ -202,22 +230,64 @@ export default function NotchUI() {
                 </div>
               </div>
               <div className="w-fit flex justify-end items-center">
-                <SoundWave isPlaying={isPlaying} size="lg" />
+                <AnimatePresence mode="wait">
+                  {isPlaying && (
+                    <motion.div
+                      key="visualizer"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <MusicVisualizer isPlaying={isPlaying} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 text-[12px] font-medium text-text-dim tracking-widest mt-2">
-              <span>{formatTime(position)}</span>
-              <div className="flex-1 h-[5px] bg-gray rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-white/80 rounded-full transition-none"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-              {duration > 0 && (
-                <span className="min-w-[40px] text-right">{formatTime(duration)}</span>
-              )}
-            </div>
+            {(() => {
+              const browserSources = ['brave', 'chrome', 'youtube', 'safari']
+              const isStream = duration === 0 && browserSources.includes(source)
+
+              if (isStream) {
+                return (
+                  <div className="flex items-center gap-3 text-[12px] font-medium text-text-dim tracking-widest mt-2">
+                    <span className="text-white/50">LIVE</span>
+                    <div className="flex-1 h-[5px] bg-gray rounded-full overflow-hidden relative">
+                      {isPlaying && (
+                        <motion.div
+                          className="absolute inset-0 h-full rounded-full"
+                          style={{
+                            background:
+                              'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)',
+                            width: '40%'
+                          }}
+                          animate={{ x: ['-100%', '350%'] }}
+                          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                      )}
+                    </div>
+                    <span className="min-w-[40px] text-right text-white/30">∞</span>
+                  </div>
+                )
+              }
+
+              return (
+                <div className="flex items-center gap-3 text-[12px] font-medium text-text-dim tracking-widest mt-2">
+                  <span>{formatTime(position)}</span>
+                  <div className="flex-1 h-[5px] bg-gray rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-white/80 rounded-full transition-none"
+                      style={{ width: `${progressPct}%` }}
+                    />
+                  </div>
+                  {duration > 0 && (
+                    <span className="min-w-[40px] text-right">{formatTime(duration)}</span>
+                  )}
+                </div>
+              )
+            })()}
 
             <div className="flex items-center justify-center relative mt-1">
               <div className="absolute text-white size-[40px] left-2 rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20">

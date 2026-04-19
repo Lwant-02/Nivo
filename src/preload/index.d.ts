@@ -15,6 +15,7 @@ declare global {
           title: string
           artist: string
           isPlaying: boolean
+          playbackRate: number
           progress: number
           volume: number
           albumArt: string | null
