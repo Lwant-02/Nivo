@@ -47,7 +47,7 @@ const NAV_GROUPS = [
     ]
   },
   {
-    label: 'Alcove',
+    label: 'Lume',
     items: [
       { id: 'license', icon: ShieldCheck, label: 'License', color: '#32D74B' },
       { id: 'about', icon: Info, label: 'About', color: '#636366' }

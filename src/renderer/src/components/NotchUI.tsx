@@ -52,14 +52,14 @@ export default function NotchUI() {
     source
   } = useMedia()
 
-  const [position, setPosition] = useState(0)
+  const [position, setPosition] = useState(initialPosition)
   const [displayArt, setDisplayArt] = useState<string | null>(null)
 
   // Sync position and volume when media updates
   useEffect(() => {
-    setPosition(initialPosition)
+    setPosition(duration > 0 ? Math.min(initialPosition, duration) : initialPosition)
     setVolumeLevel(volume)
-  }, [initialPosition, volume])
+  }, [initialPosition, volume, duration])
 
   // Auto-expand announcement on song change
   useEffect(() => {
@@ -113,6 +113,11 @@ export default function NotchUI() {
   playbackRateRef.current = playbackRate
 
   // Smooth position increment between backend ticks
+  const durationRef = useRef(duration)
+  useEffect(() => {
+    durationRef.current = duration
+  }, [duration])
+
   useEffect(() => {
     let last = performance.now()
     let rafId: number
@@ -120,7 +125,10 @@ export default function NotchUI() {
       const delta = (now - last) / 1000
       last = now
       if (playbackRateRef.current > 0) {
-        setPosition((p) => p + delta * playbackRateRef.current)
+        setPosition((p) => {
+          const next = p + delta * playbackRateRef.current
+          return durationRef.current > 0 ? Math.min(next, durationRef.current) : next
+        })
       }
       rafId = requestAnimationFrame(tick)
     }

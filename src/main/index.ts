@@ -139,13 +139,13 @@ function createOnboardingWindow(): void {
     return
   }
 
-  const { width, height } = screen.getPrimaryDisplay().bounds
+  const { width } = screen.getPrimaryDisplay().bounds
 
   onboardingWindow = new BrowserWindow({
-    width: 600,
-    height: 500,
+    width: 700,
+    height: 600,
     x: Math.floor(width / 2 - 300),
-    y: Math.floor(height / 2 - 250),
+    y: 100, // Positioned near the top for Notch proximity
     resizable: false,
     show: false,
     titleBarStyle: 'hiddenInset',
@@ -195,9 +195,19 @@ app.whenReady().then(() => {
   tray = new Tray(trayIcon)
 
   const contextMenu = Menu.buildFromTemplate([
-    { label: 'Settings', click: () => createSettingsWindow() },
+    { label: `Version ${app.getVersion()}`, enabled: false },
     { type: 'separator' },
-    { label: 'Quit Lume', click: () => app.quit() }
+    {
+      label: 'Settings...',
+      accelerator: 'Command+,',
+      click: () => createSettingsWindow()
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit Lume',
+      accelerator: 'Command+Q',
+      click: () => app.quit()
+    }
   ])
 
   tray.setToolTip('Lume')
@@ -208,8 +218,22 @@ app.whenReady().then(() => {
   createOnboardingWindow()
 })
 
+ipcMain.handle('get-version', () => app.getVersion())
+
 ipcMain.handle('open-settings', () => {
   createSettingsWindow()
+})
+
+ipcMain.handle('pulse-onboarding', () => {
+  if (!onboardingWindow) return
+  const current = onboardingWindow.getBounds()
+  // Brief nudge upwards towards the notch
+  onboardingWindow.setBounds({ ...current, y: current.y - 8 }, true)
+  setTimeout(() => {
+    if (onboardingWindow) {
+      onboardingWindow.setBounds({ ...current, y: 100 }, true)
+    }
+  }, 120)
 })
 
 ipcMain.handle('close-onboarding', () => {

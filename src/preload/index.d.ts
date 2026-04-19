@@ -10,6 +10,8 @@ declare global {
       setVolume: (level: number) => Promise<void>
       openSettings: () => Promise<void>
       closeOnboarding: () => Promise<void>
+      pulseOnboarding: () => Promise<void>
+      getAppVersion: () => Promise<string>
       onMediaUpdate: (
         callback: (data: {
           title: string

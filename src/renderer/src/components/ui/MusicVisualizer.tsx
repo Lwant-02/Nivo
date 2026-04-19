@@ -30,7 +30,7 @@ export const MusicVisualizer = ({ isPlaying = false, className = '' }: MusicVisu
             ease: 'easeInOut',
             times: [0, 0.25, 0.5, 0.75, 1]
           }}
-          className="w-[3px] bg-white/70 rounded-full"
+          className="w-[3px] bg-white/50 rounded-full"
         />
       ))}
     </div>

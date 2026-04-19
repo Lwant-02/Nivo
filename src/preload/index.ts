@@ -14,6 +14,8 @@ const api = {
   // Events & Windows
   openSettings: () => ipcRenderer.invoke('open-settings'),
   closeOnboarding: () => ipcRenderer.invoke('close-onboarding'),
+  pulseOnboarding: () => ipcRenderer.invoke('pulse-onboarding'),
+  getAppVersion: () => ipcRenderer.invoke('get-version'),
 
   // Events
   onMediaUpdate: (callback: (data: any) => void) => {

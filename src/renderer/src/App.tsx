@@ -1,5 +1,5 @@
 import NotchUI from './components/NotchUI'
-import OnboardingUI from './components/OnboardingUI'
+import { OnboardingUI } from './components/OnboardingUI'
 import SettingsUI from './components/SettingsUI'
 
 export default function App() {

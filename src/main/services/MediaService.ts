@@ -133,12 +133,19 @@ export class MediaService {
   }
 
   constructor() {
-    this.binaryPath = app.isPackaged
-      ? join(process.resourcesPath, 'bin', 'nowplaying-cli')
-      : join(process.cwd(), 'resources', 'bin', 'nowplaying-cli')
+    // Prioritize Homebrew binary on M-series Macs for better metadata stability
+    const homebrewPath = '/opt/homebrew/bin/nowplaying-cli'
+    this.binaryPath = fs.existsSync(homebrewPath)
+      ? homebrewPath
+      : app.isPackaged
+        ? join(process.resourcesPath, 'bin', 'nowplaying-cli')
+        : join(process.cwd(), 'resources', 'bin', 'nowplaying-cli')
 
     this.ensurePermissions()
   }
+
+  private lastReportedTitle = ''
+  private lastReportedDuration = 0
 
   private async ensurePermissions() {
     if (!fs.existsSync(this.binaryPath)) {
@@ -157,85 +164,162 @@ export class MediaService {
     }
   }
 
+  private isFetchingState = false
+
   public startPolling(window: BrowserWindow) {
     if (this.pollingInterval) clearInterval(this.pollingInterval)
     this.mainWindow = window
     this.ensurePermissions()
 
-    this.pollingInterval = setInterval(async () => {
+    const doPoll = async () => {
       if (!window || window.isDestroyed()) return
 
       // Debounce: Skip polling if user just interacted (allow system to settle)
       if (Date.now() - this.lastInteractionTime < 2000) return
 
-      const pollStart = Date.now()
-      const { payload, snapshot } = await this.fetchState()
+      // Reentrancy guard
+      if (this.isFetchingState) return
+      this.isFetchingState = true
 
-      // Discard stale in-flight polls: if an interaction happened after this
-      // poll started, its snapshot is older than the user's action.
-      if (this.lastInteractionTime > pollStart) return
-      if (!window || window.isDestroyed()) return
+      try {
+        const pollStart = Date.now()
+        const { payload, snapshot } = await this.fetchState()
 
-      this.lastState = snapshot
-      window.webContents.send('media-update', payload)
-    }, 1000)
+        if (this.lastInteractionTime > pollStart) return
+        if (!window || window.isDestroyed()) return
+
+        this.lastState = snapshot
+        window.webContents.send('media-update', payload)
+      } finally {
+        this.isFetchingState = false
+      }
+    }
+
+    // Zero-latency initial fetch: fetch immediately on app start
+    doPoll()
+
+    this.pollingInterval = setInterval(doPoll, 500)
   }
 
   private setInteraction() {
     this.lastInteractionTime = Date.now()
   }
 
-  private async runCLI(): Promise<string> {
-    const cmd = `"${this.binaryPath}" get title artist playbackRate duration elapsedPlaybackTime bundleIdentifier artworkData volume`
-    const opts = { maxBuffer: 1024 * 1024, timeout: 500 }
+  // Single source of truth: nowplaying-cli get-raw dumps the full
+  // kMRMediaRemoteNowPlayingInfo dictionary as JSON (including bundleId and
+  // base64 artwork). One exec per poll covers every field we need.
+  private async fetchRawNowPlaying(): Promise<Record<string, string>> {
+    const cmd = `"${this.binaryPath}" get-raw`
+    const opts = { maxBuffer: 10 * 1024 * 1024, timeout: 2000 }
 
     const { stdout } = await execAsync(cmd, opts).catch(() => ({ stdout: '' }))
-    console.log('[MediaService] Raw CLI stdout:', JSON.stringify(stdout))
+    const trimmed = stdout.trim()
 
-    if (!stdout.trim()) {
-      console.log('[MediaService] CLI returned empty — retrying in 200ms')
-      await new Promise((r) => setTimeout(r, 200))
-      const { stdout: retry } = await execAsync(cmd, opts).catch(() => ({ stdout: '' }))
-      console.log('[MediaService] Raw CLI stdout (retry):', JSON.stringify(retry))
-      return retry
+    if (!trimmed || trimmed === '{}' || trimmed === '{\n}') return {}
+
+    try {
+      // 1. JSON path (Modern/Homebrew nowplaying-cli)
+      const obj = JSON.parse(trimmed)
+      if (obj && typeof obj === 'object') {
+        const result: Record<string, string> = {}
+        for (const [k, v] of Object.entries(obj)) {
+          if (v === null || v === undefined) continue
+          result[k] = String(v)
+        }
+        return result
+      }
+    } catch {
+      // 2. Legacy key = value path fallback
+      const result: Record<string, string> = {}
+      const pattern = /([A-Za-z_][\w]*)\s*=\s*(?:"((?:[^"\\]|\\.)*)"|([^;]+?))\s*;/g
+      let match: RegExpExecArray | null
+      while ((match = pattern.exec(trimmed)) !== null) {
+        const val = match[2] !== undefined ? match[2].replace(/\\"/g, '"') : match[3].trim()
+        result[match[1]] = val
+      }
+      return result
     }
+    return {}
+  }
 
-    return stdout
+  // Fallback artwork fetch used only if get-raw didn't include base64 art
+  // (some nowplaying-cli builds omit it). Cached per track.
+  private cliArtCache = new Map<string, string>()
+  private async getCliArtwork(trackKey: string): Promise<string | null> {
+    if (this.cliArtCache.has(trackKey)) return this.cliArtCache.get(trackKey) || null
+
+    const cmd = `"${this.binaryPath}" get artworkData`
+    const opts = { maxBuffer: 4 * 1024 * 1024, timeout: 2000 }
+    const { stdout } = await execAsync(cmd, opts).catch(() => ({ stdout: '' }))
+    const data = stdout.trim()
+    if (!data || data === 'null' || data === '(null)') return null
+
+    const art = `data:image/jpeg;base64,${data}`
+    this.cliArtCache.set(trackKey, art)
+    return art
   }
 
   private async fetchState(): Promise<{ payload: MediaState; snapshot: MediaState }> {
     try {
-      // 1. Primary Engine: nowplaying-cli
-      const stdout = await this.runCLI()
+      const raw = await this.fetchRawNowPlaying()
 
-      const lines = stdout.trim().split('\n')
-      const val = (s: string) => {
-        if (!s) return ''
-        const trimmed = s.trim()
-        if (trimmed === 'null' || trimmed === '(null)') return ''
-        return trimmed
+      const title = raw['kMRMediaRemoteNowPlayingInfoTitle'] || ''
+      const artist = raw['kMRMediaRemoteNowPlayingInfoArtist'] || ''
+      const durationRaw = raw['kMRMediaRemoteNowPlayingInfoDuration'] || ''
+      const elapsedRaw = raw['kMRMediaRemoteNowPlayingInfoElapsedTime'] || ''
+      const playbackRateStr = raw['kMRMediaRemoteNowPlayingInfoPlaybackRate'] || ''
+
+      const playbackRate = playbackRateStr ? parseFloat(playbackRateStr) || 0 : 0
+      const isPlaying = playbackRate > 0
+
+      // Browser Correction: Chrome often reports incorrect durations or "stuck" end-times
+      let duration = Math.round((parseFloat(durationRaw) || 0) * 100) / 100
+      let elapsed = Math.round((parseFloat(elapsedRaw) || 0) * 100) / 100
+
+      const bundleId = (
+        raw['kMRMediaRemoteNowPlayingInfoClientBundleIdentifier'] || ''
+      ).toLowerCase()
+      const isBrowser =
+        bundleId.includes('chrome') || bundleId.includes('brave') || bundleId.includes('safari')
+
+      if (isBrowser) {
+        // The "Magic 5:45" (345.136458s) is a known macOS/Chrome stale session artifact.
+        const JUNK_VAL = 345.14
+        const isChrome = bundleId.includes('chrome')
+
+        // Transition detection: If the title changed but the duration is exactly the same as the previous song's duration,
+        // the system dictionary is likely stale (Partial Update).
+        const isFirstTrack = this.lastReportedTitle === ''
+        const titleChanged = !isFirstTrack && title !== this.lastReportedTitle
+        const durationUnchanged = Math.abs(duration - this.lastReportedDuration) < 0.1
+
+        // Sanity Check: If isPlaying but position is stuck at the end OR magic junk values
+        const isStuckAtEnd = isPlaying && duration > 0 && Math.abs(duration - elapsed) < 0.1
+        const matchesJunk = isChrome && Math.abs(duration - JUNK_VAL) < 0.01
+
+        if ((titleChanged && durationUnchanged && duration > 0) || matchesJunk || isStuckAtEnd) {
+          console.log(
+            '[MediaService] Suspicious timing detected (Stale/Junk/Stuck). Probing fallback...'
+          )
+          const fallbackTiming = await this.getBrowserTimingFallback()
+          if (fallbackTiming.duration > 0) {
+            duration = fallbackTiming.duration
+            elapsed = fallbackTiming.elapsed
+          } else if (matchesJunk || isStuckAtEnd) {
+            // Invalidate if it's clearly broken and we have no fallback
+            duration = 0
+            elapsed = 0
+          }
+        }
+
+        this.lastReportedTitle = title
+        this.lastReportedDuration = duration
       }
-
-      const title = val(lines[0])
-      const durationRaw = val(lines[3])
-      const elapsedRaw = val(lines[4])
-      const cliVolumeRaw = val(lines[7])
-
-      // Debugging: Log if duration is missing but we have a title
-      if (title && !durationRaw) {
-        console.log(`[MediaService] Missing duration for: ${title}. CLI Output:`, lines)
-      }
+      const progress = duration > 0 ? (elapsed / duration) * 100 : 0
 
       // 2. Engine Selection: If CLI returns junk or nothing, try Fallback (Brave, Spotify, etc.)
       const isJunk = !title || title === '-' || title === 'null' || title === '(null)'
       let finalState: MediaState
-
-      const playbackRateStr = val(lines[2])
-      const playbackRate = playbackRateStr ? parseFloat(playbackRateStr) || 0 : 0
-      const duration = parseFloat(durationRaw) || 0
-      const elapsed = parseFloat(elapsedRaw) || 0
-      const isPlaying = playbackRate > 0
-      const progress = duration > 0 ? (elapsed / duration) * 100 : 0
 
       if (isJunk) {
         const fallback = await this.getFallbackState()
@@ -257,8 +341,9 @@ export class MediaService {
           const isBrowserSource = this.BROWSER_SOURCES.includes(fallback.source)
 
           if (isBrowserSource) {
-            // Browsers don't expose player state via AppleScript (always 'unknown').
-            // Use our tracked state, toggled only when user clicks play/pause in Lume.
+            // Reached only when CLI failed entirely (MediaRemote didn't register
+            // the browser tab, e.g. site without MediaSession). Use tracked state,
+            // toggled when the user clicks play/pause inside Lume.
             const titleChanged = fallback.title && fallback.title !== this.lastState?.title
             if (titleChanged) {
               console.log('[MediaService] Browser: new title detected, resetting to playing')
@@ -289,12 +374,13 @@ export class MediaService {
           finalState = { ...EMPTY_STATE, volume: await this.getVolume() }
         }
       } else {
-        const artist = val(lines[1])
+        const artistName = artist
         console.log('[MediaService] CLI found media:', title, 'isPlaying:', isPlaying)
-        const bundleId = val(lines[5]).toLowerCase()
-        const artworkData = val(lines[6])
 
-        const volume = cliVolumeRaw ? parseFloat(cliVolumeRaw) * 100 : await this.getVolume()
+        const trackKey = `${title}-${artistName}`
+        const bundleId = (
+          raw['kMRMediaRemoteNowPlayingInfoClientBundleIdentifier'] || ''
+        ).toLowerCase()
 
         let source = 'system'
         if (bundleId.includes('music')) source = 'music'
@@ -303,24 +389,41 @@ export class MediaService {
         else if (bundleId.includes('chrome')) source = 'chrome'
         else if (bundleId.includes('safari')) source = 'safari'
 
+        // Artwork: prefer raw data from kMRMediaRemoteNowPlayingInfoArtworkData
+        // (Cleaned of escaped slashes if they exist)
         let albumArt: string | null = null
-        if (artworkData) {
-          console.log('[MediaService] Found system artwork (Base64)')
-          albumArt = `data:image/png;base64,${artworkData}`
-        } else if (source === 'music') {
-          console.log('[MediaService] Fetching Music artwork fallback...')
-          albumArt = await this.getMusicAlbumArt(`${title}-${artist}`)
-        } else if (source === 'spotify') {
-          console.log('[MediaService] Fetching Spotify URL fallback...')
-          albumArt = await this.getSpotifyArtworkUrl(`${title}-${artist}`)
-        } else if (this.BROWSER_SOURCES.includes(source)) {
-          // If CLI finds browser media but no artwork (common), try to get URL and Artwork from fallback logic
+        const rawArt = raw['kMRMediaRemoteNowPlayingInfoArtworkData']
+        if (rawArt && rawArt.length > 100) {
+          const cleanB64 = rawArt.replace(/\\\//g, '/')
+          albumArt = `data:image/jpeg;base64,${cleanB64}`
+        } else {
+          albumArt = await this.getCliArtwork(trackKey)
+        }
+
+        // Source Refinement: Check if browser tab is actually YouTube or other specific media sites
+        if (this.BROWSER_SOURCES.includes(source)) {
           const url = await this.getBrowserURL(source)
           if (url) {
             if (url.includes('youtube.com')) source = 'youtube'
-            albumArt = await this.getBetterBrowserArtwork(url)
+            else if (url.includes('music.apple.com')) source = 'music'
+            else if (url.includes('open.spotify.com')) source = 'spotify'
+
+            // If we still don't have artwork, try to get it from the URL
+            if (!albumArt) {
+              albumArt = await this.getBetterBrowserArtwork(url)
+            }
           }
         }
+
+        if (!albumArt) {
+          if (source === 'music') {
+            albumArt = await this.getMusicAlbumArt(trackKey)
+          } else if (source === 'spotify') {
+            albumArt = await this.getSpotifyArtworkUrl(trackKey)
+          }
+        }
+
+        const volume = await this.getVolume()
 
         finalState = {
           title,
@@ -331,7 +434,7 @@ export class MediaService {
           volume,
           albumArt,
           duration,
-          position: elapsed,
+          position: Math.min(elapsed, duration),
           source
         }
       }
@@ -683,6 +786,44 @@ end tell`
     return null
   }
 
+  private async getBrowserTimingFallback(): Promise<{ duration: number; elapsed: number }> {
+    const script = `
+tell application "System Events"
+	set chromeRunning to (count of (processes whose name is "Google Chrome")) > 0
+	set braveRunning to (count of (processes whose name is "Brave Browser")) > 0
+end tell
+
+if chromeRunning then
+	tell application "Google Chrome"
+		try
+			set tabName to title of active tab of front window
+			return tabName
+		end try
+	end tell
+else if braveRunning then
+	tell application "Brave Browser"
+		try
+			set tabName to title of active tab of front window
+			return tabName
+		end try
+	end tell
+end if
+return ""
+`
+    try {
+      const title = await this.runAppleScript(script)
+      // Extract (M:SS) or (MM:SS) or (H:MM:SS) from title
+      const match = title.match(/\((\d+:)?(\d+):(\d+)\)/)
+      if (match) {
+        const h = match[1] ? parseInt(match[1].replace(':', '')) : 0
+        const m = parseInt(match[2])
+        const s = parseInt(match[3])
+        return { duration: h * 3600 + m * 60 + s, elapsed: 0 }
+      }
+    } catch {}
+    return { duration: 0, elapsed: 0 }
+  }
+
   private async getSpotifyArtworkUrl(trackKey?: string): Promise<string | null> {
     if (trackKey && this.spotifyArtCache.has(trackKey)) {
       return this.spotifyArtCache.get(trackKey) || null
@@ -699,11 +840,10 @@ if spotifyRunning then
     end try
   end tell
 end if
-return ""`
+return ""
+`
     try {
       let url = await this.runAppleScript(script)
-      console.log('[MediaService] Spotify artwork raw:', JSON.stringify(url))
-
       if (!url) return null
 
       if (url.startsWith('spotify:image:')) {
@@ -713,15 +853,11 @@ return ""`
 
       if (!url.startsWith('http')) return null
 
-      // Pre-fetch to base64 — the renderer CSP (img-src 'self' data:) blocks
-      // direct https URLs, so we inline the artwork as a data URI.
+      // Pre-fetch to base64 for CSP compliance
       const b64 = await this.fetchImageAsBase64(url)
-      if (!b64) {
-        console.log('[MediaService] Spotify artwork fetch returned no bytes for', url)
-        return null
+      if (b64 && trackKey) {
+        this.spotifyArtCache.set(trackKey, b64)
       }
-
-      if (trackKey) this.spotifyArtCache.set(trackKey, b64)
       return b64
     } catch (err: any) {
       console.error('[MediaService] Spotify artwork fetch failed:', err.message)
