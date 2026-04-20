@@ -22,6 +22,13 @@ const api = {
     const wrapper = (_: any, data: any) => callback(data)
     ipcRenderer.on('media-update', wrapper)
     return () => ipcRenderer.removeListener('media-update', wrapper)
+  },
+
+  // Audio output
+  onAudioOutputUpdate: (callback: (data: any) => void) => {
+    const wrapper = (_: any, data: any) => callback(data)
+    ipcRenderer.on('audio-output-update', wrapper)
+    return () => ipcRenderer.removeListener('audio-output-update', wrapper)
   }
 }
 

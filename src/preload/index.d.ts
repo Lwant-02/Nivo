@@ -26,6 +26,12 @@ declare global {
           source: string
         }) => void
       ) => () => void
+      onAudioOutputUpdate: (
+        callback: (data: {
+          device: string
+          kind: 'airpods' | 'headset' | 'speakers'
+        }) => void
+      ) => () => void
     }
   }
 }

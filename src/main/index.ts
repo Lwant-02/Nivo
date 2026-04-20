@@ -2,8 +2,10 @@ import { app, BrowserWindow, screen, ipcMain, Tray, nativeImage, Menu } from 'el
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { MediaService } from './services/MediaService'
+import { AudioService } from './services/AudioService'
 
 let mediaService: MediaService | null = null
+let audioService: AudioService | null = null
 
 let mainWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
@@ -79,6 +81,10 @@ function createWindow(): void {
   // Start media service push model
   if (mediaService) {
     mediaService.startPolling(mainWindow)
+  }
+
+  if (audioService) {
+    audioService.start(mainWindow)
   }
 
   mainWindow.on('closed', () => {
@@ -183,6 +189,12 @@ app.whenReady().then(() => {
     mediaService = new MediaService()
   } catch (err: any) {
     console.error('[main] Failed to initialize MediaService:', err.message)
+  }
+
+  try {
+    audioService = new AudioService()
+  } catch (err: any) {
+    console.error('[main] Failed to initialize AudioService:', err.message)
   }
 
   if (app.dock) {
