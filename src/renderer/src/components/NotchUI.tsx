@@ -23,6 +23,7 @@ import cn from 'clsx'
 import MarqueeText from './ui/MarqueeText'
 import { MusicVisualizer } from './ui/MusicVisualizer'
 import { useMedia } from '../hooks/useMedia'
+import { useSound } from '../hooks/useSound'
 import { SourceBadge } from './ui/SourceBadge'
 import { Thumbnail } from './ui/Thumbnail'
 import { formatTime } from '@renderer/util'
@@ -53,13 +54,14 @@ const CALENDAR_PANE_WIDTH = 300
 const COLLAPSED_WIDTH = 270
 
 // TODO: lift this out to the settings store once it exists.
-const showCalendar = false
+const showCalendar = true
 
 export default function NotchUI() {
   const [isHovering, setIsHovering] = useState(false)
   const [isAutoExpanded, setIsAutoExpanded] = useState(false)
   const [sidePanel, setSidePanel] = useState<SidePanel>(null)
   const [volumeLevel, setVolumeLevel] = useState(50)
+  const { playHover, playExpand } = useSound()
 
   const showVolume = sidePanel === 'volume'
   const showDevice = sidePanel === 'device'
@@ -106,6 +108,7 @@ export default function NotchUI() {
       }
       pendingCollapseRef.current = false
       setIsAutoExpanded(true)
+      playExpand()
 
       autoCollapseTimerRef.current = setTimeout(() => {
         if (isHoveringRef.current) {
@@ -252,6 +255,7 @@ export default function NotchUI() {
   return (
     <motion.div
       onMouseEnter={() => {
+        if (!isExpanded) playExpand()
         setIsHovering(true)
         isHoveringRef.current = true
       }}

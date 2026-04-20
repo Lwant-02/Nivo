@@ -1,5 +1,6 @@
 import { app, BrowserWindow, screen, ipcMain, Tray, nativeImage, Menu } from 'electron'
 import { join } from 'path'
+import { exec } from 'child_process'
 import { is } from '@electron-toolkit/utils'
 import { MediaService } from './services/MediaService'
 import { AudioService } from './services/AudioService'
@@ -283,6 +284,20 @@ ipcMain.handle('get-calendar-events', async () => {
     console.error('[main] get-calendar-events failed:', err.message)
     return []
   }
+})
+
+ipcMain.handle('trigger-haptic', () => {
+  const binaryPath = app.isPackaged
+    ? join(process.resourcesPath, 'bin', 'haptic-cli')
+    : join(process.cwd(), 'resources', 'bin', 'haptic-cli')
+
+  exec(`"${binaryPath}"`, (err) => {
+    if (err) {
+      console.error('[Haptic] Command failed:', err.message)
+    } else {
+      console.log('[Haptic] Triggered native feedback successfully')
+    }
+  })
 })
 
 app.on('window-all-closed', () => {

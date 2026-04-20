@@ -42,6 +42,7 @@ declare global {
           endMs: number
         }>
       >
+      triggerHaptic: () => Promise<void>
     }
   }
 }

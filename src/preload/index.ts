@@ -34,7 +34,10 @@ const api = {
   getAudioOutput: () => ipcRenderer.invoke('get-audio-output'),
 
   // Calendar
-  getCalendarEvents: () => ipcRenderer.invoke('get-calendar-events')
+  getCalendarEvents: () => ipcRenderer.invoke('get-calendar-events'),
+
+  // Haptic
+  triggerHaptic: () => ipcRenderer.invoke('trigger-haptic')
 }
 
 if (process.contextIsolated) {
