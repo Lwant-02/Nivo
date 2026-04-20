@@ -32,6 +32,7 @@ declare global {
           kind: 'airpods' | 'headset' | 'speakers'
         }) => void
       ) => () => void
+      getAudioOutput: () => Promise<{ device: string; kind: 'airpods' | 'headset' | 'speakers' }>
     }
   }
 }

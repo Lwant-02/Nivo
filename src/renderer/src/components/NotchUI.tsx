@@ -14,8 +14,6 @@ import {
   Rewind,
   FastForward,
   Monitor,
-  Volume,
-  Volume2,
   ChevronsLeft,
   ChevronsRight,
   Headphones
@@ -27,16 +25,15 @@ import { MusicVisualizer } from './ui/MusicVisualizer'
 import { useMedia } from '../hooks/useMedia'
 import { SourceBadge } from './ui/SourceBadge'
 import { Thumbnail } from './ui/Thumbnail'
-import { DevicePannel } from './ui/DevicePannel'
 import { formatTime } from '@renderer/util'
+import { VolumeSwitcher } from './ui/VolumeSwitcher'
+import { DevicePannel } from './ui/DevicePannel'
 
 const bounceTransition: Transition = { type: 'spring', stiffness: 400, damping: 28, mass: 0.8 }
 
 const SWIPE_THRESHOLD = 100
 const SWIPE_COOLDOWN_MS = 600
 const TRANSITION_HOLD_MS = 1200
-
-const PANEL_SPRING: Transition = { type: 'spring', stiffness: 400, damping: 30 }
 
 const BRAND_COLORS: Record<string, string> = {
   spotify: '#1DB954',
@@ -58,7 +55,6 @@ export default function NotchUI() {
 
   const showVolume = sidePanel === 'volume'
   const showDevice = sidePanel === 'device'
-  const isPanelOpen = sidePanel !== null
 
   const isExpanded = isHovering || isAutoExpanded
 
@@ -257,7 +253,7 @@ export default function NotchUI() {
       initial={false}
       animate={{
         width: isExpanded ? 350 : 270,
-        height: isExpanded ? (isPanelOpen ? 280 : 180) : 33.8
+        height: isExpanded ? (showDevice || showVolume ? 270 : 180) : 33.8
       }}
       transition={bounceTransition}
       className={cn(
@@ -464,30 +460,13 @@ export default function NotchUI() {
 
             <AnimatePresence mode="wait" initial={false}>
               {showVolume && (
-                <motion.div
-                  key="volume-panel"
-                  initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                  animate={{ height: 'auto', opacity: 1, marginTop: 12 }}
-                  exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                  transition={PANEL_SPRING}
-                  className="flex items-center gap-3 text-text-dim px-1 overflow-hidden"
-                >
-                  <Volume size={16} />
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={volumeLevel}
-                    onChange={handleVolumeChange}
-                    className="flex-1 h-[5px] rounded-full appearance-none outline-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-md transition-all duration-75"
-                    style={{
-                      background: `linear-gradient(to right, rgba(255,255,255,0.9) ${volumeLevel}%, var(--color-gray) ${volumeLevel}%)`
-                    }}
-                  />
-                  <Volume2 size={16} />
-                </motion.div>
+                <VolumeSwitcher
+                  showVolume={showVolume}
+                  volumeLevel={volumeLevel}
+                  handleVolumeChange={handleVolumeChange}
+                />
               )}
-              <DevicePannel show={showDevice} />
+              {showDevice && <DevicePannel show={showDevice} />}
             </AnimatePresence>
           </motion.div>
         )}

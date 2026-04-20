@@ -29,7 +29,9 @@ const api = {
     const wrapper = (_: any, data: any) => callback(data)
     ipcRenderer.on('audio-output-update', wrapper)
     return () => ipcRenderer.removeListener('audio-output-update', wrapper)
-  }
+  },
+
+  getAudioOutput: () => ipcRenderer.invoke('get-audio-output')
 }
 
 if (process.contextIsolated) {

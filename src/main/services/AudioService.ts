@@ -11,29 +11,43 @@ export interface AudioOutputUpdate {
   kind: AudioDeviceKind
 }
 
-const HEADSET_KEYWORDS = ['headphones', 'bluetooth', 'beats', 'buds', 'headset']
+const HEADSET_KEYWORDS = [
+  'headphones', 'bluetooth', 'beats', 'buds', 'headset', 'pods', 
+  'pro', 'max', 'ugreen', 'sony', 'bose', 'hitune', 'wireless', 'hands-free'
+]
 
 function classifyKind(name: string, transport?: string, minorType?: string): AudioDeviceKind {
-  const lowerName = name.toLowerCase()
+  const lowerName = name.trim().toLowerCase()
   const lowerMinor = (minorType || '').toLowerCase()
 
-  // 1. AirPods/Beats Priority (Name-based)
-  if (lowerName.includes('airpods') || lowerName.includes('beats')) {
+  // 1. AirPods Priority
+  if (
+    lowerName.includes('airpods') || 
+    lowerName.includes('powerbeats') ||
+    lowerName.includes('beats solo') ||
+    lowerMinor.includes('headphones') && lowerName.includes('pro')
+  ) {
     return 'airpods'
   }
 
-  // 2. Headset/Headphones (Minor Type based)
+  // 2. Headset Category (Technology-based)
   if (
-    lowerMinor.includes('headphones') ||
     lowerMinor.includes('headset') ||
-    transport === 'coreaudio_device_type_bluetooth'
+    lowerMinor.includes('headphones') ||
+    (transport && transport.toLowerCase().includes('bluetooth')) ||
+    (transport && transport.toLowerCase().includes('usb')) ||
+    (transport && transport.toLowerCase().includes('airplay'))
   ) {
+    if (lowerName.includes('speaker') && !lowerName.includes('headset')) {
+       return 'speakers'
+    }
     return 'headset'
   }
 
-  // 3. Fallback
+  // 3. Name-based Keyword Fallback
   if (HEADSET_KEYWORDS.some((k) => lowerName.includes(k))) return 'headset'
 
+  // 4. Default to Speakers
   return 'speakers'
 }
 
@@ -42,13 +56,17 @@ export class AudioService {
   private pollingInterval: NodeJS.Timeout | null = null
   private isPolling = false
   private lastState: AudioOutputUpdate = { device: '', kind: 'speakers' }
-  private deviceMetaCache = new Map<string, { minorType?: string; ts: number }>()
+  private deviceMetaCache = new Map<string, { minorType?: string; transport?: string; ts: number }>()
+
+  public getState(): AudioOutputUpdate {
+    return this.lastState
+  }
 
   public start(window: BrowserWindow): void {
     if (this.pollingInterval) clearInterval(this.pollingInterval)
     this.mainWindow = window
     this.poll(true)
-    this.pollingInterval = setInterval(() => this.poll(), 2500)
+    this.pollingInterval = setInterval(() => this.poll(), 3000) // Slightly slower poll for stability
   }
 
   public stop(): void {
@@ -60,139 +78,146 @@ export class AudioService {
     if (!this.mainWindow || this.mainWindow.isDestroyed()) return
     if (this.isPolling) return
     this.isPolling = true
+
     try {
-      const info = await this.getCurrentOutputInfo()
-      if (!info) return
+      // Get Default Device Info (Name and Transport)
+      const deviceInfo = await this.getPrimaryOutputInfo()
+      if (!deviceInfo) {
+        this.isPolling = false
+        return
+      }
 
-      const meta = await this.getDeviceMeta(info.device)
-      
-      const effectiveTransport = info.transport || (meta ? 'coreaudio_device_type_bluetooth' : undefined)
-      const kind = classifyKind(info.device, effectiveTransport, meta?.minorType)
+      const { device: deviceName, transport } = deviceInfo
 
-      if (force || info.device !== this.lastState.device || kind !== this.lastState.kind) {
-        this.lastState = { device: info.device, kind }
+      // Get Bluetooth Metadata if applicable
+      let minorType: string | undefined
+      if (transport?.toLowerCase().includes('bluetooth')) {
+        const meta = await this.getDeviceMeta(deviceName)
+        minorType = meta?.minorType
+      }
+
+      const kind = classifyKind(deviceName, transport, minorType)
+
+      if (force || deviceName !== this.lastState.device || kind !== this.lastState.kind) {
+        this.lastState = { device: deviceName, kind }
         this.mainWindow.webContents.send('audio-output-update', this.lastState)
+        
+        // Log to user terminal for verification
+        console.log(`[AudioUpdate] active: "${deviceName}" | transport: ${transport || 'unknown'} | minor: ${minorType || 'none'} | kind: ${kind}`)
       }
     } catch (err: any) {
-      console.error('[AudioService] Poll failed:', err.message)
+      console.error('[AudioService] Polled failed:', err.message)
     } finally {
       this.isPolling = false
     }
   }
 
-  private async getCurrentOutputInfo(): Promise<{ device: string; transport?: string } | null> {
+  private async getPrimaryOutputInfo(): Promise<{ device: string; transport?: string } | null> {
+    // 1. Try robust osascript first for CURRENT NAME
+    let osascriptName: string | undefined
     try {
-      const { stdout } = await execAsync(
-        `osascript -e "output name of (get volume settings)"`,
-        { timeout: 1500 }
-      )
-      const name = stdout.trim()
-      if (name && name !== 'missing value') {
-        const sysInfo = await this.getDefaultOutputFromSystemProfiler()
-        if (sysInfo && sysInfo.device.trim().toLowerCase() === name.toLowerCase()) {
-          return sysInfo
-        }
-        return { device: name }
+      const { stdout } = await execAsync(`osascript -e "output name of (get volume settings)"`, { timeout: 1500 })
+      osascriptName = stdout.trim()
+    } catch { /* ignore */ }
+
+    // 2. Scan system profiling for TRANSPORT and FALLBACK NAME
+    try {
+      const { stdout } = await execAsync('system_profiler SPAudioDataType -json', { timeout: 10000 })
+      const data = JSON.parse(stdout)
+      const devices = parseAudioDevicesJSON(data)
+
+      // Find the device marked as Default
+      const defaultDevice = devices.find(d => d.isDefault)
+
+      if (defaultDevice) {
+        // If osascript failed or returned something generic, trust the profiler name
+        const finalName = osascriptName && osascriptName !== 'missing value' ? osascriptName : defaultDevice.device
+        return { device: finalName, transport: defaultDevice.transport }
       }
     } catch {
-      // expected on macOS versions where the property isn't exposed
+       // Regex fallback if JSON fails
+       return this.getPrimaryOutputViaRegex()
     }
-    return this.getDefaultOutputFromSystemProfiler()
+
+    return osascriptName ? { device: osascriptName } : null
   }
 
-  private async getDefaultOutputFromSystemProfiler(): Promise<{
-    device: string
-    transport?: string
-  } | null> {
+  private async getPrimaryOutputViaRegex(): Promise<{ device: string; transport?: string } | null> {
     try {
-      const { stdout } = await execAsync('system_profiler SPAudioDataType -json', {
-        maxBuffer: 8 * 1024 * 1024,
-        timeout: 5000
-      })
-      const data = JSON.parse(stdout)
-      return findDefaultOutput(data)
-    } catch {
-      return null
-    }
-  }
-
-  private async getDeviceMeta(deviceName: string): Promise<{ minorType?: string } | null> {
-    if (!deviceName) return null
-    const cached = this.deviceMetaCache.get(deviceName)
-    if (cached && Date.now() - cached.ts < 30000) {
-      return { minorType: cached.minorType }
-    }
-
-    try {
-      const meta = await this.fetchDeviceMetaFromSystemProfiler(deviceName)
-      this.deviceMetaCache.set(deviceName, {
-        minorType: meta?.minorType,
-        ts: Date.now()
-      })
-      return meta
-    } catch {
-      return cached ? { minorType: cached.minorType } : null
-    }
-  }
-
-  private async fetchDeviceMetaFromSystemProfiler(targetName: string): Promise<{ minorType?: string } | null> {
-    try {
-      const { stdout } = await execAsync('system_profiler SPBluetoothDataType -json', {
-        maxBuffer: 8 * 1024 * 1024,
-        timeout: 5000
-      })
-      const data = JSON.parse(stdout)
-      const root = Array.isArray(data?.SPBluetoothDataType) ? data.SPBluetoothDataType[0] : null
-      if (!root) return null
-
-      const connectedRaw = root.device_connected || root.device_connected_v2 || root.devices_list || []
-      const targetLower = targetName.trim().toLowerCase()
-
-      for (const entry of connectedRaw) {
-        if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
-          for (const [name, attrs] of Object.entries(entry)) {
-            const namedAttrs = attrs as Record<string, unknown> | null
-            if (!namedAttrs || typeof namedAttrs !== 'object') continue
-
-            const candidateName = String(namedAttrs.device_name ?? name).trim().toLowerCase()
-            if (
-              candidateName === targetLower ||
-              candidateName.includes(targetLower) ||
-              targetLower.includes(candidateName)
-            ) {
-              return { minorType: namedAttrs.device_minorType as string | undefined }
+      const { stdout } = await execAsync('system_profiler SPAudioDataType', { timeout: 10000 })
+      
+      // Regex to find the block containing "Default Output Device: Yes"
+      // Then extract the device name and transport from that block
+      const blocks = stdout.split('\n\n')
+      for (const block of blocks) {
+        if (block.includes('Default Output Device: Yes')) {
+          const nameMatch = block.match(/^\s+(.*?):$/m)
+          const transportMatch = block.match(/Transport:\s+(.*)$/m)
+          if (nameMatch) {
+            return {
+              device: nameMatch[1].trim(),
+              transport: transportMatch ? transportMatch[1].trim() : undefined
             }
           }
         }
       }
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
     return null
+  }
+
+  private async getDeviceMeta(deviceName: string): Promise<{ minorType?: string } | null> {
+    const cached = this.deviceMetaCache.get(deviceName)
+    if (cached && Date.now() - cached.ts < 60000) return cached
+
+    try {
+      const { stdout } = await execAsync('system_profiler SPBluetoothDataType -json', { timeout: 10000 })
+      const data = JSON.parse(stdout)
+      const minorType = findMinorTypeInBTData(data, deviceName)
+      const res = { minorType, ts: Date.now() }
+      this.deviceMetaCache.set(deviceName, res)
+      return res
+    } catch {
+      return cached || null
+    }
   }
 }
 
-function findDefaultOutput(node: unknown): { device: string; transport?: string } | null {
-  if (!node) return null
-  if (Array.isArray(node)) {
-    for (const item of node) {
-      const found = findDefaultOutput(item)
-      if (found) return found
+function parseAudioDevicesJSON(data: any): { device: string; transport?: string; isDefault: boolean }[] {
+  const devices: any[] = []
+  function scan(node: any) {
+    if (!node) return
+    if (Array.isArray(node)) { node.forEach(scan); return }
+    if (typeof node === 'object') {
+       if (node._name && (node.coreaudio_device_output || node.coreaudio_default_audio_output_device === 'spaudio_yes')) {
+         devices.push({
+           device: node._name,
+           transport: node.coreaudio_device_transport,
+           isDefault: node.coreaudio_default_audio_output_device === 'spaudio_yes'
+         })
+       }
+       Object.values(node).forEach(scan)
     }
-    return null
   }
-  if (typeof node === 'object') {
-    const obj = node as Record<string, unknown>
-    if (obj.coreaudio_default_audio_output_device === 'spaudio_yes' && typeof obj._name === 'string') {
-      return {
-        device: obj._name,
-        transport: obj.coreaudio_device_transport as string | undefined
+  scan(data)
+  return devices
+}
+
+function findMinorTypeInBTData(data: any, name: string): string | undefined {
+  const target = name.toLowerCase().trim()
+  const root = data?.SPBluetoothDataType?.[0]
+  if (!root) return undefined
+  const pools = [root.device_connected, root.device_connected_v2]
+  for (const pool of pools) {
+    if (!Array.isArray(pool)) continue
+    for (const entry of pool) {
+      for (const [key, val] of Object.entries(entry)) {
+        const p = val as any
+        const candidate = (p.device_name || key).toLowerCase().trim()
+        if (candidate === target || target.includes(candidate) || candidate.includes(target)) {
+           return p.device_minorType
+        }
       }
     }
-    for (const value of Object.values(obj)) {
-      const found = findDefaultOutput(value)
-      if (found) return found
-    }
   }
-  return null
+  return undefined
 }

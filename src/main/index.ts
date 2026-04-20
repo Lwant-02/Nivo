@@ -230,6 +230,8 @@ app.whenReady().then(() => {
   createOnboardingWindow()
 })
 
+ipcMain.handle('get-audio-output', () => audioService?.getState())
+
 ipcMain.handle('get-version', () => app.getVersion())
 
 ipcMain.handle('open-settings', () => {

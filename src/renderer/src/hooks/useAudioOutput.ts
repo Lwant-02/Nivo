@@ -13,6 +13,11 @@ export function useAudioOutput(): AudioOutput {
   const [audio, setAudio] = useState<AudioOutput>(DEFAULT)
 
   useEffect(() => {
+    // Fetch initial state
+    window.api.getAudioOutput().then((data) => {
+      if (data) setAudio(data)
+    })
+
     const unsubscribe = window.api.onAudioOutputUpdate((data) => {
       setAudio(data)
     })
