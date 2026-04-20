@@ -28,6 +28,7 @@ import { Thumbnail } from './ui/Thumbnail'
 import { formatTime } from '@renderer/util'
 import { VolumeSwitcher } from './ui/VolumeSwitcher'
 import { DevicePannel } from './ui/DevicePannel'
+import { CalendarPane } from './ui/CalendarPane'
 
 const bounceTransition: Transition = { type: 'spring', stiffness: 400, damping: 28, mass: 0.8 }
 
@@ -47,6 +48,13 @@ const BRAND_COLORS: Record<string, string> = {
 
 type SidePanel = 'volume' | 'device' | null
 
+const MEDIA_PANE_WIDTH = 350
+const CALENDAR_PANE_WIDTH = 300
+const COLLAPSED_WIDTH = 270
+
+// TODO: lift this out to the settings store once it exists.
+const showCalendar = true
+
 export default function NotchUI() {
   const [isHovering, setIsHovering] = useState(false)
   const [isAutoExpanded, setIsAutoExpanded] = useState(false)
@@ -57,6 +65,7 @@ export default function NotchUI() {
   const showDevice = sidePanel === 'device'
 
   const isExpanded = isHovering || isAutoExpanded
+  const showSidePane = isExpanded && showCalendar
 
   const isHoveringRef = useRef(false)
   const autoCollapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -235,6 +244,11 @@ export default function NotchUI() {
 
   const progressPct = duration > 0 ? (position / duration) * 100 : 0
 
+  const mediaPaneWidth = isExpanded ? MEDIA_PANE_WIDTH : COLLAPSED_WIDTH
+  const sidePaneExtra = showSidePane ? CALENDAR_PANE_WIDTH + 1 : 0
+  const totalWidth = mediaPaneWidth + sidePaneExtra
+  const expandedHeight = showDevice || showVolume ? 270 : showSidePane ? 240 : 180
+
   return (
     <motion.div
       onMouseEnter={() => {
@@ -252,15 +266,15 @@ export default function NotchUI() {
       }}
       initial={false}
       animate={{
-        width: isExpanded ? 350 : 270,
-        height: isExpanded ? (showDevice || showVolume ? 270 : 180) : 33.8
+        width: totalWidth,
+        height: isExpanded ? expandedHeight : 33.8
       }}
       transition={bounceTransition}
       className={cn(
-        'relative bg-black overflow-hidden origin-top transition-shadow duration-500',
+        'relative overflow-hidden origin-top transition-shadow duration-500',
         isExpanded
-          ? 'border border-white/10 shadow-[0_0_60px_rgba(0,0,0,0.8),0_0_30px_var(--color-purple-glow)]/10'
-          : 'border-none shadow-none'
+          ? 'bg-black/85 backdrop-blur-2xl border border-white/10 shadow-[0_0_60px_rgba(0,0,0,0.8),0_0_30px_var(--color-purple-glow)]/10'
+          : 'bg-black border-none shadow-none'
       )}
       style={{
         borderTopLeftRadius: 0,
@@ -268,209 +282,227 @@ export default function NotchUI() {
         borderBottomLeftRadius: isExpanded ? 40 : 17,
         borderBottomRightRadius: isExpanded ? 40 : 17,
         borderTop: 'none',
-        marginTop: '-1px',
-        padding: isExpanded ? '20px' : '10px'
+        marginTop: '-1px'
       }}
     >
-      {isExpanded && (
-        <>
-          <motion.div
-            aria-hidden
-            style={{
-              opacity: nextIconOpacity,
-              color: nextActive ? brandColor : 'rgba(255,255,255,0.55)',
-              filter: nextActive ? `drop-shadow(0 0 10px ${brandColor})` : 'none'
-            }}
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-0 pointer-events-none transition-[color,filter] duration-150"
-          >
-            <ChevronsRight size={28} strokeWidth={2.5} />
-          </motion.div>
-          <motion.div
-            aria-hidden
-            style={{
-              opacity: prevIconOpacity,
-              color: prevActive ? brandColor : 'rgba(255,255,255,0.55)',
-              filter: prevActive ? `drop-shadow(0 0 10px ${brandColor})` : 'none'
-            }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-0 pointer-events-none transition-[color,filter] duration-150"
-          >
-            <ChevronsLeft size={28} strokeWidth={2.5} />
-          </motion.div>
-        </>
-      )}
+      <div className="flex h-full backdrop-blur-2xl shadow-inner bg-black">
+        <div
+          className="relative shrink-0 h-full"
+          style={{
+            width: mediaPaneWidth,
+            padding: isExpanded ? '20px' : '10px'
+          }}
+        >
+          {isExpanded && (
+            <>
+              <motion.div
+                aria-hidden
+                style={{
+                  opacity: nextIconOpacity,
+                  color: nextActive ? brandColor : 'rgba(255,255,255,0.55)',
+                  filter: nextActive ? `drop-shadow(0 0 10px ${brandColor})` : 'none'
+                }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 z-0 pointer-events-none transition-[color,filter] duration-150"
+              >
+                <ChevronsRight size={28} strokeWidth={2.5} />
+              </motion.div>
+              <motion.div
+                aria-hidden
+                style={{
+                  opacity: prevIconOpacity,
+                  color: prevActive ? brandColor : 'rgba(255,255,255,0.55)',
+                  filter: prevActive ? `drop-shadow(0 0 10px ${brandColor})` : 'none'
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 z-0 pointer-events-none transition-[color,filter] duration-150"
+              >
+                <ChevronsLeft size={28} strokeWidth={2.5} />
+              </motion.div>
+            </>
+          )}
 
-      <AnimatePresence mode="wait">
-        {!isExpanded ? (
-          <motion.div
-            key="collapsed"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex items-center justify-between p-10 h-full"
-          >
-            <div className="relative">
-              <Thumbnail src={displayArt} alt={title} size="pill" />
-            </div>
-            <MusicVisualizer isPlaying={isPlaying} />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="expanded"
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.7}
-            dragMomentum={false}
-            dragTransition={{ bounceStiffness: 400, bounceDamping: 30 }}
-            onDragEnd={handleDragEnd}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            style={{ x, rotate, scale, paddingTop: '12px', cursor: 'grab', touchAction: 'pan-y' }}
-            whileDrag={{ cursor: 'grabbing' }}
-            className="flex flex-col h-full p-[22px] justify-between relative z-10 backdrop-blur-2xl shadow-inner bg-black"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+          <AnimatePresence mode="wait">
+            {!isExpanded ? (
+              <motion.div
+                key="collapsed"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center justify-between p-10 h-full"
+              >
                 <div className="relative">
-                  <div className="w-12 h-10 bg-gray rounded-md flex items-center justify-center overflow-hidden shadow-lg border border-white/5 relative">
-                    <Thumbnail src={displayArt} alt={title} size="expanded" />
-                  </div>
-                  {source && (
-                    <div className="absolute -bottom-1 right-0 flex items-center justify-center p-1">
-                      <div className="size-full flex items-center justify-center">
-                        <SourceBadge source={source} />
+                  <Thumbnail src={displayArt} alt={title} size="pill" />
+                </div>
+                <MusicVisualizer isPlaying={isPlaying} />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="expanded"
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.7}
+                dragMomentum={false}
+                dragTransition={{ bounceStiffness: 400, bounceDamping: 30 }}
+                onDragEnd={handleDragEnd}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{
+                  x,
+                  rotate,
+                  scale,
+                  paddingTop: '12px',
+                  cursor: 'grab',
+                  touchAction: 'pan-y'
+                }}
+                whileDrag={{ cursor: 'grabbing' }}
+                className="flex flex-col h-full p-[22px] justify-between relative z-10"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-14 h-9 bg-gray rounded-md flex items-center justify-center overflow-hidden shadow-lg border border-white/5 relative">
+                        <Thumbnail src={displayArt} alt={title} size="expanded" />
                       </div>
-                    </div>
-                  )}
-                </div>
-                <div
-                  className="flex flex-col justify-start items-start min-w-0 flex-1 transition-opacity duration-200"
-                  style={{ opacity: isTransitioning ? 0.4 : 1 }}
-                >
-                  <MarqueeText
-                    text={isTransitioning ? '...' : title || 'Nothing Playing'}
-                    className="text-text font-bold text-base tracking-wide max-w-[190px]"
-                    speed={25}
-                  />
-                  <MarqueeText
-                    text={isTransitioning ? '' : artist || '—'}
-                    className="text-text-dim text-center font-semibold text-sm tracking-wide max-w-[190px]"
-                    speed={25}
-                  />
-                </div>
-              </div>
-              <div className="w-fit flex justify-end items-center">
-                <AnimatePresence mode="wait">
-                  {isPlaying && (
-                    <motion.div
-                      key="visualizer"
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <MusicVisualizer isPlaying={isPlaying} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-
-            {(() => {
-              const browserSources = ['brave', 'chrome', 'youtube', 'safari']
-              const isStream = duration === 0 && browserSources.includes(source)
-
-              if (isStream) {
-                return (
-                  <div className="flex items-center gap-3 text-[12px] font-medium text-text-dim tracking-widest mt-2">
-                    <span className="text-white/50">LIVE</span>
-                    <div className="flex-1 h-[5px] bg-gray rounded-full overflow-hidden relative">
-                      {isPlaying && (
-                        <motion.div
-                          className="absolute inset-0 h-full rounded-full"
-                          style={{
-                            background:
-                              'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)',
-                            width: '40%'
-                          }}
-                          animate={{ x: ['-100%', '350%'] }}
-                          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-                        />
+                      {source && (
+                        <div className="absolute -bottom-1 right-0 flex items-center justify-center p-1">
+                          <div className="size-full flex items-center justify-center">
+                            <SourceBadge source={source} />
+                          </div>
+                        </div>
                       )}
                     </div>
-                    <span className="min-w-[40px] text-right text-white/30">∞</span>
-                  </div>
-                )
-              }
-
-              return (
-                <div className="flex items-center gap-3 text-[12px] font-medium text-text-dim tracking-widest mt-2">
-                  <span>{formatTime(position)}</span>
-                  <div className="flex-1 h-[5px] bg-gray rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-white/80 rounded-full transition-none"
-                      style={{ width: `${progressPct}%` }}
-                    />
+                      className="flex flex-col justify-start items-start min-w-0 flex-1 transition-opacity duration-200"
+                      style={{ opacity: isTransitioning ? 0.4 : 1 }}
+                    >
+                      <MarqueeText
+                        text={isTransitioning ? '...' : title || 'Nothing Playing'}
+                        className="text-text font-bold text-base tracking-wide max-w-[190px]"
+                        speed={25}
+                      />
+                      <MarqueeText
+                        text={isTransitioning ? '' : artist || '—'}
+                        className="text-text-dim text-center font-semibold text-sm tracking-wide max-w-[190px]"
+                        speed={25}
+                      />
+                    </div>
                   </div>
-                  {duration > 0 && (
-                    <span className="min-w-[40px] text-right">{formatTime(duration)}</span>
-                  )}
+                  <div className="w-fit flex justify-end items-center">
+                    <AnimatePresence mode="wait">
+                      {isPlaying && (
+                        <motion.div
+                          key="visualizer"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <MusicVisualizer isPlaying={isPlaying} />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
-              )
-            })()}
 
-            <div className="flex items-center justify-center relative mt-1">
-              <div className="absolute left-0">
-                <button
-                  onClick={handleToggleDevice}
-                  className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
-                >
-                  <Headphones size={20} className={showVolume ? 'text-white' : 'text-text'} />
-                </button>
-              </div>
+                {(() => {
+                  const browserSources = ['brave', 'chrome', 'youtube', 'safari']
+                  const isStream = duration === 0 && browserSources.includes(source)
 
-              <div className="flex items-center gap-4 text-white">
-                <button
-                  onClick={handlePrev}
-                  className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
-                >
-                  <Rewind size={20} />
-                </button>
-                <button
-                  onClick={handlePlayPause}
-                  className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
-                >
-                  {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-                </button>
-                <button
-                  onClick={handleNext}
-                  className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
-                >
-                  <FastForward size={20} />
-                </button>
-              </div>
+                  if (isStream) {
+                    return (
+                      <div className="flex items-center gap-3 text-[12px] font-medium text-text-dim tracking-widest mt-2">
+                        <span className="text-white/50">LIVE</span>
+                        <div className="flex-1 h-[5px] bg-gray rounded-full overflow-hidden relative">
+                          {isPlaying && (
+                            <motion.div
+                              className="absolute inset-0 h-full rounded-full"
+                              style={{
+                                background:
+                                  'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)',
+                                width: '40%'
+                              }}
+                              animate={{ x: ['-100%', '350%'] }}
+                              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                            />
+                          )}
+                        </div>
+                        <span className="min-w-[40px] text-right text-white/30">∞</span>
+                      </div>
+                    )
+                  }
 
-              <button
-                onClick={handleShowVolume}
-                className="absolute right-0 size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
-              >
-                <Monitor size={20} className={showVolume ? 'text-white' : 'text-text'} />
-              </button>
-            </div>
+                  return (
+                    <div className="flex items-center gap-3 text-[12px] font-medium text-text-dim tracking-widest mt-2">
+                      <span>{formatTime(position)}</span>
+                      <div className="flex-1 h-[5px] bg-gray rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-white/80 rounded-full transition-none"
+                          style={{ width: `${progressPct}%` }}
+                        />
+                      </div>
+                      {duration > 0 && (
+                        <span className="min-w-[40px] text-right">{formatTime(duration)}</span>
+                      )}
+                    </div>
+                  )
+                })()}
 
-            <AnimatePresence mode="wait" initial={false}>
-              {showVolume && (
-                <VolumeSwitcher
-                  showVolume={showVolume}
-                  volumeLevel={volumeLevel}
-                  handleVolumeChange={handleVolumeChange}
-                />
-              )}
-              {showDevice && <DevicePannel show={showDevice} />}
-            </AnimatePresence>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                <div className="flex items-center justify-center relative mt-1">
+                  <div className="absolute left-0">
+                    <button
+                      onClick={handleToggleDevice}
+                      className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
+                    >
+                      <Headphones size={20} className={showVolume ? 'text-white' : 'text-text'} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-white">
+                    <button
+                      onClick={handlePrev}
+                      className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
+                    >
+                      <Rewind size={20} />
+                    </button>
+                    <button
+                      onClick={handlePlayPause}
+                      className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
+                    >
+                      {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                    </button>
+                    <button
+                      onClick={handleNext}
+                      className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
+                    >
+                      <FastForward size={20} />
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={handleShowVolume}
+                    className="absolute right-0 size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
+                  >
+                    <Monitor size={20} className={showVolume ? 'text-white' : 'text-text'} />
+                  </button>
+                </div>
+
+                <AnimatePresence mode="wait" initial={false}>
+                  {showVolume && (
+                    <VolumeSwitcher
+                      showVolume={showVolume}
+                      volumeLevel={volumeLevel}
+                      handleVolumeChange={handleVolumeChange}
+                    />
+                  )}
+                  {showDevice && <DevicePannel show={showDevice} />}
+                </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {showSidePane && <CalendarPane />}
+      </div>
     </motion.div>
   )
 }

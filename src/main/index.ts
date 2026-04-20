@@ -3,6 +3,7 @@ import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { MediaService } from './services/MediaService'
 import { AudioService } from './services/AudioService'
+import { fetchMacEvents } from './services/calendarService'
 
 let mediaService: MediaService | null = null
 let audioService: AudioService | null = null
@@ -17,9 +18,9 @@ function createWindow(): void {
   const { width: screenWidth } = screen.getPrimaryDisplay().bounds
 
   mainWindow = new BrowserWindow({
-    width: 500,
+    width: 800,
     height: 400,
-    x: Math.floor(screenWidth / 2 - 250),
+    x: Math.floor(screenWidth / 2 - 400),
     y: 0,
     frame: false,
     transparent: true,
@@ -56,12 +57,12 @@ function createWindow(): void {
     const cursor = screen.getCursorScreenPoint()
     const { x: wx, y: wy, width: ww } = mainWindow.getBounds()
 
-    const pw = hoverActive ? 350 : 270
-    const ph = hoverActive ? 240 : 34
+    const pw = hoverActive ? 651 : 270
+    const ph = hoverActive ? 270 : 34
     const px = wx + Math.floor((ww - pw) / 2)
 
     const over =
-      cursor.x >= px - 10 && cursor.x <= px + pw + 10 && cursor.y >= wy && cursor.y <= wy + ph + 10
+      cursor.x >= px - 8 && cursor.x <= px + pw + 8 && cursor.y >= wy && cursor.y <= wy + ph + 8
 
     if (over && !hoverActive) {
       hoverActive = true
@@ -274,6 +275,15 @@ ipcMain.handle('media-control', (_event, command: MediaCommand) => {
 })
 
 ipcMain.handle('set-system-volume', (_event, level: number) => mediaService?.setVolume(level))
+
+ipcMain.handle('get-calendar-events', async () => {
+  try {
+    return await fetchMacEvents()
+  } catch (err: any) {
+    console.error('[main] get-calendar-events failed:', err.message)
+    return []
+  }
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

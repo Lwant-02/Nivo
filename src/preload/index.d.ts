@@ -33,6 +33,15 @@ declare global {
         }) => void
       ) => () => void
       getAudioOutput: () => Promise<{ device: string; kind: 'airpods' | 'headset' | 'speakers' }>
+      getCalendarEvents: () => Promise<
+        Array<{
+          title: string
+          time: string
+          progress: number
+          startMs: number
+          endMs: number
+        }>
+      >
     }
   }
 }

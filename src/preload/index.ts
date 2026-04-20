@@ -31,7 +31,10 @@ const api = {
     return () => ipcRenderer.removeListener('audio-output-update', wrapper)
   },
 
-  getAudioOutput: () => ipcRenderer.invoke('get-audio-output')
+  getAudioOutput: () => ipcRenderer.invoke('get-audio-output'),
+
+  // Calendar
+  getCalendarEvents: () => ipcRenderer.invoke('get-calendar-events')
 }
 
 if (process.contextIsolated) {

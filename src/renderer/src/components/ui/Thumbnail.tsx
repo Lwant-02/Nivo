@@ -46,9 +46,7 @@ export function Thumbnail({ src, alt = '', size = 'expanded', className = '' }: 
       alt={alt}
       onError={() => setErrored(true)}
       className={cn(
-        isPill
-          ? 'w-6 h-3.5 overflow-hidden rounded-xs object-cover'
-          : 'size-full object-cover',
+        isPill ? 'w-6 h-3.5 overflow-hidden rounded-xs object-cover' : 'size-full object-cover',
         className
       )}
     />
