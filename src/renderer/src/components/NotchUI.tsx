@@ -61,7 +61,7 @@ export default function NotchUI() {
   const [isAutoExpanded, setIsAutoExpanded] = useState(false)
   const [sidePanel, setSidePanel] = useState<SidePanel>(null)
   const [volumeLevel, setVolumeLevel] = useState(50)
-  const { playHover, playExpand } = useSound()
+  const { playExpand } = useSound()
 
   const showVolume = sidePanel === 'volume'
   const showDevice = sidePanel === 'device'
@@ -331,7 +331,7 @@ export default function NotchUI() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex items-center justify-between p-10 h-full"
+                className={cn('flex items-center p-10 h-full justify-between')}
               >
                 <div className="relative">
                   <Thumbnail src={displayArt} alt={title} size="pill" />

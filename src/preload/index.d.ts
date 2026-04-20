@@ -27,10 +27,7 @@ declare global {
         }) => void
       ) => () => void
       onAudioOutputUpdate: (
-        callback: (data: {
-          device: string
-          kind: 'airpods' | 'headset' | 'speakers'
-        }) => void
+        callback: (data: { device: string; kind: 'airpods' | 'headset' | 'speakers' }) => void
       ) => () => void
       getAudioOutput: () => Promise<{ device: string; kind: 'airpods' | 'headset' | 'speakers' }>
       getCalendarEvents: () => Promise<

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import cn from 'clsx'
 import { CalendarIcon } from './CalendarIcon'
-import { Clock } from 'lucide-react'
 
 interface CalendarEvent {
   title: string
@@ -76,7 +75,6 @@ export const CalendarPane = () => {
             </span>
           </div>
           <div className="ml-auto flex items-center justify-end gap-1 text-text w-full">
-            <Clock className="size-4" />
             <span className="text-base font-semibold tabular-nums tracking-wider">{timePart}</span>
             <span className="text-[10px] font-bold text-text-dim uppercase tracking-wider">
               {amPmPart}
