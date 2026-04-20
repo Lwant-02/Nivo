@@ -9,9 +9,16 @@ interface ThumbnailProps {
   alt?: string
   size?: 'pill' | 'expanded'
   className?: string
+  isPlaying?: boolean
 }
 
-export function Thumbnail({ src, alt = '', size = 'expanded', className = '' }: ThumbnailProps) {
+export function Thumbnail({
+  src,
+  alt = '',
+  size = 'expanded',
+  className = '',
+  isPlaying = false
+}: ThumbnailProps) {
   const [errored, setErrored] = useState(false)
 
   useEffect(() => {
@@ -32,8 +39,9 @@ export function Thumbnail({ src, alt = '', size = 'expanded', className = '' }: 
       >
         <Disc3
           className={cn(
-            'text-purple animate-spin [animation-duration:2s]',
-            isPill ? 'size-5' : 'size-8'
+            'text-purple',
+            isPill ? 'size-5' : 'size-8',
+            isPlaying ? 'animate-spin [animation-duration:2s]' : ''
           )}
         />
       </div>

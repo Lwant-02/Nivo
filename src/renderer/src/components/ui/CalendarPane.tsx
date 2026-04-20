@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import cn from 'clsx'
+import { CalendarIcon } from './CalendarIcon'
+import { Clock } from 'lucide-react'
 
 interface CalendarEvent {
   title: string
@@ -66,9 +68,15 @@ export const CalendarPane = () => {
       style={{ width: PANE_WIDTH, paddingTop: '30px', paddingLeft: '20px', paddingRight: '20px' }}
     >
       <div className="mb-4 pb-3 border-b border-white/10">
-        <div className="flex items-baseline justify-between mb-0.5">
-          <span className="text-text font-bold text-lg tracking-tight">{weekday}</span>
-          <div className="flex items-baseline gap-1 text-text">
+        <div className="flex items-center gap-3 mb-1.5">
+          <CalendarIcon className="size-10" date={now.getDate()} />
+          <div className="flex flex-col">
+            <span className="text-text font-bold text-lg leading-tight tracking-tight">
+              {weekday}
+            </span>
+          </div>
+          <div className="ml-auto flex items-center justify-end gap-1 text-text w-full">
+            <Clock className="size-4" />
             <span className="text-base font-semibold tabular-nums tracking-wider">{timePart}</span>
             <span className="text-[10px] font-bold text-text-dim uppercase tracking-wider">
               {amPmPart}

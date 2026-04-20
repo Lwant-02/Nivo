@@ -53,7 +53,7 @@ const CALENDAR_PANE_WIDTH = 300
 const COLLAPSED_WIDTH = 270
 
 // TODO: lift this out to the settings store once it exists.
-const showCalendar = true
+const showCalendar = false
 
 export default function NotchUI() {
   const [isHovering, setIsHovering] = useState(false)
