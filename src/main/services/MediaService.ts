@@ -298,9 +298,6 @@ export class MediaService {
         const matchesJunk = isChrome && Math.abs(duration - JUNK_VAL) < 0.01
 
         if ((titleChanged && durationUnchanged && duration > 0) || matchesJunk || isStuckAtEnd) {
-          console.log(
-            '[MediaService] Suspicious timing detected (Stale/Junk/Stuck). Probing fallback...'
-          )
           const fallbackTiming = await this.getBrowserTimingFallback()
           if (fallbackTiming.duration > 0) {
             duration = fallbackTiming.duration
@@ -323,12 +320,10 @@ export class MediaService {
 
       if (isJunk) {
         const fallback = await this.getFallbackState()
-        console.log('[MediaService] CLI is junk. Fallback title:', fallback?.title)
 
         if (fallback) {
           // 2a. Stitch system timing only if CLI reported any
           if (duration > 0 || elapsed > 0) {
-            console.log('[MediaService] CLI has timing data:', { duration, elapsed, playbackRate })
             fallback.duration = duration
             fallback.position = elapsed
             fallback.progress = progress
@@ -341,32 +336,16 @@ export class MediaService {
           const isBrowserSource = this.BROWSER_SOURCES.includes(fallback.source)
 
           if (isBrowserSource) {
-            // Reached only when CLI failed entirely (MediaRemote didn't register
-            // the browser tab, e.g. site without MediaSession). Use tracked state,
-            // toggled when the user clicks play/pause inside Lume.
             const titleChanged = fallback.title && fallback.title !== this.lastState?.title
             if (titleChanged) {
-              console.log('[MediaService] Browser: new title detected, resetting to playing')
               this.lastBrowserIsPlaying = true
             }
-            console.log(
-              '[MediaService] Browser: using tracked isPlaying:',
-              this.lastBrowserIsPlaying
-            )
+
             fallback.isPlaying = this.lastBrowserIsPlaying
             fallback.playbackRate = this.lastBrowserIsPlaying ? 1 : 0
           } else if (cliHasSignal) {
-            console.log('[MediaService] CLI has playback signal — syncing:', {
-              playbackRate,
-              isPlaying
-            })
             fallback.isPlaying = isPlaying
             fallback.playbackRate = playbackRate
-          } else {
-            console.log(
-              '[MediaService] CLI empty — trusting fallback isPlaying:',
-              fallback.isPlaying
-            )
           }
 
           finalState = fallback
@@ -648,7 +627,6 @@ return "none"`
 
   public async setVolume(level: number) {
     try {
-      console.log(`[MediaService] Setting volume to: ${level}`)
       this.setInteraction()
       await execAsync(`osascript -e "set volume output volume ${Math.round(level)}"`)
       if (this.lastState && this.mainWindow) {
@@ -662,7 +640,6 @@ return "none"`
 
   public async playPause() {
     try {
-      console.log('[MediaService] Triggering play/pause — source:', this.lastState?.source)
       this.setInteraction()
 
       const isBrowser = this.BROWSER_SOURCES.includes(this.lastState?.source)
@@ -686,7 +663,6 @@ return "none"`
 
   public async next() {
     try {
-      console.log('[MediaService] Triggering next — source:', this.lastState?.source)
       this.setInteraction()
       await this.dispatchControl('next')
     } catch (err: any) {
@@ -696,7 +672,6 @@ return "none"`
 
   public async previous() {
     try {
-      console.log('[MediaService] Triggering previous — source:', this.lastState?.source)
       this.setInteraction()
       await this.dispatchControl('previous')
     } catch (err: any) {
@@ -723,9 +698,7 @@ return "none"`
       action === 'playpause' ? 'togglePlayPause' : action === 'next' ? 'next' : 'previous'
     try {
       await execAsync(`"${this.binaryPath}" ${cliCmd}`)
-      console.log(`[MediaService] CLI ${cliCmd} succeeded`)
     } catch {
-      console.log('[MediaService] CLI control failed, sending system media key')
       const keyMap = { playpause: 16, next: 17, previous: 19 }
       const keyCode = keyMap[action]
       const mediaKeyScript = `
