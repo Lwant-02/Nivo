@@ -375,7 +375,6 @@ export class MediaService {
         }
       } else {
         const artistName = artist
-        console.log('[MediaService] CLI found media:', title, 'isPlaying:', isPlaying)
 
         const trackKey = `${title}-${artistName}`
         const bundleId = (

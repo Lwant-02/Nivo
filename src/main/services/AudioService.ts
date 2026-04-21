@@ -12,8 +12,20 @@ export interface AudioOutputUpdate {
 }
 
 const HEADSET_KEYWORDS = [
-  'headphones', 'bluetooth', 'beats', 'buds', 'headset', 'pods', 
-  'pro', 'max', 'ugreen', 'sony', 'bose', 'hitune', 'wireless', 'hands-free'
+  'headphones',
+  'bluetooth',
+  'beats',
+  'buds',
+  'headset',
+  'pods',
+  'pro',
+  'max',
+  'ugreen',
+  'sony',
+  'bose',
+  'hitune',
+  'wireless',
+  'hands-free'
 ]
 
 function classifyKind(name: string, transport?: string, minorType?: string): AudioDeviceKind {
@@ -22,10 +34,10 @@ function classifyKind(name: string, transport?: string, minorType?: string): Aud
 
   // 1. AirPods Priority
   if (
-    lowerName.includes('airpods') || 
+    lowerName.includes('airpods') ||
     lowerName.includes('powerbeats') ||
     lowerName.includes('beats solo') ||
-    lowerMinor.includes('headphones') && lowerName.includes('pro')
+    (lowerMinor.includes('headphones') && lowerName.includes('pro'))
   ) {
     return 'airpods'
   }
@@ -39,7 +51,7 @@ function classifyKind(name: string, transport?: string, minorType?: string): Aud
     (transport && transport.toLowerCase().includes('airplay'))
   ) {
     if (lowerName.includes('speaker') && !lowerName.includes('headset')) {
-       return 'speakers'
+      return 'speakers'
     }
     return 'headset'
   }
@@ -56,7 +68,10 @@ export class AudioService {
   private pollingInterval: NodeJS.Timeout | null = null
   private isPolling = false
   private lastState: AudioOutputUpdate = { device: '', kind: 'speakers' }
-  private deviceMetaCache = new Map<string, { minorType?: string; transport?: string; ts: number }>()
+  private deviceMetaCache = new Map<
+    string,
+    { minorType?: string; transport?: string; ts: number }
+  >()
 
   public getState(): AudioOutputUpdate {
     return this.lastState
@@ -101,9 +116,6 @@ export class AudioService {
       if (force || deviceName !== this.lastState.device || kind !== this.lastState.kind) {
         this.lastState = { device: deviceName, kind }
         this.mainWindow.webContents.send('audio-output-update', this.lastState)
-        
-        // Log to user terminal for verification
-        console.log(`[AudioUpdate] active: "${deviceName}" | transport: ${transport || 'unknown'} | minor: ${minorType || 'none'} | kind: ${kind}`)
       }
     } catch (err: any) {
       console.error('[AudioService] Polled failed:', err.message)
@@ -116,27 +128,34 @@ export class AudioService {
     // 1. Try robust osascript first for CURRENT NAME
     let osascriptName: string | undefined
     try {
-      const { stdout } = await execAsync(`osascript -e "output name of (get volume settings)"`, { timeout: 1500 })
+      const { stdout } = await execAsync(`osascript -e "output name of (get volume settings)"`, {
+        timeout: 1500
+      })
       osascriptName = stdout.trim()
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     // 2. Scan system profiling for TRANSPORT and FALLBACK NAME
     try {
-      const { stdout } = await execAsync('system_profiler SPAudioDataType -json', { timeout: 10000 })
+      const { stdout } = await execAsync('system_profiler SPAudioDataType -json', {
+        timeout: 10000
+      })
       const data = JSON.parse(stdout)
       const devices = parseAudioDevicesJSON(data)
 
       // Find the device marked as Default
-      const defaultDevice = devices.find(d => d.isDefault)
+      const defaultDevice = devices.find((d) => d.isDefault)
 
       if (defaultDevice) {
         // If osascript failed or returned something generic, trust the profiler name
-        const finalName = osascriptName && osascriptName !== 'missing value' ? osascriptName : defaultDevice.device
+        const finalName =
+          osascriptName && osascriptName !== 'missing value' ? osascriptName : defaultDevice.device
         return { device: finalName, transport: defaultDevice.transport }
       }
     } catch {
-       // Regex fallback if JSON fails
-       return this.getPrimaryOutputViaRegex()
+      // Regex fallback if JSON fails
+      return this.getPrimaryOutputViaRegex()
     }
 
     return osascriptName ? { device: osascriptName } : null
@@ -145,7 +164,7 @@ export class AudioService {
   private async getPrimaryOutputViaRegex(): Promise<{ device: string; transport?: string } | null> {
     try {
       const { stdout } = await execAsync('system_profiler SPAudioDataType', { timeout: 10000 })
-      
+
       // Regex to find the block containing "Default Output Device: Yes"
       // Then extract the device name and transport from that block
       const blocks = stdout.split('\n\n')
@@ -161,7 +180,9 @@ export class AudioService {
           }
         }
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return null
   }
 
@@ -170,7 +191,9 @@ export class AudioService {
     if (cached && Date.now() - cached.ts < 60000) return cached
 
     try {
-      const { stdout } = await execAsync('system_profiler SPBluetoothDataType -json', { timeout: 10000 })
+      const { stdout } = await execAsync('system_profiler SPBluetoothDataType -json', {
+        timeout: 10000
+      })
       const data = JSON.parse(stdout)
       const minorType = findMinorTypeInBTData(data, deviceName)
       const res = { minorType, ts: Date.now() }
@@ -182,20 +205,29 @@ export class AudioService {
   }
 }
 
-function parseAudioDevicesJSON(data: any): { device: string; transport?: string; isDefault: boolean }[] {
+function parseAudioDevicesJSON(
+  data: any
+): { device: string; transport?: string; isDefault: boolean }[] {
   const devices: any[] = []
   function scan(node: any) {
     if (!node) return
-    if (Array.isArray(node)) { node.forEach(scan); return }
+    if (Array.isArray(node)) {
+      node.forEach(scan)
+      return
+    }
     if (typeof node === 'object') {
-       if (node._name && (node.coreaudio_device_output || node.coreaudio_default_audio_output_device === 'spaudio_yes')) {
-         devices.push({
-           device: node._name,
-           transport: node.coreaudio_device_transport,
-           isDefault: node.coreaudio_default_audio_output_device === 'spaudio_yes'
-         })
-       }
-       Object.values(node).forEach(scan)
+      if (
+        node._name &&
+        (node.coreaudio_device_output ||
+          node.coreaudio_default_audio_output_device === 'spaudio_yes')
+      ) {
+        devices.push({
+          device: node._name,
+          transport: node.coreaudio_device_transport,
+          isDefault: node.coreaudio_default_audio_output_device === 'spaudio_yes'
+        })
+      }
+      Object.values(node).forEach(scan)
     }
   }
   scan(data)
@@ -214,7 +246,7 @@ function findMinorTypeInBTData(data: any, name: string): string | undefined {
         const p = val as any
         const candidate = (p.device_name || key).toLowerCase().trim()
         if (candidate === target || target.includes(candidate) || candidate.includes(target)) {
-           return p.device_minorType
+          return p.device_minorType
         }
       }
     }

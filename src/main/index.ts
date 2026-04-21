@@ -1,4 +1,13 @@
-import { app, BrowserWindow, screen, ipcMain, Tray, nativeImage, Menu } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  screen,
+  ipcMain,
+  Tray,
+  nativeImage,
+  Menu,
+  powerMonitor
+} from 'electron'
 import { join } from 'path'
 import { exec } from 'child_process'
 import { is } from '@electron-toolkit/utils'
@@ -45,7 +54,7 @@ function createMainWindow(): void {
     }
   })
 
-  mainWindow.setAlwaysOnTop(true, 'status', 21)
+  mainWindow.setAlwaysOnTop(true, 'screen-saver', 1)
 
   mainWindow.setVisibleOnAllWorkspaces(true, {
     visibleOnFullScreen: true,
@@ -257,6 +266,21 @@ app.whenReady().then(() => {
   tray.setToolTip('Lume')
   refreshTrayMenu()
 
+  // Dim the notch while the Mac is locked so it sits quietly on the
+  // lock screen, then restore full opacity on unlock.
+  const DIMMED_OPACITY = 0.55
+  const setNotchOpacity = (opacity: number): void => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.setOpacity(opacity)
+    }
+  }
+  powerMonitor.on('lock-screen', () => {
+    setNotchOpacity(DIMMED_OPACITY)
+  })
+  powerMonitor.on('unlock-screen', () => {
+    setNotchOpacity(1)
+  })
+
   if (licenseService?.isActivated()) {
     createMainWindow()
   } else {
@@ -333,8 +357,6 @@ ipcMain.handle('trigger-haptic', () => {
   exec(`"${binaryPath}"`, (err) => {
     if (err) {
       console.error('[Haptic] Command failed:', err.message)
-    } else {
-      console.log('[Haptic] Triggered native feedback successfully')
     }
   })
 })
