@@ -117,13 +117,10 @@ function createSettingsWindow(): void {
     return
   }
 
-  const { width, height } = screen.getPrimaryDisplay().bounds
-
   settingsWindow = new BrowserWindow({
-    width: 850,
+    width: 650,
     height: 600,
-    x: Math.floor(width / 2 - 425),
-    y: Math.floor(height / 2 - 300),
+    center: true,
     resizable: true,
     show: false,
     titleBarStyle: 'hiddenInset',

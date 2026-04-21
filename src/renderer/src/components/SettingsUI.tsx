@@ -1,49 +1,33 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Settings,
-  Zap,
-  Wifi,
-  Moon,
-  Sun,
-  Volume2,
-  Play,
-  Calendar,
-  Archive,
-  Lock,
-  ShieldCheck,
-  Info,
-  Laptop,
-  Monitor,
-  Layers,
-  RotateCcw,
-  Info as InfoIcon
-} from 'lucide-react'
-import { Toggle } from '../components/ui/Toggle'
-
-// ─── Sidebar config ───────────────────────────────────────────────────────────
+import { Settings, Zap, Moon, Play, Calendar, ShieldCheck, Info } from 'lucide-react'
+import { SidebarItem } from './settings/SidebarItem'
+import { LicensePanel } from './settings/LicensePanel'
+import { AboutPanel } from './settings/AboutPanel'
+import { NowPlayingPanel } from './settings/NowPlayingPanel'
+import { CalendarPanel } from './settings/CalendarPanel'
+import { BatteryPanel } from './settings/BatteryPanel'
+import { FocusPanel } from './settings/FocusPanel'
+import { GeneralPanel } from './settings/GeneralPanel'
+import { PlaceholderPanel } from './settings/PlaceholderPanel'
 
 const NAV_GROUPS = [
   {
+    label: 'General',
     items: [{ id: 'general', icon: Settings, label: 'General', color: '#636366' }]
   },
   {
     label: 'Notifications',
     items: [
       { id: 'battery', icon: Zap, label: 'Battery', color: '#FF9F0A' },
-      { id: 'connectivity', icon: Wifi, label: 'Connectivity', color: '#32D74B' },
-      { id: 'focus', icon: Moon, label: 'Focus', color: '#5E5CE6' },
-      { id: 'display', icon: Sun, label: 'Display', color: '#FFD60A' },
-      { id: 'sound', icon: Volume2, label: 'Sound', color: '#BF5AF2' }
+      { id: 'focus', icon: Moon, label: 'Focus', color: '#5E5CE6' }
     ]
   },
   {
     label: 'Live Activities',
     items: [
       { id: 'nowplaying', icon: Play, label: 'Now Playing', color: '#FF3B30' },
-      { id: 'calendar', icon: Calendar, label: 'Calendar', color: '#FF3B30' },
-      { id: 'filetray', icon: Archive, label: 'File Tray', color: '#636366', soon: true },
-      { id: 'lockscreen', icon: Lock, label: 'Lock Screen', color: '#636366' }
+      { id: 'calendar', icon: Calendar, label: 'Calendar', color: '#FF3B30' }
     ]
   },
   {
@@ -55,76 +39,111 @@ const NAV_GROUPS = [
   }
 ]
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default function SettingsUI() {
   const [active, setActive] = useState('general')
+
+  const activeLabel =
+    NAV_GROUPS.flatMap((g) => g.items).find((i) => i.id === active)?.label ?? 'General'
 
   return (
     <div
       className="flex h-screen w-full select-none overflow-hidden text-white"
-      style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' }}
+      style={{
+        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif',
+        borderRadius: 18,
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 24px 60px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(0,0,0,0.6)'
+      }}
     >
-      {/* Sidebar */}
-      <aside className="w-[210px] shrink-0 flex flex-col bg-[#1C1C1E]/90 backdrop-blur-2xl border-r border-white/6">
+      {/* ── Sidebar ── */}
+      <aside
+        className="shrink-0 flex flex-col"
+        style={{
+          width: 230,
+          background: 'linear-gradient(180deg, rgba(24,24,28,0.92) 0%, rgba(18,18,22,0.92) 100%)',
+          backdropFilter: 'blur(32px)',
+          WebkitBackdropFilter: 'blur(32px)',
+          borderRight: '1px solid rgba(255,255,255,0.06)'
+        }}
+      >
         <div
-          className="h-[52px] shrink-0"
-          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+          style={{ height: 52, flexShrink: 0, WebkitAppRegion: 'drag' } as React.CSSProperties}
         />
 
-        <nav className="flex-1 px-2 pb-4 space-y-4 overflow-y-auto overflow-x-hidden scrollbar-hide">
+        <nav
+          className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide"
+          style={{
+            paddingLeft: 10,
+            paddingRight: 10,
+            paddingBottom: 20
+          }}
+        >
           {NAV_GROUPS.map((group, gi) => (
-            <div key={gi}>
+            <div key={gi} style={{ marginBottom: 18 }}>
               {group.label && (
-                <p className="px-3 pb-1 text-[11px] font-semibold text-white/30 tracking-wide">
+                <p
+                  style={{
+                    paddingLeft: 12,
+                    paddingRight: 12,
+                    marginBottom: 6,
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    color: 'rgba(255,255,255,0.32)',
+                    textTransform: 'uppercase',
+                    letterSpacing: 1.3
+                  }}
+                >
                   {group.label}
                 </p>
               )}
-              <div className="space-y-0.5">
-                {group.items.map((item: (typeof NAV_GROUPS)[0]['items'][0]) => {
-                  const Icon = item.icon
-                  const isActive = active === item.id
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setActive(item.id)}
-                      className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg transition-all duration-150 cursor-pointer
-                        ${isActive ? 'bg-white/12 text-white' : 'text-white/55 hover:bg-white/6 hover:text-white/80'}`}
-                    >
-                      <span
-                        className="w-[26px] h-[26px] rounded-[7px] flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: item.color }}
-                      >
-                        <Icon size={13} className="text-white" />
-                      </span>
-                      <span className="text-[13px] font-medium flex-1 text-left min-w-0 truncate">
-                        {item.label}
-                      </span>
-                      {'soon' in item && item.soon && (
-                        <span className="text-[10px] font-medium text-white/40 bg-white/8 border border-white/10 px-1.5 py-0.5 rounded-md">
-                          Soon
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
+              {group.items.map((item: (typeof NAV_GROUPS)[number]['items'][number]) => (
+                <SidebarItem
+                  key={item.id}
+                  icon={item.icon}
+                  label={item.label}
+                  color={item.color}
+                  active={active === item.id}
+                  soon={'soon' in item ? (item.soon as boolean) : false}
+                  onClick={() => setActive(item.id)}
+                />
+              ))}
             </div>
           ))}
         </nav>
       </aside>
 
-      {/* Content */}
+      {/* ── Content ── */}
       <div
-        className="flex-1 flex flex-col overflow-hidden"
+        className="flex-1 flex flex-col overflow-hidden relative"
         style={{
-          background: 'linear-gradient(160deg, #1e2d3d 0%, #1a1a2e 40%, #16213e 100%)'
+          background:
+            'radial-gradient(120% 80% at 0% 0%, #1f3048 0%, transparent 55%), radial-gradient(100% 80% at 100% 100%, #2a1b40 0%, transparent 55%), linear-gradient(160deg, #141826 0%, #0f1420 50%, #0b0f1a 100%)'
         }}
       >
+        {/* Title bar */}
         <div
-          className="h-[52px] shrink-0"
-          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-        />
+          className="flex items-center justify-between shrink-0"
+          style={
+            {
+              height: 52,
+              paddingLeft: 28,
+              paddingRight: 28,
+              WebkitAppRegion: 'drag',
+              borderBottom: '1px solid rgba(255,255,255,0.04)'
+            } as React.CSSProperties
+          }
+        >
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'rgba(255,255,255,0.55)',
+              letterSpacing: -0.1
+            }}
+          >
+            {activeLabel}
+          </span>
+        </div>
 
         <div
           className="flex-1 overflow-y-auto scrollbar-hide"
@@ -133,217 +152,38 @@ export default function SettingsUI() {
           <AnimatePresence mode="wait">
             <motion.div
               key={active}
-              initial={{ opacity: 0, y: 6 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.15, ease: 'easeOut' }}
-              className="px-6 pb-12 pt-2 max-w-[540px]"
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              style={{
+                paddingLeft: 28,
+                paddingRight: 28,
+                paddingTop: 20,
+                paddingBottom: 48,
+                maxWidth: 620
+              }}
             >
               {active === 'general' && <GeneralPanel />}
-              {active !== 'general' && <PlaceholderPanel id={active} />}
+              {active === 'battery' && <BatteryPanel />}
+              {active === 'focus' && <FocusPanel />}
+              {active === 'nowplaying' && <NowPlayingPanel />}
+              {active === 'calendar' && <CalendarPanel />}
+              {active === 'license' && <LicensePanel />}
+              {active === 'about' && <AboutPanel />}
+              {![
+                'general',
+                'battery',
+                'focus',
+                'nowplaying',
+                'calendar',
+                'license',
+                'about'
+              ].includes(active) && <PlaceholderPanel id={active} />}
             </motion.div>
           </AnimatePresence>
         </div>
       </div>
-    </div>
-  )
-}
-
-// ─── Settings Card ────────────────────────────────────────────────────────────
-
-function SCard({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="bg-white/6 border border-white/8 rounded-xl overflow-hidden">{children}</div>
-  )
-}
-
-// ─── Settings Row ─────────────────────────────────────────────────────────────
-
-function SRow({
-  label,
-  enabled,
-  onToggle,
-  isFirst = false,
-  info = false,
-  right
-}: {
-  label: string
-  enabled?: boolean
-  onToggle?: () => void
-  isFirst?: boolean
-  info?: boolean
-  right?: React.ReactNode
-}) {
-  return (
-    <div
-      onClick={onToggle}
-      className={`relative flex items-center justify-between px-4 py-3 min-h-[44px] transition-colors
-        ${onToggle ? 'cursor-pointer hover:bg-white/4' : ''}`}
-    >
-      {!isFirst && <div className="absolute top-0 left-4 right-0 h-px bg-white/7" />}
-      <div className="flex items-center gap-1.5">
-        <span className="text-[14px] font-medium text-white/90">{label}</span>
-        {info && <InfoIcon size={13} className="text-white/30" />}
-      </div>
-      <div className="shrink-0">
-        {right}
-        {enabled !== undefined && onToggle && <Toggle enabled={enabled} onChange={onToggle} />}
-      </div>
-    </div>
-  )
-}
-
-// ─── Section Label ────────────────────────────────────────────────────────────
-
-function SLabel({ text }: { text: string }) {
-  return <p className="text-[13px] font-semibold text-white/50 mt-5 mb-2 px-1">{text}</p>
-}
-
-// ─── General Panel ────────────────────────────────────────────────────────────
-
-function GeneralPanel() {
-  const [launchAtLogin, setLaunchAtLogin] = useState(false)
-  const [syncICloud, setSyncICloud] = useState(true)
-  const [hideFullscreen, setHideFullscreen] = useState(true)
-  const [hideMissionControl, setHideMissionControl] = useState(false)
-  const [hideScreenCapture, setHideScreenCapture] = useState(false)
-  const [forceNotch, setForceNotch] = useState(false)
-  const [display, setDisplay] = useState<'builtin' | 'main' | 'active'>('builtin')
-  const [idleActivity, setIdleActivity] = useState(true)
-  const [progressiveBlur, setProgressiveBlur] = useState(true)
-  const [hapticFeedback, setHapticFeedback] = useState(true)
-  const [expandOnHover, setExpandOnHover] = useState(true)
-
-  const displays: { id: 'builtin' | 'main' | 'active'; label: string; Icon: typeof Laptop }[] = [
-    { id: 'builtin', label: 'Built-in display', Icon: Laptop },
-    { id: 'main', label: 'Main display', Icon: Monitor },
-    { id: 'active', label: 'Active display', Icon: Layers }
-  ]
-
-  return (
-    <>
-      {/* Main toggles */}
-      <SCard>
-        <SRow
-          label="Launch at login"
-          enabled={launchAtLogin}
-          onToggle={() => setLaunchAtLogin((v) => !v)}
-          isFirst
-        />
-        <SRow
-          label="Sync settings via iCloud"
-          enabled={syncICloud}
-          onToggle={() => setSyncICloud((v) => !v)}
-        />
-        <SRow
-          label="Hide in fullscreen"
-          enabled={hideFullscreen}
-          onToggle={() => setHideFullscreen((v) => !v)}
-        />
-        <SRow
-          label="Hide in mission control"
-          enabled={hideMissionControl}
-          onToggle={() => setHideMissionControl((v) => !v)}
-        />
-        <SRow
-          label="Hide from screen capture"
-          enabled={hideScreenCapture}
-          onToggle={() => setHideScreenCapture((v) => !v)}
-        />
-        <SRow
-          label="Force simulated notch"
-          enabled={forceNotch}
-          onToggle={() => setForceNotch((v) => !v)}
-        />
-
-        {/* Display selector */}
-        <div className="relative px-4 py-3">
-          <div className="absolute top-0 left-4 right-0 h-px bg-white/7" />
-          <div className="grid grid-cols-3 gap-2">
-            {displays.map(({ id, label, Icon }) => {
-              const active = display === id
-              return (
-                <button
-                  key={id}
-                  onClick={() => setDisplay(id)}
-                  className={`flex flex-col items-center gap-2 py-3 px-2 rounded-xl transition-all duration-150 cursor-pointer
-                    ${
-                      active
-                        ? 'bg-white/10 border border-[#32D74B]/60 text-white'
-                        : 'bg-white/4 border border-white/7 text-white/35 hover:text-white/60 hover:bg-white/7'
-                    }`}
-                >
-                  <Icon size={22} strokeWidth={1.5} />
-                  <span
-                    className={`text-[11px] font-medium text-center leading-tight
-                    ${active ? 'text-white font-semibold' : 'text-white/35'}`}
-                  >
-                    {label}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      </SCard>
-
-      {/* Idle Activity */}
-      <SLabel text="Idle Activity" />
-      <SCard>
-        <div
-          className="flex items-center justify-between px-4 py-3 min-h-[44px] cursor-pointer hover:bg-white/4 transition-colors"
-          onClick={() => setIdleActivity((v) => !v)}
-        >
-          <div className="flex items-center gap-2">
-            <RotateCcw size={15} className="text-white/50" />
-            <span className="text-[14px] font-medium text-white/90">Most Recent</span>
-            <span className="text-[14px] text-white/35">· Duo</span>
-          </div>
-          <Toggle enabled={idleActivity} onChange={() => setIdleActivity((v) => !v)} />
-        </div>
-      </SCard>
-
-      {/* Behaviour */}
-      <SLabel text="Behaviour" />
-      <SCard>
-        <SRow
-          label="Progressive blur"
-          enabled={progressiveBlur}
-          onToggle={() => setProgressiveBlur((v) => !v)}
-          isFirst
-        />
-        <SRow
-          label="Haptic feedback"
-          enabled={hapticFeedback}
-          onToggle={() => setHapticFeedback((v) => !v)}
-        />
-        <SRow
-          label="Expand on hover"
-          enabled={expandOnHover}
-          onToggle={() => setExpandOnHover((v) => !v)}
-          info
-        />
-        <SRow
-          label="Hover duration"
-          right={
-            <span className="text-[13px] font-medium text-white/40 bg-white/7 border border-white/10 rounded-full px-3 py-1">
-              0.0 s
-            </span>
-          }
-        />
-      </SCard>
-    </>
-  )
-}
-
-// ─── Placeholder for other panels ─────────────────────────────────────────────
-
-function PlaceholderPanel({ id }: { id: string }) {
-  const label = id.charAt(0).toUpperCase() + id.slice(1)
-  return (
-    <div className="flex flex-col items-center justify-center h-48 opacity-30">
-      <p className="text-[15px] font-medium text-white">{label}</p>
-      <p className="text-[13px] text-white/50 mt-1">Coming soon</p>
     </div>
   )
 }
