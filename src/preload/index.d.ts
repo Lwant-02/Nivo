@@ -40,6 +40,7 @@ declare global {
         }>
       >
       triggerHaptic: () => Promise<void>
+      openExternal: (url: string) => Promise<void>
     }
   }
 }

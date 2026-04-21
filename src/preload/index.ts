@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, shell } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
@@ -37,7 +37,10 @@ const api = {
   getCalendarEvents: () => ipcRenderer.invoke('get-calendar-events'),
 
   // Haptic
-  triggerHaptic: () => ipcRenderer.invoke('trigger-haptic')
+  triggerHaptic: () => ipcRenderer.invoke('trigger-haptic'),
+
+  // Navigation
+  openExternal: (url: string) => shell.openExternal(url)
 }
 
 if (process.contextIsolated) {

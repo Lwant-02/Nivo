@@ -38,6 +38,10 @@ body {
   -webkit-app-region: no-drag;
 }
 
+button, a, input, select, textarea, [role="button"], .no-drag {
+  -webkit-app-region: no-drag !important;
+}
+
 #root {
   height: 100%;
   width: 100%;

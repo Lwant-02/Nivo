@@ -146,19 +146,18 @@ function createOnboardingWindow(): void {
     onboardingWindow.focus()
     return
   }
-
-  const { width } = screen.getPrimaryDisplay().bounds
+  const { width, height } = screen.getPrimaryDisplay().bounds
 
   onboardingWindow = new BrowserWindow({
-    width: 700,
-    height: 600,
-    x: Math.floor(width / 2 - 300),
-    y: 100, // Positioned near the top for Notch proximity
+    width: 500,
+    height: 510,
+    x: Math.floor(width / 2 - 250),
+    y: Math.floor(height / 2 - 255),
     resizable: false,
     show: false,
-    titleBarStyle: 'hiddenInset',
-    vibrancy: 'under-window',
-    visualEffectState: 'active',
+    frame: false,
+    transparent: true,
+    hasShadow: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
@@ -247,7 +246,7 @@ ipcMain.handle('pulse-onboarding', () => {
   onboardingWindow.setBounds({ ...current, y: current.y - 8 }, true)
   setTimeout(() => {
     if (onboardingWindow) {
-      onboardingWindow.setBounds({ ...current, y: 100 }, true)
+      onboardingWindow.setBounds({ ...current, y: current.y }, true)
     }
   }, 120)
 })
