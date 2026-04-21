@@ -13,9 +13,11 @@ const api = {
 
   // Events & Windows
   openSettings: () => ipcRenderer.invoke('open-settings'),
-  closeOnboarding: () => ipcRenderer.invoke('close-onboarding'),
-  pulseOnboarding: () => ipcRenderer.invoke('pulse-onboarding'),
   getAppVersion: () => ipcRenderer.invoke('get-version'),
+
+  // License activation
+  activateLicense: (key: string) => ipcRenderer.invoke('activate-license', key),
+  getLicenseState: () => ipcRenderer.invoke('get-license-state'),
 
   // Events
   onMediaUpdate: (callback: (data: any) => void) => {

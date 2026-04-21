@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import cn from 'clsx'
 import { CalendarIcon } from './CalendarIcon'
+import { Spinner } from './Spinner'
 
 interface CalendarEvent {
   title: string
@@ -12,7 +13,7 @@ interface CalendarEvent {
 }
 
 const PANE_WIDTH = 300
-const REFRESH_MS = 60_000
+const REFRESH_MS = 300_000 // 5 minutes
 
 export const CalendarPane = () => {
   const [events, setEvents] = useState<CalendarEvent[] | null>(null)
@@ -90,45 +91,13 @@ export const CalendarPane = () => {
       </div>
 
       {events === null ? (
-        <div className="flex justify-center items-center w-full h-full">
-          <svg
-            className="w-12 h-12 text-purple"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <circle cx="4" cy="12" r="1.5">
-              <animate
-                attributeName="r"
-                dur="0.75s"
-                values="1.5;3;1.5"
-                repeatCount="indefinite"
-              ></animate>
-            </circle>
-            <circle cx="12" cy="12" r="3">
-              <animate
-                attributeName="r"
-                dur="0.75s"
-                values="3;1.5;3"
-                repeatCount="indefinite"
-              ></animate>
-            </circle>
-            <circle cx="20" cy="12" r="1.5">
-              <animate
-                attributeName="r"
-                dur="0.75s"
-                values="1.5;3;1.5"
-                repeatCount="indefinite"
-              ></animate>
-            </circle>
-          </svg>
-        </div>
+        <Spinner size="size-12" />
       ) : events.length === 0 ? (
         <div
           style={{ padding: '10px' }}
           className="text-text-dim flex justify-center items-center w-full h-full text-xs text-center"
         >
-          No events today.
+          A quiet day ahead.
         </div>
       ) : (
         <div className="flex flex-col gap-2.5 overflow-y-auto pr-1">

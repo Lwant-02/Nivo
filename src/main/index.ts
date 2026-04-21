@@ -5,9 +5,11 @@ import { is } from '@electron-toolkit/utils'
 import { MediaService } from './services/MediaService'
 import { AudioService } from './services/AudioService'
 import { fetchMacEvents } from './services/calendarService'
+import { LicenseService } from './services/LicenseService'
 
 let mediaService: MediaService | null = null
 let audioService: AudioService | null = null
+let licenseService: LicenseService | null = null
 
 let mainWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
@@ -15,7 +17,11 @@ let onboardingWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 
 // Notch window
-function createWindow(): void {
+function createMainWindow(): void {
+  if (mainWindow) {
+    mainWindow.focus()
+    return
+  }
   const { width: screenWidth } = screen.getPrimaryDisplay().bounds
 
   mainWindow = new BrowserWindow({
@@ -157,6 +163,7 @@ function createOnboardingWindow(): void {
     show: false,
     frame: false,
     transparent: true,
+    titleBarStyle: 'hiddenInset',
     hasShadow: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -184,8 +191,49 @@ function createOnboardingWindow(): void {
   })
 }
 
+function refreshTrayMenu(): void {
+  if (!tray) return
+
+  const activated = licenseService?.isActivated() ?? false
+
+  const template: Electron.MenuItemConstructorOptions[] = [
+    { label: `Version ${app.getVersion()}`, enabled: false },
+    { type: 'separator' }
+  ]
+
+  if (activated) {
+    template.push({
+      label: 'Settings...',
+      accelerator: 'Command+,',
+      click: () => createSettingsWindow()
+    })
+  } else {
+    template.push({
+      label: 'Activate Lume...',
+      click: () => createOnboardingWindow()
+    })
+  }
+
+  template.push(
+    { type: 'separator' },
+    {
+      label: 'Quit Lume',
+      accelerator: 'Command+Q',
+      click: () => app.quit()
+    }
+  )
+
+  tray.setContextMenu(Menu.buildFromTemplate(template))
+}
+
 // App ready
 app.whenReady().then(() => {
+  try {
+    licenseService = new LicenseService()
+  } catch (err: any) {
+    console.error('[main] Failed to initialize LicenseService:', err.message)
+  }
+
   try {
     mediaService = new MediaService()
   } catch (err: any) {
@@ -206,29 +254,14 @@ app.whenReady().then(() => {
   const trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 18, height: 18 })
 
   tray = new Tray(trayIcon)
-
-  const contextMenu = Menu.buildFromTemplate([
-    { label: `Version ${app.getVersion()}`, enabled: false },
-    { type: 'separator' },
-    {
-      label: 'Settings...',
-      accelerator: 'Command+,',
-      click: () => createSettingsWindow()
-    },
-    { type: 'separator' },
-    {
-      label: 'Quit Lume',
-      accelerator: 'Command+Q',
-      click: () => app.quit()
-    }
-  ])
-
   tray.setToolTip('Lume')
-  tray.setContextMenu(contextMenu)
+  refreshTrayMenu()
 
-  createWindow()
-
-  createOnboardingWindow()
+  if (licenseService?.isActivated()) {
+    createMainWindow()
+  } else {
+    createOnboardingWindow()
+  }
 })
 
 ipcMain.handle('get-audio-output', () => audioService?.getState())
@@ -239,22 +272,29 @@ ipcMain.handle('open-settings', () => {
   createSettingsWindow()
 })
 
-ipcMain.handle('pulse-onboarding', () => {
-  if (!onboardingWindow) return
-  const current = onboardingWindow.getBounds()
-  // Brief nudge upwards towards the notch
-  onboardingWindow.setBounds({ ...current, y: current.y - 8 }, true)
-  setTimeout(() => {
-    if (onboardingWindow) {
-      onboardingWindow.setBounds({ ...current, y: current.y }, true)
-    }
-  }, 120)
+ipcMain.handle('activate-license', async (_event, key: string) => {
+  if (!licenseService) {
+    return { ok: false, error: 'License service unavailable. Please restart Lume.' }
+  }
+
+  // Simulate network round-trip so the UI's "Activating…" state is visible.
+  await new Promise((resolve) => setTimeout(resolve, 3000))
+
+  const result = licenseService.activate(key)
+  if (!result.ok) return result
+
+  if (onboardingWindow) {
+    onboardingWindow.destroy()
+    onboardingWindow = null
+  }
+  createMainWindow()
+  refreshTrayMenu()
+
+  return { ok: true }
 })
 
-ipcMain.handle('close-onboarding', () => {
-  if (onboardingWindow) {
-    onboardingWindow.close()
-  }
+ipcMain.handle('get-license-state', () => {
+  return licenseService?.getAuth() ?? { licenseKey: null, isActivated: false, instanceId: null }
 })
 
 type MediaCommand = 'playPause' | 'next' | 'previous'

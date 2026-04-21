@@ -22,6 +22,15 @@ set todayStart to (current date) - (time of (current date))
 set todayEnd to todayStart + (1 * days)
 set output to ""
 
+tell application "System Events"
+    set isRunning to (count of (every process whose name is "Calendar")) > 0
+end tell
+
+if not isRunning then
+    do shell script "open -a Calendar -j -g"
+    delay 0.5
+end if
+
 tell application "Calendar"
     try
         set calList to every calendar
@@ -144,7 +153,7 @@ async function runAppleScript(script: string): Promise<string> {
 // for Calendar.app and producing random failures.
 let inFlight: Promise<CalendarEvent[]> | null = null
 let cache: { at: number; data: CalendarEvent[] } | null = null
-const CACHE_MS = 30_000
+const CACHE_MS = 120_000 // 2 mins
 
 export async function fetchMacEvents(): Promise<CalendarEvent[]> {
   if (cache && Date.now() - cache.at < CACHE_MS) return cache.data

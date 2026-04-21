@@ -9,9 +9,13 @@ declare global {
       mediaPrevious: () => Promise<void>
       setVolume: (level: number) => Promise<void>
       openSettings: () => Promise<void>
-      closeOnboarding: () => Promise<void>
-      pulseOnboarding: () => Promise<void>
       getAppVersion: () => Promise<string>
+      activateLicense: (key: string) => Promise<{ ok: boolean; error?: string }>
+      getLicenseState: () => Promise<{
+        licenseKey: string | null
+        isActivated: boolean
+        instanceId: string | null
+      }>
       onMediaUpdate: (
         callback: (data: {
           title: string

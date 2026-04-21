@@ -1,13 +1,37 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { BadgeCheck, HelpCircle, KeyRound, ShoppingCart } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import cn from 'clsx'
+import { Spinner } from './ui/Spinner'
+
+const GET_LICENSE_URL = 'https://nawmain.dev'
+const RECOVER_LICENSE_URL = 'https://nawmain.dev'
 
 export const OnboardingUI = () => {
   const [licenseKey, setLicenseKey] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => inputRef.current?.focus())
+    return () => cancelAnimationFrame(id)
+  }, [])
 
   const finish = async () => {
-    await window.api.closeOnboarding()
+    if (!licenseKey || submitting) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      const result = await window.api.activateLicense(licenseKey)
+      if (!result.ok) {
+        setError(result.error ?? 'Activation failed. Please try again.')
+      }
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -69,9 +93,17 @@ export const OnboardingUI = () => {
             <div className="flex items-center gap-3" style={{ padding: '12px 18px' }}>
               <KeyRound className="size-[18px] -rotate-135 text-white/40" />
               <input
+                ref={inputRef}
+                autoFocus
                 type="text"
                 value={licenseKey}
-                onChange={(e) => setLicenseKey(e.target.value)}
+                onChange={(e) => {
+                  setLicenseKey(e.target.value)
+                  if (error) setError(null)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') finish()
+                }}
                 placeholder="License Key"
                 style={{ WebkitAppRegion: 'no-drag' } as any}
                 className="bg-transparent border-none outline-none text-white/80 placeholder:text-white/30 w-full text-[14px] font-mono tracking-wide"
@@ -79,13 +111,22 @@ export const OnboardingUI = () => {
             </div>
           </div>
 
+          {error && (
+            <p
+              className="text-[12px] text-red-400 text-center max-w-[320px] font-mono"
+              style={{ marginTop: '-8px', marginBottom: '14px' }}
+            >
+              {error}
+            </p>
+          )}
+
           <div className="flex flex-col items-center w-full" style={{ gap: '16px' }}>
             <div className="flex flex-col items-center" style={{ gap: '8px' }}>
               <p className="text-[13px] text-white/55 flex items-center gap-2">
                 <ShoppingCart className="size-[14px] text-white/40" />
                 Buy once. Own forever.
                 <span
-                  onClick={() => window.api.openExternal('https://nawmain.dev')}
+                  onClick={() => window.api.openExternal(GET_LICENSE_URL)}
                   style={{ WebkitAppRegion: 'no-drag' } as any}
                   className="text-green-400 cursor-pointer hover:underline font-medium"
                 >
@@ -103,7 +144,7 @@ export const OnboardingUI = () => {
                 <HelpCircle className="size-[14px] text-white/40" />
                 Lost your license?
                 <span
-                  onClick={() => window.api.openExternal('https://nawmain.dev')}
+                  onClick={() => window.api.openExternal(RECOVER_LICENSE_URL)}
                   style={{ WebkitAppRegion: 'no-drag' } as any}
                   className="text-purple cursor-pointer hover:underline font-medium"
                 >
@@ -113,17 +154,17 @@ export const OnboardingUI = () => {
             </div>
 
             <button
-              disabled={!licenseKey}
+              disabled={!licenseKey || submitting}
               onClick={finish}
               style={{ WebkitAppRegion: 'no-drag' } as any}
               className={cn(
                 'w-[360px] h-12 rounded-xl border text-sm font-semibold transition-all',
-                licenseKey
+                licenseKey && !submitting
                   ? 'bg-purple border-purple text-white cursor-pointer shadow-purple/50 hover:bg-purple/90'
                   : 'bg-white/3 border-white/8 text-white/40 cursor-not-allowed'
               )}
             >
-              Activate Lume
+              {submitting ? <Spinner size="size-11" /> : 'Activate Lume'}
             </button>
           </div>
         </motion.div>
