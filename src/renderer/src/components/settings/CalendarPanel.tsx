@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CalendarDays, Hourglass, Timer, Video, Bell } from 'lucide-react'
+import { CalendarDays, Hourglass, Video, Bell } from 'lucide-react'
 import { SettingCard } from './SettingCard'
 import { SectionLabel } from './SectionLabel'
 import { SettingRow } from './SettingRow'
@@ -8,7 +8,6 @@ import { Pill } from './Pill'
 export function CalendarPanel() {
   const [enabled, setEnabled] = useState(true)
   const [nextOnly, setNextOnly] = useState(true)
-  const [countdown, setCountdown] = useState(true)
   const [clickToJoin, setClickToJoin] = useState(true)
   const [reminderBeforeMin, setReminderBeforeMin] = useState<5 | 10 | 15>(5)
 
@@ -57,9 +56,7 @@ export function CalendarPanel() {
 
       {/* Display */}
       <SectionLabel text="Display" />
-      <SettingCard
-        style={{ opacity: enabled ? 1 : 0.5, pointerEvents: enabled ? 'auto' : 'none' }}
-      >
+      <SettingCard style={{ opacity: enabled ? 1 : 0.5, pointerEvents: enabled ? 'auto' : 'none' }}>
         <SettingRow
           icon={<Hourglass {...iconStyle} />}
           label="Show next event only"
@@ -68,20 +65,11 @@ export function CalendarPanel() {
           onToggle={() => setNextOnly((v) => !v)}
           isFirst
         />
-        <SettingRow
-          icon={<Timer {...iconStyle} />}
-          label="Meeting countdown"
-          description="Live timer in the Island — “Starts in 5m”."
-          enabled={countdown}
-          onToggle={() => setCountdown((v) => !v)}
-        />
       </SettingCard>
 
       {/* Meeting */}
       <SectionLabel text="Meetings" />
-      <SettingCard
-        style={{ opacity: enabled ? 1 : 0.5, pointerEvents: enabled ? 'auto' : 'none' }}
-      >
+      <SettingCard style={{ opacity: enabled ? 1 : 0.5, pointerEvents: enabled ? 'auto' : 'none' }}>
         <SettingRow
           icon={<Video {...iconStyle} />}
           label="Click to join"

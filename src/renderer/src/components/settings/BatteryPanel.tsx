@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BatteryWarning, BatteryCharging, Clock3, Zap, Gauge } from 'lucide-react'
+import { BatteryWarning, BatteryCharging, Clock3, Zap } from 'lucide-react'
 import { SettingCard } from './SettingCard'
 import { SectionLabel } from './SectionLabel'
 import { SettingRow } from './SettingRow'
@@ -7,7 +7,6 @@ import { Pill } from './Pill'
 
 export function BatteryPanel() {
   const [enabled, setEnabled] = useState(true)
-  const [lowBatteryAlert, setLowBatteryAlert] = useState(true)
   const [criticalThreshold, setCriticalThreshold] = useState<10 | 20>(20)
   const [chargingPulse, setChargingPulse] = useState(true)
   const [showTimeRemaining, setShowTimeRemaining] = useState(true)
@@ -57,21 +56,11 @@ export function BatteryPanel() {
 
       {/* Alerts */}
       <SectionLabel text="Alerts" />
-      <SettingCard
-        style={{ opacity: enabled ? 1 : 0.5, pointerEvents: enabled ? 'auto' : 'none' }}
-      >
+      <SettingCard style={{ opacity: enabled ? 1 : 0.5, pointerEvents: enabled ? 'auto' : 'none' }}>
         <SettingRow
           icon={<BatteryWarning {...iconStyle} />}
           label="Low battery alert"
           description="Expand the Island into an amber / red shape when power runs low."
-          enabled={lowBatteryAlert}
-          onToggle={() => setLowBatteryAlert((v) => !v)}
-          isFirst
-        />
-        <SettingRow
-          icon={<Gauge {...iconStyle} />}
-          label="Alert threshold"
-          description="Trigger the glow when the battery drops below this level."
           right={
             <div
               style={{
@@ -122,7 +111,7 @@ export function BatteryPanel() {
         <SettingRow
           icon={<BatteryCharging {...iconStyle} />}
           label="Charging animation"
-          description='Pulse the Island green for 3 seconds when the charger connects.'
+          description="Pulse the Island green for 3 seconds when the charger connects."
           enabled={chargingPulse}
           onToggle={() => setChargingPulse((v) => !v)}
         />
@@ -130,9 +119,7 @@ export function BatteryPanel() {
 
       {/* Display */}
       <SectionLabel text="Readout" />
-      <SettingCard
-        style={{ opacity: enabled ? 1 : 0.5, pointerEvents: enabled ? 'auto' : 'none' }}
-      >
+      <SettingCard style={{ opacity: enabled ? 1 : 0.5, pointerEvents: enabled ? 'auto' : 'none' }}>
         <SettingRow
           icon={<Clock3 {...iconStyle} />}
           label="Show time remaining"
