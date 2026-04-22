@@ -18,7 +18,9 @@
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
-    "build:linux": "electron-vite build && electron-builder --linux"
+    "build:linux": "electron-vite build && electron-builder --linux",
+    "db:check": "ts-node --project scripts/tsconfig.json scripts/check-db.ts",
+    "db:reset": "rm -f \"$HOME/Library/Application Support/lume/lume.db\" \"$HOME/Library/Application Support/lume/lume.db-shm\" \"$HOME/Library/Application Support/lume/lume.db-wal\""
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
@@ -27,6 +29,8 @@
     "better-sqlite3": "^12.9.0",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
+    "lucide-react": "^1.8.0",
+    "react-router-dom": "^7.14.1",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.2"
   },
@@ -34,6 +38,7 @@
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
     "@electron-toolkit/eslint-config-ts": "^3.1.0",
     "@electron-toolkit/tsconfig": "^2.0.0",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.19.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
@@ -48,6 +53,7 @@
     "prettier": "^3.7.4",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "vite": "^7.2.6"
   }

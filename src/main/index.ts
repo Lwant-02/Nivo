@@ -2,217 +2,364 @@ import {
   app,
   BrowserWindow,
   screen,
-  globalShortcut,
   ipcMain,
-  powerMonitor,
-  clipboard
+  Tray,
+  nativeImage,
+  Menu,
+  powerMonitor
 } from 'electron'
 import { join } from 'path'
 import { exec } from 'child_process'
-import { promisify } from 'util'
+import { is } from '@electron-toolkit/utils'
+import { MediaService } from './services/MediaService'
+import { AudioService } from './services/AudioService'
+import { fetchMacEvents } from './services/calendarService'
+import { LicenseService } from './services/LicenseService'
 
-const execAsync = promisify(exec)
+let mediaService: MediaService | null = null
+let audioService: AudioService | null = null
+let licenseService: LicenseService | null = null
 
 let mainWindow: BrowserWindow | null = null
-let isPro = false
-let licenseKey: string | null = null
+let settingsWindow: BrowserWindow | null = null
+let onboardingWindow: BrowserWindow | null = null
+let tray: Tray | null = null
 
-// Get battery info
-async function getBatteryInfo() {
-  try {
-    const { exec } = await import('child_process')
-    const { promisify } = await import('util')
-    const execAsync = promisify(exec)
-
-    const result = await execAsync('pmset -g batt | grep -Eo "[0-9]+%" | head -1')
-    const level = parseInt(result.stdout.replace('%', '').trim())
-
-    const chargingResult = await execAsync('pmset -g batt | grep "charging"')
-    const isCharging = chargingResult.stdout.includes('charging')
-
-    return { level, isCharging }
-  } catch {
-    return { level: 100, isCharging: true }
+// Notch window
+function createMainWindow(): void {
+  if (mainWindow) {
+    mainWindow.focus()
+    return
   }
-}
-
-// Get system stats
-async function getSystemStats() {
-  try {
-    const { exec } = await import('child_process')
-    const { promisify } = await import('util')
-    const execAsync = promisify(exec)
-
-    // Get CPU usage
-    const cpuResult = await execAsync(
-      "top -l 1 | grep 'CPU usage' | awk '{print $3}' | sed 's/%//'"
-    )
-    const cpu = parseFloat(cpuResult.stdout.trim()) || 0
-
-    // Get memory usage
-    const memResult = await execAsync(
-      "vm_stat | grep 'Pages active' | awk '{print $3}' | sed 's/\\.//'"
-    )
-    const memInfo = await execAsync('sysctl hw.memsize')
-    const totalMem = parseInt(memInfo.stdout.split(':')[1].trim())
-    const activePages = parseInt(memResult.stdout.trim()) * 4096
-    const memory = Math.round((activePages / totalMem) * 100) || 0
-
-    return { cpu: Math.min(100, Math.round(cpu)), memory: Math.min(100, memory) }
-  } catch {
-    return { cpu: 15, memory: 45 }
-  }
-}
-
-// Get clipboard content
-function getClipboardContent() {
-  try {
-    return clipboard.readText('clipboard')
-  } catch {
-    return ''
-  }
-}
-
-// Mock media state (will be integrated with actual media players later)
-let mediaState = {
-  isPlaying: false,
-  title: 'Starboy',
-  artist: 'The Weeknd, Daft Punk',
-  source: 'Spotify'
-}
-
-// Simulate song change every 30 seconds if playing
-const mockSongs = [
-  { title: 'Starboy', artist: 'The Weeknd, Daft Punk' },
-  { title: 'Anti-Hero', artist: 'Taylor Swift' },
-  { title: 'As It Was', artist: 'Harry Styles' }
-]
-let songIndex = 0
-
-setInterval(() => {
-  if (mediaState.isPlaying) {
-    songIndex = (songIndex + 1) % mockSongs.length
-    mediaState.title = mockSongs[songIndex].title
-    mediaState.artist = mockSongs[songIndex].artist
-  }
-}, 30000)
-
-function createWindow(): void {
-  const { width } = screen.getPrimaryDisplay().bounds
+  const { width: screenWidth } = screen.getPrimaryDisplay().bounds
 
   mainWindow = new BrowserWindow({
-    width: 500,
+    width: 800,
     height: 400,
-    x: Math.floor(width / 2 - 250),
+    x: Math.floor(screenWidth / 2 - 400),
     y: 0,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
-    resizable: false,
-    movable: false,
     skipTaskbar: true,
     hasShadow: false,
     focusable: false,
-    // Helps it float correctly over other apps
-    type: 'panel',
+    roundedCorners: false,
+    titleBarStyle: 'hidden',
+    enableLargerThanScreen: true,
+    hiddenInMissionControl: true,
     webPreferences: {
-      preload: join(__dirname, '../preload/index.mjs'),
-      sandbox: false,
-      nodeIntegration: false,
-      contextIsolation: true
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false
     }
   })
 
-  mainWindow.setWindowButtonVisibility(false)
-  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-
-  // 'main-menu' + 1 ensures it sits exactly where the notch/menu bar is
   mainWindow.setAlwaysOnTop(true, 'screen-saver', 1)
 
-  mainWindow.setBackgroundColor('#00000000')
-
-  // Start with ignore on
-  mainWindow.setIgnoreMouseEvents(true, { forward: true })
-
-  // --- IPC Listeners for Interaction ---
-  ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
-    win?.setIgnoreMouseEvents(ignore, options)
+  mainWindow.setVisibleOnAllWorkspaces(true, {
+    visibleOnFullScreen: true,
+    skipTransformProcessType: true
   })
 
-  if (process.env['ELECTRON_RENDERER_URL']) {
+  mainWindow.setWindowButtonVisibility(false)
+
+  mainWindow.setIgnoreMouseEvents(true, { forward: true })
+
+  let hoverActive = false
+
+  const pollInterval = setInterval(() => {
+    if (!mainWindow || mainWindow.isDestroyed()) return
+
+    const cursor = screen.getCursorScreenPoint()
+    const { x: wx, y: wy, width: ww } = mainWindow.getBounds()
+
+    const pw = hoverActive ? 651 : 270
+    const ph = hoverActive ? 270 : 34
+    const px = wx + Math.floor((ww - pw) / 2)
+
+    const over =
+      cursor.x >= px - 8 && cursor.x <= px + pw + 8 && cursor.y >= wy && cursor.y <= wy + ph + 8
+
+    if (over && !hoverActive) {
+      hoverActive = true
+      mainWindow.setIgnoreMouseEvents(false)
+    } else if (!over && hoverActive) {
+      hoverActive = false
+      mainWindow.setIgnoreMouseEvents(true, { forward: true })
+    }
+  }, 16)
+
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
+  // Start media service push model
+  if (mediaService) {
+    mediaService.startPolling(mainWindow)
+  }
+
+  if (audioService) {
+    audioService.start(mainWindow)
+  }
+
   mainWindow.on('closed', () => {
+    clearInterval(pollInterval)
     mainWindow = null
   })
 }
 
-// IPC Handlers
-ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
-  BrowserWindow.fromWebContents(event.sender)?.setIgnoreMouseEvents(ignore, options)
-})
-ipcMain.handle('get-battery-info', getBatteryInfo)
-ipcMain.handle('get-system-stats', getSystemStats)
-ipcMain.handle('get-clipboard', getClipboardContent)
-ipcMain.handle('get-media-state', () => mediaState)
-ipcMain.handle('media-play-pause', () => {
-  mediaState.isPlaying = !mediaState.isPlaying
-  return mediaState
-})
-ipcMain.handle('validate-license', (event, key: string) => {
-  // Mock validation - replace with actual Lemon Squeezy API
-  if (key.length >= 16 && key.includes('-')) {
-    isPro = true
-    licenseKey = key
-    return { valid: true, message: 'License activated successfully' }
+// Settings window
+function createSettingsWindow(): void {
+  if (settingsWindow) {
+    settingsWindow.focus()
+    return
   }
-  return { valid: false, message: 'Invalid license key' }
-})
-ipcMain.handle('get-license-status', () => ({ isPro }))
 
-app.whenReady().then(() => {
-  createWindow()
-
-  // Toggle visibility shortcut
-  globalShortcut.register('CommandOrControl+Shift+L', () => {
-    if (mainWindow) {
-      mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show()
+  settingsWindow = new BrowserWindow({
+    width: 650,
+    height: 600,
+    center: true,
+    resizable: true,
+    show: false,
+    titleBarStyle: 'hiddenInset',
+    vibrancy: 'under-window',
+    visualEffectState: 'active',
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false
     }
   })
 
-  // Update battery status periodically
-  setInterval(async () => {
-    if (mainWindow) {
-      const batteryInfo = await getBatteryInfo()
-      mainWindow.webContents.send('battery-update', batteryInfo)
-    }
-  }, 30000)
+  if (process.env['ELECTRON_RENDERER_URL']) {
+    settingsWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/settings`)
+  } else {
+    settingsWindow.loadFile(join(__dirname, '../renderer/index.html'), { hash: 'settings' })
+  }
 
-  // Update system stats periodically
-  setInterval(async () => {
-    if (mainWindow) {
-      const stats = await getSystemStats()
-      mainWindow.webContents.send('system-stats-update', stats)
+  settingsWindow.once('ready-to-show', () => {
+    settingsWindow?.show()
+    settingsWindow?.focus()
+  })
+
+  settingsWindow.webContents.on('did-fail-load', () => {
+    console.error('[main] Settings window failed to load')
+  })
+
+  settingsWindow.on('closed', () => {
+    settingsWindow = null
+  })
+}
+
+// Onboarding window
+function createOnboardingWindow(): void {
+  if (onboardingWindow) {
+    onboardingWindow.focus()
+    return
+  }
+  const { width, height } = screen.getPrimaryDisplay().bounds
+
+  onboardingWindow = new BrowserWindow({
+    width: 500,
+    height: 510,
+    x: Math.floor(width / 2 - 250),
+    y: Math.floor(height / 2 - 255),
+    resizable: false,
+    show: false,
+    frame: false,
+    transparent: true,
+    titleBarStyle: 'hiddenInset',
+    hasShadow: false,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false
     }
-  }, 2000)
+  })
+
+  if (process.env['ELECTRON_RENDERER_URL']) {
+    onboardingWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/onboarding`)
+  } else {
+    onboardingWindow.loadFile(join(__dirname, '../renderer/index.html'), { hash: 'onboarding' })
+  }
+
+  onboardingWindow.once('ready-to-show', () => {
+    onboardingWindow?.show()
+    onboardingWindow?.focus()
+  })
+
+  onboardingWindow.webContents.on('did-fail-load', () => {
+    console.error('[main] Onboarding window failed to load')
+  })
+
+  onboardingWindow.on('closed', () => {
+    onboardingWindow = null
+  })
+}
+
+function refreshTrayMenu(): void {
+  if (!tray) return
+
+  const activated = licenseService?.isActivated() ?? false
+
+  const template: Electron.MenuItemConstructorOptions[] = [
+    { label: `Version ${app.getVersion()}`, enabled: false },
+    { type: 'separator' }
+  ]
+
+  if (activated) {
+    template.push({
+      label: 'Settings...',
+      accelerator: 'Command+,',
+      click: () => createSettingsWindow()
+    })
+  } else {
+    template.push({
+      label: 'Activate Lume...',
+      click: () => createOnboardingWindow()
+    })
+  }
+
+  template.push(
+    { type: 'separator' },
+    {
+      label: 'Quit Lume',
+      accelerator: 'Command+Q',
+      click: () => app.quit()
+    }
+  )
+
+  tray.setContextMenu(Menu.buildFromTemplate(template))
+}
+
+// App ready
+app.whenReady().then(() => {
+  try {
+    licenseService = new LicenseService()
+  } catch (err: any) {
+    console.error('[main] Failed to initialize LicenseService:', err.message)
+  }
+
+  try {
+    mediaService = new MediaService()
+  } catch (err: any) {
+    console.error('[main] Failed to initialize MediaService:', err.message)
+  }
+
+  try {
+    audioService = new AudioService()
+  } catch (err: any) {
+    console.error('[main] Failed to initialize AudioService:', err.message)
+  }
+
+  if (app.dock) {
+    app.dock.hide()
+  }
+
+  const iconPath = join(__dirname, '../../resources/icon.png')
+  const trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 18, height: 18 })
+
+  tray = new Tray(trayIcon)
+  tray.setToolTip('Lume')
+  refreshTrayMenu()
+
+  // Dim the notch while the Mac is locked so it sits quietly on the
+  // lock screen, then restore full opacity on unlock.
+  const DIMMED_OPACITY = 0.55
+  const setNotchOpacity = (opacity: number): void => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.setOpacity(opacity)
+    }
+  }
+  powerMonitor.on('lock-screen', () => {
+    setNotchOpacity(DIMMED_OPACITY)
+  })
+  powerMonitor.on('unlock-screen', () => {
+    setNotchOpacity(1)
+  })
+
+  if (licenseService?.isActivated()) {
+    createMainWindow()
+  } else {
+    createOnboardingWindow()
+  }
+})
+
+ipcMain.handle('get-audio-output', () => audioService?.getState())
+
+ipcMain.handle('get-version', () => app.getVersion())
+
+ipcMain.handle('open-settings', () => {
+  createSettingsWindow()
+})
+
+ipcMain.handle('activate-license', async (_event, key: string) => {
+  if (!licenseService) {
+    return { ok: false, error: 'License service unavailable. Please restart Lume.' }
+  }
+
+  // Simulate network round-trip so the UI's "Activating…" state is visible.
+  await new Promise((resolve) => setTimeout(resolve, 3000))
+
+  const result = licenseService.activate(key)
+  if (!result.ok) return result
+
+  if (onboardingWindow) {
+    onboardingWindow.destroy()
+    onboardingWindow = null
+  }
+  createMainWindow()
+  refreshTrayMenu()
+
+  return { ok: true }
+})
+
+ipcMain.handle('get-license-state', () => {
+  return licenseService?.getAuth() ?? { licenseKey: null, isActivated: false, instanceId: null }
+})
+
+type MediaCommand = 'playPause' | 'next' | 'previous'
+
+ipcMain.handle('media-control', (_event, command: MediaCommand) => {
+  if (!mediaService) return
+  switch (command) {
+    case 'playPause':
+      return mediaService.playPause()
+    case 'next':
+      return mediaService.next()
+    case 'previous':
+      return mediaService.previous()
+    default:
+      console.warn('[main] Unknown media-control command:', command)
+      return
+  }
+})
+
+ipcMain.handle('set-system-volume', (_event, level: number) => mediaService?.setVolume(level))
+
+ipcMain.handle('get-calendar-events', async () => {
+  try {
+    return await fetchMacEvents()
+  } catch (err: any) {
+    console.error('[main] get-calendar-events failed:', err.message)
+    return []
+  }
+})
+
+ipcMain.handle('trigger-haptic', () => {
+  const binaryPath = app.isPackaged
+    ? join(process.resourcesPath, 'bin', 'haptic-cli')
+    : join(process.cwd(), 'resources', 'bin', 'haptic-cli')
+
+  exec(`"${binaryPath}"`, (err) => {
+    if (err) {
+      console.error('[Haptic] Command failed:', err.message)
+    }
+  })
 })
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
-})
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
-})
-
-app.on('quit', () => {
-  globalShortcut.unregisterAll()
 })

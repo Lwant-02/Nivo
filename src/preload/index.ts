@@ -1,38 +1,50 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, shell } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
 const api = {
-  setIgnoreMouseEvents: (ignore: boolean, options?: any) => ipcRenderer.send('set-ignore-mouse-events', ignore, options),
-  
-  // System battery info
-  getBatteryInfo: () => ipcRenderer.invoke('get-battery-info'),
+  // Media control (routed through unified media-control channel)
+  playPause: () => ipcRenderer.invoke('media-control', 'playPause'),
+  mediaNext: () => ipcRenderer.invoke('media-control', 'next'),
+  mediaPrevious: () => ipcRenderer.invoke('media-control', 'previous'),
 
-  // System stats (CPU/Memory)
-  getSystemStats: () => ipcRenderer.invoke('get-system-stats'),
+  // Volume
+  setVolume: (level: number) => ipcRenderer.invoke('set-system-volume', level),
 
-  // Clipboard content
-  getClipboard: () => ipcRenderer.invoke('get-clipboard'),
+  // Events & Windows
+  openSettings: () => ipcRenderer.invoke('open-settings'),
+  getAppVersion: () => ipcRenderer.invoke('get-version'),
 
-  // Media control
-  getMediaState: () => ipcRenderer.invoke('get-media-state'),
-  playPause: () => ipcRenderer.invoke('media-play-pause'),
-
-  // License management
-  validateLicense: (key: string) => ipcRenderer.invoke('validate-license', key),
-  getLicenseStatus: () => ipcRenderer.invoke('get-license-status'),
+  // License activation
+  activateLicense: (key: string) => ipcRenderer.invoke('activate-license', key),
+  getLicenseState: () => ipcRenderer.invoke('get-license-state'),
 
   // Events
-  onBatteryUpdate: (callback: (info: unknown) => void) => {
-    ipcRenderer.on('battery-update', (_, info) => callback(info))
+  onMediaUpdate: (callback: (data: any) => void) => {
+    const wrapper = (_: any, data: any) => callback(data)
+    ipcRenderer.on('media-update', wrapper)
+    return () => ipcRenderer.removeListener('media-update', wrapper)
   },
-  onClipboardUpdate: (callback: (text: string) => void) => {
-    ipcRenderer.on('clipboard-update', (_, text) => callback(text))
-  }
+
+  // Audio output
+  onAudioOutputUpdate: (callback: (data: any) => void) => {
+    const wrapper = (_: any, data: any) => callback(data)
+    ipcRenderer.on('audio-output-update', wrapper)
+    return () => ipcRenderer.removeListener('audio-output-update', wrapper)
+  },
+
+  getAudioOutput: () => ipcRenderer.invoke('get-audio-output'),
+
+  // Calendar
+  getCalendarEvents: () => ipcRenderer.invoke('get-calendar-events'),
+
+  // Haptic
+  triggerHaptic: () => ipcRenderer.invoke('trigger-haptic'),
+
+  // Navigation
+  openExternal: (url: string) => shell.openExternal(url)
 }
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)

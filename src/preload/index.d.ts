@@ -4,16 +4,47 @@ declare global {
   interface Window {
     electron: ElectronAPI
     api: {
-      setIgnoreMouseEvents: (ignore: boolean, options?: any) => void
-      getBatteryInfo: () => Promise<{ level: number; isCharging: boolean; timeRemaining?: string }>
-      getSystemStats: () => Promise<{ cpu: number; memory: number }>
-      getClipboard: () => Promise<string>
-      getMediaState: () => Promise<{ isPlaying: boolean; title: string; artist: string; source: string }>
       playPause: () => Promise<void>
-      validateLicense: (key: string) => Promise<{ valid: boolean; message?: string }>
-      getLicenseStatus: () => Promise<{ isPro: boolean }>
-      onBatteryUpdate: (callback: (info: unknown) => void) => void
-      onClipboardUpdate: (callback: (text: string) => void) => void
+      mediaNext: () => Promise<void>
+      mediaPrevious: () => Promise<void>
+      setVolume: (level: number) => Promise<void>
+      openSettings: () => Promise<void>
+      getAppVersion: () => Promise<string>
+      activateLicense: (key: string) => Promise<{ ok: boolean; error?: string }>
+      getLicenseState: () => Promise<{
+        licenseKey: string | null
+        isActivated: boolean
+        instanceId: string | null
+      }>
+      onMediaUpdate: (
+        callback: (data: {
+          title: string
+          artist: string
+          isPlaying: boolean
+          playbackRate: number
+          progress: number
+          volume: number
+          albumArt: string | null
+          duration: number
+          position: number
+          source: string
+        }) => void
+      ) => () => void
+      onAudioOutputUpdate: (
+        callback: (data: { device: string; kind: 'airpods' | 'headset' | 'speakers' }) => void
+      ) => () => void
+      getAudioOutput: () => Promise<{ device: string; kind: 'airpods' | 'headset' | 'speakers' }>
+      getCalendarEvents: () => Promise<
+        Array<{
+          title: string
+          time: string
+          progress: number
+          startMs: number
+          endMs: number
+        }>
+      >
+      triggerHaptic: () => Promise<void>
+      openExternal: (url: string) => Promise<void>
     }
   }
 }

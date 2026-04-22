@@ -1,0 +1,67 @@
+import { useState } from 'react'
+import { PauseCircle, Image as ImageIcon, Waves } from 'lucide-react'
+import { SettingCard } from './SettingCard'
+import { SectionLabel } from './SectionLabel'
+import { SettingRow } from './SettingRow'
+
+export function NowPlayingPanel() {
+  const [hideWhenPaused, setHideWhenPaused] = useState(true)
+  const [showAlbumArt, setShowAlbumArt] = useState(true)
+  const [showVisualizer, setShowVisualizer] = useState(false)
+
+  const iconStyle = { size: 15, strokeWidth: 2 }
+
+  return (
+    <>
+      <div style={{ marginBottom: 18 }}>
+        <h1
+          style={{
+            fontSize: 26,
+            fontWeight: 700,
+            letterSpacing: -0.6,
+            color: '#fff',
+            lineHeight: 1.1
+          }}
+        >
+          Now Playing
+        </h1>
+        <p
+          style={{
+            marginTop: 6,
+            fontSize: 13,
+            color: 'rgba(255,255,255,0.48)',
+            letterSpacing: -0.1
+          }}
+        >
+          Customize how media appears and behaves inside the Island.
+        </p>
+      </div>
+
+      <SectionLabel text="Island Behaviour" />
+      <SettingCard>
+        <SettingRow
+          icon={<PauseCircle {...iconStyle} />}
+          label="Hide when paused"
+          description="Auto-shrink the Island when playback stops."
+          enabled={hideWhenPaused}
+          onToggle={() => setHideWhenPaused((v) => !v)}
+          isFirst
+        />
+        <SettingRow
+          icon={<ImageIcon {...iconStyle} />}
+          label="Show album art"
+          description="Use cover artwork instead of a generic play icon."
+          enabled={showAlbumArt}
+          onToggle={() => setShowAlbumArt((v) => !v)}
+        />
+        <SettingRow
+          icon={<Waves {...iconStyle} />}
+          label="Live visualizer"
+          description="Animated waveform while music is playing."
+          enabled={showVisualizer}
+          onToggle={() => setShowVisualizer((v) => !v)}
+        />
+      </SettingCard>
+    </>
+  )
+}
