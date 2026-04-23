@@ -9,12 +9,27 @@ import {
   powerMonitor
 } from 'electron'
 import { join } from 'path'
-import { exec } from 'child_process'
+import { existsSync, chmodSync } from 'fs'
+import { execFile } from 'child_process'
 import { is } from '@electron-toolkit/utils'
 import { MediaService } from './services/MediaService'
 import { AudioService } from './services/AudioService'
 import { fetchMacEvents } from './services/calendarService'
 import { LicenseService } from './services/LicenseService'
+
+// Keep the renderer running full-speed even though the notch window is
+// non-focusable + always-on-top. Without these, Chromium throttles rAF and
+// the music visualizer / drag animations stall in packaged builds.
+app.commandLine.appendSwitch('disable-renderer-backgrounding')
+app.commandLine.appendSwitch('disable-background-timer-throttling')
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows')
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion')
+
+// Force GPU acceleration for the transparent always-on-top surface.
+app.commandLine.appendSwitch('ignore-gpu-blocklist')
+app.commandLine.appendSwitch('enable-gpu-rasterization')
+app.commandLine.appendSwitch('enable-accelerated-video-decode')
+app.commandLine.appendSwitch('enable-zero-copy')
 
 let mediaService: MediaService | null = null
 let audioService: AudioService | null = null
@@ -50,7 +65,8 @@ function createMainWindow(): void {
     hiddenInMissionControl: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      backgroundThrottling: false
     }
   })
 
@@ -128,7 +144,8 @@ function createSettingsWindow(): void {
     visualEffectState: 'active',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      backgroundThrottling: false
     }
   })
 
@@ -173,7 +190,8 @@ function createOnboardingWindow(): void {
     hasShadow: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      backgroundThrottling: false
     }
   })
 
@@ -346,15 +364,52 @@ ipcMain.handle('get-calendar-events', async () => {
   }
 })
 
-ipcMain.handle('trigger-haptic', () => {
-  const binaryPath = app.isPackaged
-    ? join(process.resourcesPath, 'bin', 'haptic-cli')
-    : join(process.cwd(), 'resources', 'bin', 'haptic-cli')
+let hapticBinaryPath: string | null = null
+let hapticBinaryResolved = false
+let hapticPermissionWarned = false
 
-  exec(`"${binaryPath}"`, (err) => {
-    if (err) {
-      console.error('[Haptic] Command failed:', err.message)
+function resolveHapticBinary(): string | null {
+  if (hapticBinaryResolved) return hapticBinaryPath
+  hapticBinaryResolved = true
+
+  if (process.platform !== 'darwin') return null
+
+  const candidate = app.isPackaged
+    ? join(process.resourcesPath, 'bin', 'haptic-cli')
+    : join(app.getAppPath(), 'resources', 'bin', 'haptic-cli')
+
+  if (!existsSync(candidate)) {
+    console.warn('[Haptic] binary not found at', candidate)
+    return null
+  }
+
+  // Packaging / notarization occasionally strips the executable bit from
+  // extraResources. Re-apply it defensively — silent if already set.
+  try {
+    chmodSync(candidate, 0o755)
+  } catch {
+    // fall through; execFile will surface a clearer error if it matters
+  }
+
+  hapticBinaryPath = candidate
+  return hapticBinaryPath
+}
+
+ipcMain.handle('trigger-haptic', () => {
+  const binary = resolveHapticBinary()
+  if (!binary) return
+
+  execFile(binary, [], { timeout: 1000 }, (err) => {
+    if (!err) return
+    const msg = err.message || ''
+    if (msg.includes('not permitted') || msg.includes('Operation not permitted')) {
+      if (!hapticPermissionWarned) {
+        hapticPermissionWarned = true
+        console.warn('[Haptic] Taptic Engine unavailable (accessibility/entitlements). Feedback disabled.')
+      }
+      return
     }
+    console.warn('[Haptic] invocation failed:', msg)
   })
 })
 
