@@ -257,7 +257,7 @@ function refreshTrayMenu(): void {
   const activated = licenseService?.isActivated() ?? false
 
   const template: Electron.MenuItemConstructorOptions[] = [
-    { label: `Version ${app.getVersion()}`, enabled: false },
+    { label: `Lume Settings`, enabled: false },
     { type: 'separator' }
   ]
 
