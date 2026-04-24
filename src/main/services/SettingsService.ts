@@ -15,6 +15,12 @@ export interface Settings {
   hideWhenPaused: boolean
   showAlbumArt: boolean
   showVisualizer: boolean
+  enableCalendar: boolean
+  calendarNextEventOnly: boolean
+  calendarClickToJoin: boolean
+  calendarReminderMin: number
+  showLottieOnPause: boolean
+  lottieStyle: number
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -25,7 +31,13 @@ export const DEFAULT_SETTINGS: Settings = {
   hapticFeedback: true,
   hideWhenPaused: true,
   showAlbumArt: true,
-  showVisualizer: true
+  showVisualizer: true,
+  enableCalendar: false,
+  calendarNextEventOnly: true,
+  calendarClickToJoin: true,
+  calendarReminderMin: 5,
+  showLottieOnPause: false,
+  lottieStyle: 0
 }
 
 const VALID_THEMES: ReadonlySet<ThemeId> = new Set([
@@ -46,6 +58,12 @@ type Column =
   | 'hide_when_paused'
   | 'show_album_art'
   | 'show_visualizer'
+  | 'enable_calendar'
+  | 'calendar_next_event_only'
+  | 'calendar_click_to_join'
+  | 'calendar_reminder_min'
+  | 'show_lottie_on_pause'
+  | 'lottie_style'
 
 type Kind = 'bool' | 'int' | 'theme'
 
@@ -62,7 +80,13 @@ const FIELDS: { [K in keyof Settings]: FieldSpec } = {
   hapticFeedback: { column: 'haptic_feedback', kind: 'bool' },
   hideWhenPaused: { column: 'hide_when_paused', kind: 'bool' },
   showAlbumArt: { column: 'show_album_art', kind: 'bool' },
-  showVisualizer: { column: 'show_visualizer', kind: 'bool' }
+  showVisualizer: { column: 'show_visualizer', kind: 'bool' },
+  enableCalendar: { column: 'enable_calendar', kind: 'bool' },
+  calendarNextEventOnly: { column: 'calendar_next_event_only', kind: 'bool' },
+  calendarClickToJoin: { column: 'calendar_click_to_join', kind: 'bool' },
+  calendarReminderMin: { column: 'calendar_reminder_min', kind: 'int' },
+  showLottieOnPause: { column: 'show_lottie_on_pause', kind: 'bool' },
+  lottieStyle: { column: 'lottie_style', kind: 'int' }
 }
 
 const SELECT_ALIASES = (Object.keys(FIELDS) as (keyof Settings)[])

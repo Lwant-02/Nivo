@@ -8,7 +8,13 @@ const DEFAULTS: AppSettings = {
   hapticFeedback: true,
   hideWhenPaused: true,
   showAlbumArt: true,
-  showVisualizer: true
+  showVisualizer: true,
+  enableCalendar: false,
+  calendarNextEventOnly: true,
+  calendarClickToJoin: true,
+  calendarReminderMin: 5,
+  showLottieOnPause: false,
+  lottieStyle: 0
 }
 
 export function useSettings(): {

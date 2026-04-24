@@ -4,10 +4,12 @@ import { OnboardingUI } from './components/OnboardingUI'
 import SettingsUI from './components/SettingsUI'
 import { useSettings } from './hooks/useSettings'
 import { useAppliedTheme } from './hooks/useAppliedTheme'
+import { useCalendarReminders } from './hooks/useCalendarReminders'
 
 export default function App(): React.JSX.Element {
   const { settings } = useSettings()
   useAppliedTheme(settings.theme)
+  useCalendarReminders()
 
   const hash = window.location.hash || '#/'
 

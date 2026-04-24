@@ -6,7 +6,9 @@ import {
   Tray,
   nativeImage,
   Menu,
-  powerMonitor
+  powerMonitor,
+  shell,
+  Notification
 } from 'electron'
 import { join } from 'path'
 import { existsSync, chmodSync } from 'fs'
@@ -96,23 +98,16 @@ function createMainWindow(): void {
     if (over && !hoverActive) {
       hoverActive = true
       mainWindow.setIgnoreMouseEvents(false)
-      // Force pop-to-front if we were hidden behind fullscreen apps or paused
-      const hideFS = !!settingsService?.get('hideInFullscreen')
-      const hidePaused = !!settingsService?.get('hideWhenPaused') && !mediaService?.isMediaPlaying()
-      
-      if (hideFS || hidePaused) {
-        mainWindow.setAlwaysOnTop(true, 'screen-saver', 1)
-      }
+      // Always promote to front on hover so the user can interact
+      mainWindow.setAlwaysOnTop(true, 'screen-saver', 1)
     } else if (!over && hoverActive) {
       hoverActive = false
       mainWindow.setIgnoreMouseEvents(true, { forward: true })
       // Restore level if we were popping over
       const hideFS = !!settingsService?.get('hideInFullscreen')
       const hidePaused = !!settingsService?.get('hideWhenPaused') && !mediaService?.isMediaPlaying()
-
-      if (hideFS || hidePaused) {
-        mainWindow.setAlwaysOnTop(true, 'floating', 1)
-      }
+      const level = hideFS || hidePaused ? 'floating' : 'screen-saver'
+      mainWindow.setAlwaysOnTop(true, level, 1)
     }
   }, 16)
 
@@ -131,7 +126,6 @@ function createMainWindow(): void {
     audioService.start(mainWindow)
   }
 
-
   mainWindow.on('closed', () => {
     clearInterval(pollInterval)
     mainWindow = null
@@ -142,11 +136,11 @@ function applyWindowSettings(win: BrowserWindow, settings: Settings | null | und
   if (win.isDestroyed()) return
   const s = settings ?? null
 
-  // When hideInFullscreen or hideWhenPaused is on, drop to 'floating' so 
+  // When hideInFullscreen or hideWhenPaused is on, drop to 'floating' so
   // fullscreen apps (or simply the desktop) cover the notch.
   const hidePaused = !!s?.hideWhenPaused && !mediaService?.isMediaPlaying()
   const shouldHide = !!s?.hideInFullscreen || hidePaused
-  
+
   const level: 'screen-saver' | 'floating' = shouldHide ? 'floating' : 'screen-saver'
   win.setAlwaysOnTop(true, level, 1)
 
@@ -420,11 +414,27 @@ ipcMain.handle('update-setting', (_event, key: keyof Settings, value: Settings[k
 
 ipcMain.handle('get-calendar-events', async () => {
   try {
-    return await fetchMacEvents()
+    const events = await fetchMacEvents()
+
+    return events
   } catch (err: any) {
     console.error('[main] get-calendar-events failed:', err.message)
     return []
   }
+})
+
+ipcMain.on('calendar:join', (_event, url: string) => {
+  if (!url) return
+  shell.openExternal(url)
+})
+
+ipcMain.on('show-notification', (_event, title: string, body: string) => {
+  const n = new Notification({ title, body, silent: false })
+  n.show()
+})
+
+ipcMain.on('lume-toast', (_event, title: string, body: string) => {
+  mainWindow?.webContents.send('lume-toast', { title, body })
 })
 
 let hapticBinaryPath: string | null = null

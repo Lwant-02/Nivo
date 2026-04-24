@@ -7,6 +7,10 @@ declare global {
       playPause: () => Promise<void>
       mediaNext: () => Promise<void>
       mediaPrevious: () => Promise<void>
+      joinMeeting: (title: string) => Promise<void>
+      showNotification: (title: string, body: string) => void
+      showLumeToast: (title: string, body: string) => void
+      onLumeToast: (callback: (data: { title: string; body: string }) => void) => () => void
       setVolume: (level: number) => Promise<void>
       openSettings: () => Promise<void>
       getAppVersion: () => Promise<string>
@@ -41,6 +45,8 @@ declare global {
           progress: number
           startMs: number
           endMs: number
+          url: string
+          description: string
         }>
       >
       triggerHaptic: () => Promise<void>
@@ -66,6 +72,12 @@ declare global {
     hideWhenPaused: boolean
     showAlbumArt: boolean
     showVisualizer: boolean
+    enableCalendar: boolean
+    calendarNextEventOnly: boolean
+    calendarClickToJoin: boolean
+    calendarReminderMin: number
+    showLottieOnPause: boolean
+    lottieStyle: number
   }
 }
 

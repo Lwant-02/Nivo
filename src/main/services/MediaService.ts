@@ -178,7 +178,8 @@ export class MediaService {
     const doPoll = async () => {
       if (!window || window.isDestroyed()) return
 
-      // Debounce: Skip polling if user just interacted (allow system to settle)
+      // Debounce: Skip polling for 2s after user interaction to prevent stale system states 
+      // from overwriting our optimistic UI updates (Spotify/system lag).
       if (Date.now() - this.lastInteractionTime < 2000) return
 
       // Reentrancy guard
@@ -202,7 +203,8 @@ export class MediaService {
     // Zero-latency initial fetch: fetch immediately on app start
     doPoll()
 
-    this.pollingInterval = setInterval(doPoll, 500)
+    // snappier polling for real-time feel
+    this.pollingInterval = setInterval(doPoll, 200)
   }
 
   private setInteraction() {
@@ -274,7 +276,11 @@ export class MediaService {
       const playbackRateStr = raw['kMRMediaRemoteNowPlayingInfoPlaybackRate'] || ''
 
       const playbackRate = playbackRateStr ? parseFloat(playbackRateStr) || 0 : 0
-      const isPlaying = playbackRate > 0
+      
+      const rawIsPlaying = raw['kMRMediaRemoteNowPlayingInfoIsPlaying']
+      let isPlaying = rawIsPlaying !== undefined 
+        ? (rawIsPlaying === '1' || rawIsPlaying === 'true')
+        : playbackRate > 0
 
       // Browser Correction: Chrome often reports incorrect durations or "stuck" end-times
       let duration = Math.round((parseFloat(durationRaw) || 0) * 100) / 100
@@ -283,6 +289,18 @@ export class MediaService {
       const bundleId = (
         raw['kMRMediaRemoteNowPlayingInfoClientBundleIdentifier'] || ''
       ).toLowerCase()
+
+      // Spotify/Music Correction: Sometimes nowplaying-cli gets stuck on 'playing' 
+      // even after pause. Force a quick AppleScript check for these apps.
+      if (bundleId.includes('spotify') || bundleId.includes('music')) {
+        const appName = bundleId.includes('spotify') ? 'Spotify' : 'Music'
+        try {
+          const { stdout: pState } = await execAsync(`osascript -e 'tell application "${appName}" to get player state as string'`)
+          isPlaying = pState.trim().toLowerCase().includes('playing')
+        } catch {
+          // Fallback to CLI if AppleScript fails
+        }
+      }
       const isBrowser =
         bundleId.includes('chrome') || bundleId.includes('brave') || bundleId.includes('safari')
 
@@ -685,31 +703,50 @@ return "none"`
 
   private async dispatchControl(action: 'playpause' | 'next' | 'previous') {
     const source = this.lastState?.source
+    const cliCmd = action === 'playpause' ? 'togglePlayPause' : action === 'next' ? 'next' : 'previous'
 
-    // App-specific: single authoritative command, no double-firing.
+    // 1. Universal Command via nowplaying-cli (Primary)
+    // The user prefers the CLI as it handles system-level media events natively.
+    await execAsync(`"${this.binaryPath}" ${cliCmd}`).catch(() => {})
+
+    // 2. App-Specific Authoritative Fallbacks
     if (source === 'spotify' || source === 'music') {
       const appName = source === 'spotify' ? 'Spotify' : 'Music'
-      const cmd =
-        action === 'playpause' ? 'playpause' : action === 'next' ? 'next track' : 'previous track'
-      await execAsync(`osascript -e 'tell application "${appName}" to ${cmd}'`).catch((err) =>
-        console.error(`[MediaService] ${appName} ${cmd} failed:`, err.message)
-      )
+      const cmd = action === 'playpause' ? 'playpause' : action === 'next' ? 'next track' : 'previous track'
+      await execAsync(`osascript -e 'tell application "${appName}" to ${cmd}'`).catch(() => {})
       return
     }
 
-    // Generic / browser path: try nowplaying-cli first, then system media key fallback.
-    const cliCmd =
-      action === 'playpause' ? 'togglePlayPause' : action === 'next' ? 'next' : 'previous'
-    try {
-      await execAsync(`"${this.binaryPath}" ${cliCmd}`)
-    } catch {
-      const keyMap = { playpause: 16, next: 17, previous: 19 }
-      const keyCode = keyMap[action]
-      const mediaKeyScript = `
-tell application "System Events"
-  key code ${keyCode}
-end tell`
-      await execAsync(`osascript -e '${mediaKeyScript}'`).catch(() => {})
+    // 3. Browser-specific Fallback via JavaScript Injection
+    const isBrowser = this.BROWSER_SOURCES.includes(source)
+    if (isBrowser) {
+      const appName = source === 'brave' ? 'Brave Browser' : source === 'chrome' ? 'Google Chrome' : 'Safari'
+      
+      let jsCode = ''
+      if (action === 'playpause') {
+        jsCode = `(function() {
+          const video = document.querySelector('video');
+          if (video) { if (video.paused) video.play(); else video.pause(); }
+          else { const btn = document.querySelector('.ytp-play-button') || document.querySelector('[data-testid="control-button-playpause"]'); if (btn) btn.click(); }
+        })()`
+      } else if (action === 'next') {
+        jsCode = `(function() {
+          const btn = document.querySelector('.ytp-next-button') || document.querySelector('[data-testid="control-button-skip-forward"]');
+          if (btn) btn.click(); else window.dispatchEvent(new KeyboardEvent('keydown', { keyCode: 39, bubbles: true }));
+        })()`
+      } else {
+        jsCode = `(function() {
+          const btn = document.querySelector('.ytp-prev-button') || document.querySelector('[data-testid="control-button-skip-back"]');
+          if (btn) btn.click(); else window.dispatchEvent(new KeyboardEvent('keydown', { keyCode: 37, bubbles: true }));
+        })()`
+      }
+
+      const script = source === 'safari' 
+        ? `tell application "Safari" to do JavaScript "${jsCode}" in current tab of front window`
+        : `tell application "${appName}" to execute active tab of front window javascript "${jsCode.replace(/"/g, '\\"')}"`
+
+      await execAsync(`osascript -e '${script}'`).catch(() => {})
+      return
     }
   }
 

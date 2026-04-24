@@ -1,5 +1,6 @@
 import type { JSX } from 'react'
-import { Maximize2, ShieldOff, Vibrate, LogIn } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Maximize2, ShieldOff, Vibrate, LogIn, Pointer } from 'lucide-react'
 import { SettingCard } from './SettingCard'
 import { SectionLabel } from './SectionLabel'
 import { ThemePicker } from './ThemePicker'
@@ -113,6 +114,43 @@ export function GeneralPanel(): JSX.Element {
             onChange={(id) => update('theme', id)}
             options={THEME_OPTIONS}
           />
+        </div>
+      </SettingCard>
+
+      <SectionLabel text="Gestures" />
+      <SettingCard>
+        <div className="grid grid-cols-2 gap-2" style={{ padding: '20px 14px' }}>
+          <div className="flex flex-col justify-center items-center gap-4">
+            <div className="w-16 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden group">
+              <motion.div
+                animate={{ x: [-15, 15, -15] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                className="text-(--lume-accent) drop-shadow-[0_0_8px_(--lume-accent)]"
+              >
+                <Pointer size={20} fill="currentColor" className="-rotate-45" />
+              </motion.div>
+            </div>
+            <div className="flex flex-col text-center">
+              <span className="text-white text-[13px] font-semibold">Swipe Right</span>
+              <span className="text-white/40 text-[10px] leading-tight mt-0.5">Next Track</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-center items-center gap-4">
+            <div className="w-16 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden group">
+              <motion.div
+                animate={{ x: [15, -15, 15] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                className="text-(--lume-accent) drop-shadow-[0_0_8px_(--lume-accent)]"
+              >
+                <Pointer size={20} fill="currentColor" className="-rotate-45" />
+              </motion.div>
+            </div>
+            <div className="flex flex-col text-center">
+              <span className="text-white text-[13px] font-semibold">Swipe Left</span>
+              <span className="text-white/40 text-[10px] leading-tight mt-0.5">Prev Track</span>
+            </div>
+          </div>
         </div>
       </SettingCard>
 

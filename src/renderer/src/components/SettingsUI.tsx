@@ -8,6 +8,8 @@ import { NowPlayingPanel } from './settings/NowPlayingPanel'
 import { CalendarPanel } from './settings/CalendarPanel'
 import { GeneralPanel } from './settings/GeneralPanel'
 import { PlaceholderPanel } from './settings/PlaceholderPanel'
+import { VisualizerPanel } from './settings/VisualizerPanel'
+import { Sparkles } from 'lucide-react'
 
 const NAV_GROUPS = [
   {
@@ -18,7 +20,8 @@ const NAV_GROUPS = [
     label: 'Live Activities',
     items: [
       { id: 'nowplaying', icon: Play, label: 'Now Playing', color: '#FF3B30' },
-      { id: 'calendar', icon: Calendar, label: 'Calendar', color: '#FF3B30' }
+      { id: 'calendar', icon: Calendar, label: 'Calendar', color: '#FF3B30' },
+      { id: 'visualizer', icon: Sparkles, label: 'Visualizer', color: 'var(--lume-accent)' }
     ]
   },
   {
@@ -158,11 +161,12 @@ export default function SettingsUI() {
               {active === 'general' && <GeneralPanel />}
               {active === 'nowplaying' && <NowPlayingPanel />}
               {active === 'calendar' && <CalendarPanel />}
+              {active === 'visualizer' && <VisualizerPanel />}
               {active === 'license' && <LicensePanel />}
               {active === 'about' && <AboutPanel />}
-              {!['general', 'nowplaying', 'calendar', 'license', 'about'].includes(active) && (
-                <PlaceholderPanel id={active} />
-              )}
+              {!['general', 'nowplaying', 'calendar', 'license', 'about', 'visualizer'].includes(
+                active
+              ) && <PlaceholderPanel id={active} />}
             </motion.div>
           </AnimatePresence>
         </div>

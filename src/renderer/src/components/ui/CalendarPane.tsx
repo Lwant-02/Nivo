@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import cn from 'clsx'
 import { CalendarIcon } from './CalendarIcon'
 import { Spinner } from './Spinner'
+import { useSettings } from '../../hooks/useSettings'
+import { Video } from 'lucide-react'
 
 interface CalendarEvent {
   title: string
@@ -10,12 +12,15 @@ interface CalendarEvent {
   progress: number
   startMs: number
   endMs: number
+  url: string
+  description: string
 }
 
 const PANE_WIDTH = 300
 const REFRESH_MS = 300_000 // 5 minutes
 
 export const CalendarPane = () => {
+  const { settings } = useSettings()
   const [events, setEvents] = useState<CalendarEvent[] | null>(null)
   const [now, setNow] = useState(() => new Date())
 
@@ -43,6 +48,8 @@ export const CalendarPane = () => {
     const id = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(id)
   }, [])
+
+  // Removed reminder logic (now handled persistently in useCalendarReminders hook)
 
   const weekday = now.toLocaleDateString([], { weekday: 'long' })
   const fullDate = now.toLocaleDateString([], {
@@ -101,21 +108,65 @@ export const CalendarPane = () => {
         </div>
       ) : (
         <div className="flex flex-col gap-2.5 overflow-y-auto pr-1">
-          {events.map((e, idx) => (
-            <EventRow key={`${e.startMs}-${idx}`} event={e} />
-          ))}
+          {(() => {
+            let filtered = events
+            if (settings.calendarNextEventOnly) {
+              const current = events.find((e) => e.progress > 0 && e.progress < 100)
+              if (current) {
+                filtered = [current]
+              } else {
+                const upcoming = events.find((e) => e.progress <= 0)
+                filtered = upcoming ? [upcoming] : []
+              }
+            }
+            return filtered.map((e, idx) => (
+              <EventRow
+                key={`${e.startMs}-${idx}`}
+                event={e}
+                clickToJoin={settings.calendarClickToJoin}
+              />
+            ))
+          })()}
         </div>
       )}
     </motion.div>
   )
 }
 
-const EventRow = ({ event }: { event: CalendarEvent }) => {
+const EventRow = ({ event, clickToJoin }: { event: CalendarEvent; clickToJoin: boolean }) => {
   const isCurrent = event.progress > 0 && event.progress < 100
   const isPast = event.progress >= 100
 
+  const findLink = (text: string) => {
+    const regex = /(https?:\/\/[^\s]+)/g
+    const matches = text.match(regex)
+    if (!matches) return null
+    // Prefer common meeting platforms
+    return (
+      matches.find(
+        (m) =>
+          m.includes('zoom.us') ||
+          m.includes('meet.google.com') ||
+          m.includes('teams.microsoft.com')
+      ) || matches[0]
+    )
+  }
+
+  const link = event.url || findLink(event.description)
+
+  const handleJoin = () => {
+    if (!clickToJoin) return
+    if (link) window.api.joinMeeting(link)
+  }
+
   return (
-    <div className="flex gap-3 items-stretch">
+    <div
+      className={cn(
+        'flex gap-3 items-stretch transition-all',
+        clickToJoin && !isPast && 'cursor-pointer hover:bg-white/5 active:scale-[0.98]'
+      )}
+      onClick={handleJoin}
+    >
       <div className="relative w-[3px] rounded-full bg-white/10 overflow-hidden">
         <div
           className={cn(
@@ -142,6 +193,14 @@ const EventRow = ({ event }: { event: CalendarEvent }) => {
         </div>
         <div className="text-[11px] text-text-dim tracking-wide">{event.time}</div>
       </div>
+
+      {link && clickToJoin && !isPast && (
+        <div className="flex items-center justify-center" style={{ paddingRight: '10px' }}>
+          <div className="size-6 rounded-full bg-(--lume-accent) shadow-[0_0_8px_(--lume-accent-glow)] flex items-center justify-center text-white">
+            <Video size={12} strokeWidth={2.5} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

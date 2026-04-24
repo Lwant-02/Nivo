@@ -28,7 +28,9 @@ export function getDatabase(): Database.Database {
       hide_in_fullscreen INTEGER NOT NULL DEFAULT 1,
       hide_from_screen_capture INTEGER NOT NULL DEFAULT 0,
       haptic_feedback INTEGER NOT NULL DEFAULT 1,
-      hide_when_paused INTEGER NOT NULL DEFAULT 1
+      hide_when_paused INTEGER NOT NULL DEFAULT 1,
+      show_lottie_on_pause INTEGER NOT NULL DEFAULT 0,
+      lottie_style INTEGER NOT NULL DEFAULT 0
     );
   `)
 
@@ -52,6 +54,12 @@ export function getDatabase(): Database.Database {
   addColumn('hide_when_paused', 'hide_when_paused INTEGER NOT NULL DEFAULT 1')
   addColumn('show_album_art', 'show_album_art INTEGER NOT NULL DEFAULT 1')
   addColumn('show_visualizer', 'show_visualizer INTEGER NOT NULL DEFAULT 1')
+  addColumn('enable_calendar', 'enable_calendar INTEGER NOT NULL DEFAULT 0')
+  addColumn('calendar_next_event_only', 'calendar_next_event_only INTEGER NOT NULL DEFAULT 1')
+  addColumn('calendar_click_to_join', 'calendar_click_to_join INTEGER NOT NULL DEFAULT 1')
+  addColumn('calendar_reminder_min', 'calendar_reminder_min INTEGER NOT NULL DEFAULT 5')
+  addColumn('show_lottie_on_pause', 'show_lottie_on_pause INTEGER NOT NULL DEFAULT 0')
+  addColumn('lottie_style', 'lottie_style INTEGER NOT NULL DEFAULT 0')
 
   dbInstance = db
   return db
