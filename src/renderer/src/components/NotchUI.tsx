@@ -21,15 +21,16 @@ import {
 import cn from 'clsx'
 
 import MarqueeText from './ui/MarqueeText'
-import { MusicVisualizer } from './ui/MusicVisualizer'
 import { useMedia } from '../hooks/useMedia'
 import { useSound } from '../hooks/useSound'
-import { SourceBadge } from './ui/SourceBadge'
+import { useSettings } from '../hooks/useSettings'
 import { Thumbnail } from './ui/Thumbnail'
 import { formatTime } from '@renderer/util'
 import { VolumeSwitcher } from './ui/VolumeSwitcher'
 import { DevicePannel } from './ui/DevicePannel'
 import { CalendarPane } from './ui/CalendarPane'
+import { MusicVisualizer } from './ui/MusicVisualizer'
+import { SourceBadge } from './ui/SourceBadge'
 
 const bounceTransition: Transition = { type: 'spring', stiffness: 400, damping: 28, mass: 0.8 }
 
@@ -51,17 +52,19 @@ type SidePanel = 'volume' | 'device' | null
 
 const MEDIA_PANE_WIDTH = 350
 const CALENDAR_PANE_WIDTH = 300
-const COLLAPSED_WIDTH = 270
 
 // TODO: lift this out to the settings store once it exists.
 const showCalendar = true
 
 export default function NotchUI() {
+  const { settings } = useSettings()
   const [isHovering, setIsHovering] = useState(false)
   const [isAutoExpanded, setIsAutoExpanded] = useState(false)
   const [sidePanel, setSidePanel] = useState<SidePanel>(null)
   const [volumeLevel, setVolumeLevel] = useState(50)
   const { playExpand } = useSound()
+
+  const collapsedWidth = 280
 
   const showVolume = sidePanel === 'volume'
   const showDevice = sidePanel === 'device'
@@ -247,7 +250,7 @@ export default function NotchUI() {
 
   const progressPct = duration > 0 ? (position / duration) * 100 : 0
 
-  const mediaPaneWidth = isExpanded ? MEDIA_PANE_WIDTH : COLLAPSED_WIDTH
+  const mediaPaneWidth = isExpanded ? MEDIA_PANE_WIDTH : collapsedWidth
   const sidePaneExtra = showSidePane ? CALENDAR_PANE_WIDTH + 1 : 0
   const totalWidth = mediaPaneWidth + sidePaneExtra
   const expandedHeight = showDevice || showVolume ? 270 : showSidePane ? 240 : 180
@@ -277,7 +280,7 @@ export default function NotchUI() {
       className={cn(
         'relative overflow-hidden origin-top transition-shadow duration-500',
         isExpanded
-          ? 'bg-black/85 backdrop-blur-2xl border border-white/10 shadow-[0_0_60px_rgba(0,0,0,0.8),0_0_30px_var(--color-purple-glow)]/10'
+          ? 'bg-black/85 backdrop-blur-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8),0_0_20px_var(--lume-accent-glow)]'
           : 'bg-black border-none shadow-none'
       )}
       style={{
@@ -331,12 +334,18 @@ export default function NotchUI() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className={cn('flex items-center p-10 h-full justify-between')}
+                className={cn('flex items-center px-6 h-full justify-between')}
               >
-                <div className="relative">
-                  <Thumbnail src={displayArt} alt={title} size="pill" />
-                </div>
-                <MusicVisualizer isPlaying={isPlaying} />
+                <Thumbnail 
+                  src={settings.showAlbumArt ? displayArt : null} 
+                  alt={title} 
+                  size="pill" 
+                  isPlaying={isPlaying} 
+                />
+                <MusicVisualizer 
+                  isPlaying={isPlaying} 
+                  isStatic={!settings.showVisualizer} 
+                />
               </motion.div>
             ) : (
               <motion.div
@@ -365,7 +374,12 @@ export default function NotchUI() {
                   <div className="flex items-center gap-4">
                     <div className="relative">
                       <div className="w-14 h-9 bg-gray rounded-md flex items-center justify-center overflow-hidden shadow-lg border border-white/5 relative">
-                        <Thumbnail src={displayArt} alt={title} size="expanded" />
+                        <Thumbnail 
+                          src={settings.showAlbumArt ? displayArt : null} 
+                          alt={title} 
+                          size="expanded" 
+                          isPlaying={isPlaying}
+                        />
                       </div>
                       {source && (
                         <div className="absolute -bottom-1 right-0 flex items-center justify-center p-1">
@@ -401,7 +415,10 @@ export default function NotchUI() {
                           exit={{ opacity: 0, scale: 0.9 }}
                           transition={{ duration: 0.2 }}
                         >
-                          <MusicVisualizer isPlaying={isPlaying} />
+                          <MusicVisualizer 
+                            isPlaying={isPlaying} 
+                            isStatic={!settings.showVisualizer} 
+                          />
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -440,8 +457,11 @@ export default function NotchUI() {
                       <span>{formatTime(position)}</span>
                       <div className="flex-1 h-[5px] bg-gray rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-white/80 rounded-full transition-none"
-                          style={{ width: `${progressPct}%` }}
+                          className="h-full rounded-full transition-none"
+                          style={{
+                            width: `${progressPct}%`,
+                            background: 'var(--lume-accent, rgba(255,255,255,0.8))'
+                          }}
                         />
                       </div>
                       {duration > 0 && (
@@ -455,28 +475,39 @@ export default function NotchUI() {
                   <div className="absolute left-0">
                     <button
                       onClick={handleToggleDevice}
-                      className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
+                      className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-all hover:bg-white/10 active:scale-95"
                     >
-                      <Headphones size={20} className={showVolume ? 'text-white' : 'text-text'} />
+                      <Headphones
+                        size={20}
+                        className="transition-colors duration-200"
+                        style={{
+                          color: showDevice ? 'var(--lume-accent)' : 'var(--lume-text-dim)'
+                        }}
+                      />
                     </button>
                   </div>
 
                   <div className="flex items-center gap-4 text-white">
                     <button
                       onClick={handlePrev}
-                      className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
+                      className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-all hover:bg-white/10 active:scale-95"
                     >
                       <Rewind size={20} />
                     </button>
                     <button
                       onClick={handlePlayPause}
-                      className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
+                      className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-all hover:bg-white/20 active:scale-95"
+                      style={{ color: 'var(--lume-accent)' }}
                     >
-                      {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                      {isPlaying ? (
+                        <Pause size={20} fill="currentColor" />
+                      ) : (
+                        <Play size={20} fill="currentColor" />
+                      )}
                     </button>
                     <button
                       onClick={handleNext}
-                      className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
+                      className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-all hover:bg-white/20 active:scale-95"
                     >
                       <FastForward size={20} />
                     </button>
@@ -484,9 +515,13 @@ export default function NotchUI() {
 
                   <button
                     onClick={handleShowVolume}
-                    className="absolute right-0 size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-white/20"
+                    className="absolute right-0 size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-all hover:bg-white/20 active:scale-95"
                   >
-                    <Monitor size={20} className={showVolume ? 'text-white' : 'text-text'} />
+                    <Monitor
+                      size={20}
+                      className="transition-colors duration-200"
+                      style={{ color: showVolume ? 'var(--lume-accent)' : 'var(--lume-text-dim)' }}
+                    />
                   </button>
                 </div>
 

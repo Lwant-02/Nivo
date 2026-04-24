@@ -1,27 +1,18 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Settings, Zap, Moon, Play, Calendar, ShieldCheck, Info } from 'lucide-react'
+import { Settings, Play, Calendar, ShieldCheck, Info } from 'lucide-react'
 import { SidebarItem } from './settings/SidebarItem'
 import { LicensePanel } from './settings/LicensePanel'
 import { AboutPanel } from './settings/AboutPanel'
 import { NowPlayingPanel } from './settings/NowPlayingPanel'
 import { CalendarPanel } from './settings/CalendarPanel'
-import { BatteryPanel } from './settings/BatteryPanel'
-import { FocusPanel } from './settings/FocusPanel'
 import { GeneralPanel } from './settings/GeneralPanel'
 import { PlaceholderPanel } from './settings/PlaceholderPanel'
 
 const NAV_GROUPS = [
   {
     label: 'General',
-    items: [{ id: 'general', icon: Settings, label: 'General', color: '#636366' }]
-  },
-  {
-    label: 'Notifications',
-    items: [
-      { id: 'battery', icon: Zap, label: 'Battery', color: '#FF9F0A' },
-      { id: 'focus', icon: Moon, label: 'Focus', color: '#5E5CE6' }
-    ]
+    items: [{ id: 'general', icon: Settings, label: 'General', color: 'var(--lume-accent)' }]
   },
   {
     label: 'Live Activities',
@@ -165,21 +156,13 @@ export default function SettingsUI() {
               }}
             >
               {active === 'general' && <GeneralPanel />}
-              {active === 'battery' && <BatteryPanel />}
-              {active === 'focus' && <FocusPanel />}
               {active === 'nowplaying' && <NowPlayingPanel />}
               {active === 'calendar' && <CalendarPanel />}
               {active === 'license' && <LicensePanel />}
               {active === 'about' && <AboutPanel />}
-              {![
-                'general',
-                'battery',
-                'focus',
-                'nowplaying',
-                'calendar',
-                'license',
-                'about'
-              ].includes(active) && <PlaceholderPanel id={active} />}
+              {!['general', 'nowplaying', 'calendar', 'license', 'about'].includes(active) && (
+                <PlaceholderPanel id={active} />
+              )}
             </motion.div>
           </AnimatePresence>
         </div>

@@ -121,7 +121,7 @@ const EventRow = ({ event }: { event: CalendarEvent }) => {
           className={cn(
             'absolute inset-x-0 top-0 rounded-full transition-all duration-500',
             isCurrent
-              ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)] animate-pulse'
+              ? 'bg-(--lume-accent) shadow-[0_0_8px_(--lume-accent-glow)] animate-pulse'
               : isPast
                 ? 'bg-white/20'
                 : 'bg-white/40'

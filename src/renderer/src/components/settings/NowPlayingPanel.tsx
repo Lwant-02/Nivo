@@ -1,13 +1,15 @@
-import { useState } from 'react'
+import { useSettings } from '../../hooks/useSettings'
 import { PauseCircle, Image as ImageIcon, Waves } from 'lucide-react'
 import { SettingCard } from './SettingCard'
 import { SectionLabel } from './SectionLabel'
 import { SettingRow } from './SettingRow'
 
 export function NowPlayingPanel() {
-  const [hideWhenPaused, setHideWhenPaused] = useState(true)
-  const [showAlbumArt, setShowAlbumArt] = useState(true)
-  const [showVisualizer, setShowVisualizer] = useState(false)
+  const { settings, update } = useSettings()
+
+  const hideWhenPaused = settings.hideWhenPaused
+  const showAlbumArt = settings.showAlbumArt
+  const showVisualizer = settings.showVisualizer
 
   const iconStyle = { size: 15, strokeWidth: 2 }
 
@@ -44,7 +46,7 @@ export function NowPlayingPanel() {
           label="Hide when paused"
           description="Auto-shrink the Island when playback stops."
           enabled={hideWhenPaused}
-          onToggle={() => setHideWhenPaused((v) => !v)}
+          onToggle={() => update('hideWhenPaused', !hideWhenPaused)}
           isFirst
         />
         <SettingRow
@@ -52,14 +54,14 @@ export function NowPlayingPanel() {
           label="Show album art"
           description="Use cover artwork instead of a generic play icon."
           enabled={showAlbumArt}
-          onToggle={() => setShowAlbumArt((v) => !v)}
+          onToggle={() => update('showAlbumArt', !showAlbumArt)}
         />
         <SettingRow
           icon={<Waves {...iconStyle} />}
           label="Live visualizer"
           description="Animated waveform while music is playing."
           enabled={showVisualizer}
-          onToggle={() => setShowVisualizer((v) => !v)}
+          onToggle={() => update('showVisualizer', !showVisualizer)}
         />
       </SettingCard>
     </>

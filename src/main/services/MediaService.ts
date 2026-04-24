@@ -166,6 +166,10 @@ export class MediaService {
 
   private isFetchingState = false
 
+  public isMediaPlaying(): boolean {
+    return this.lastState.isPlaying
+  }
+
   public startPolling(window: BrowserWindow) {
     if (this.pollingInterval) clearInterval(this.pollingInterval)
     this.mainWindow = window

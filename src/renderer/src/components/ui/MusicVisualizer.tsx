@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react'
 interface MusicVisualizerProps {
   isPlaying?: boolean
   className?: string
+  isStatic?: boolean
 }
 
 const bars = [
@@ -14,7 +15,11 @@ const bars = [
   { duration: 0.85, heights: [0.2, 1.0, 0.4, 0.8] }
 ]
 
-export const MusicVisualizer = ({ isPlaying = false, className = '' }: MusicVisualizerProps) => {
+export const MusicVisualizer = ({
+  isPlaying = false,
+  className = '',
+  isStatic = false
+}: MusicVisualizerProps) => {
   return (
     <div className={cn('flex items-center gap-[2px] h-3', className)}>
       {bars.map((bar, i) => {
@@ -25,21 +30,21 @@ export const MusicVisualizer = ({ isPlaying = false, className = '' }: MusicVisu
           '--bar-3': bar.heights[3],
           animationDuration: `${bar.duration}s`,
           animationDelay: `-${i * 0.07}s`,
-          animationPlayState: isPlaying ? 'running' : 'paused',
-          transform: isPlaying ? undefined : 'scaleY(0.2)',
-          opacity: isPlaying ? 1 : 0.4,
+          animationPlayState: isPlaying && !isStatic ? 'running' : 'paused',
+          transform: isPlaying && !isStatic ? undefined : 'scaleY(0.2)',
+          opacity: isPlaying && !isStatic ? 1 : 0.4,
           transformOrigin: 'center',
           willChange: 'transform, opacity',
-          transition: isPlaying ? undefined : 'opacity 0.3s ease, transform 0.3s ease'
+          transition: 'opacity 0.3s ease, transform 0.3s ease'
         } as CSSProperties
 
         return (
           <div
             key={i}
-            style={style}
+            style={{ ...style, background: 'var(--lume-accent, #fff)' }}
             className={cn(
-              'w-[3px] h-full bg-white rounded-full',
-              isPlaying && 'music-bar-animate'
+              'w-[3px] h-full rounded-full',
+              isPlaying && !isStatic && 'music-bar-animate'
             )}
           />
         )

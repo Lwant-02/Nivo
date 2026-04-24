@@ -14,6 +14,7 @@ import { execFile } from 'child_process'
 import { is } from '@electron-toolkit/utils'
 import { MediaService } from './services/MediaService'
 import { AudioService } from './services/AudioService'
+import { SettingsService, Settings } from './services/SettingsService'
 import { fetchMacEvents } from './services/calendarService'
 import { LicenseService } from './services/LicenseService'
 
@@ -34,6 +35,7 @@ app.commandLine.appendSwitch('enable-zero-copy')
 let mediaService: MediaService | null = null
 let audioService: AudioService | null = null
 let licenseService: LicenseService | null = null
+let settingsService: SettingsService | null = null
 
 let mainWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
@@ -70,16 +72,11 @@ function createMainWindow(): void {
     }
   })
 
-  mainWindow.setAlwaysOnTop(true, 'screen-saver', 1)
-
-  mainWindow.setVisibleOnAllWorkspaces(true, {
-    visibleOnFullScreen: true,
-    skipTransformProcessType: true
-  })
-
   mainWindow.setWindowButtonVisibility(false)
 
   mainWindow.setIgnoreMouseEvents(true, { forward: true })
+
+  applyWindowSettings(mainWindow, settingsService?.getAll() ?? null)
 
   let hoverActive = false
 
@@ -99,9 +96,23 @@ function createMainWindow(): void {
     if (over && !hoverActive) {
       hoverActive = true
       mainWindow.setIgnoreMouseEvents(false)
+      // Force pop-to-front if we were hidden behind fullscreen apps or paused
+      const hideFS = !!settingsService?.get('hideInFullscreen')
+      const hidePaused = !!settingsService?.get('hideWhenPaused') && !mediaService?.isMediaPlaying()
+      
+      if (hideFS || hidePaused) {
+        mainWindow.setAlwaysOnTop(true, 'screen-saver', 1)
+      }
     } else if (!over && hoverActive) {
       hoverActive = false
       mainWindow.setIgnoreMouseEvents(true, { forward: true })
+      // Restore level if we were popping over
+      const hideFS = !!settingsService?.get('hideInFullscreen')
+      const hidePaused = !!settingsService?.get('hideWhenPaused') && !mediaService?.isMediaPlaying()
+
+      if (hideFS || hidePaused) {
+        mainWindow.setAlwaysOnTop(true, 'floating', 1)
+      }
     }
   }, 16)
 
@@ -120,10 +131,41 @@ function createMainWindow(): void {
     audioService.start(mainWindow)
   }
 
+
   mainWindow.on('closed', () => {
     clearInterval(pollInterval)
     mainWindow = null
   })
+}
+
+function applyWindowSettings(win: BrowserWindow, settings: Settings | null | undefined): void {
+  if (win.isDestroyed()) return
+  const s = settings ?? null
+
+  // When hideInFullscreen or hideWhenPaused is on, drop to 'floating' so 
+  // fullscreen apps (or simply the desktop) cover the notch.
+  const hidePaused = !!s?.hideWhenPaused && !mediaService?.isMediaPlaying()
+  const shouldHide = !!s?.hideInFullscreen || hidePaused
+  
+  const level: 'screen-saver' | 'floating' = shouldHide ? 'floating' : 'screen-saver'
+  win.setAlwaysOnTop(true, level, 1)
+
+  win.setVisibleOnAllWorkspaces(true, {
+    visibleOnFullScreen: true,
+    skipTransformProcessType: true
+  })
+  win.setContentProtection(!!s?.hideFromScreenCapture)
+}
+
+function applyLaunchAtLogin(enabled: boolean): void {
+  if (process.platform !== 'darwin' && process.platform !== 'win32') return
+  app.setLoginItemSettings({ openAtLogin: enabled, openAsHidden: true })
+}
+
+function broadcastSettings(settings: Settings): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) win.webContents.send('settings-update', settings)
+  }
 }
 
 // Settings window
@@ -259,6 +301,18 @@ app.whenReady().then(() => {
   }
 
   try {
+    settingsService = new SettingsService()
+    applyLaunchAtLogin(settingsService.get('launchAtLogin'))
+    settingsService.on('change', (next: Settings) => {
+      applyLaunchAtLogin(next.launchAtLogin)
+      if (mainWindow) applyWindowSettings(mainWindow, next)
+      broadcastSettings(next)
+    })
+  } catch (err: any) {
+    console.error('[main] Failed to initialize SettingsService:', err.message)
+  }
+
+  try {
     mediaService = new MediaService()
   } catch (err: any) {
     console.error('[main] Failed to initialize MediaService:', err.message)
@@ -355,6 +409,15 @@ ipcMain.handle('media-control', (_event, command: MediaCommand) => {
 
 ipcMain.handle('set-system-volume', (_event, level: number) => mediaService?.setVolume(level))
 
+ipcMain.handle('get-settings', () => {
+  return settingsService?.getAll() ?? null
+})
+
+ipcMain.handle('update-setting', (_event, key: keyof Settings, value: Settings[keyof Settings]) => {
+  if (!settingsService) return null
+  return settingsService.set(key, value)
+})
+
 ipcMain.handle('get-calendar-events', async () => {
   try {
     return await fetchMacEvents()
@@ -396,6 +459,8 @@ function resolveHapticBinary(): string | null {
 }
 
 ipcMain.handle('trigger-haptic', () => {
+  if (settingsService && !settingsService.get('hapticFeedback')) return
+
   const binary = resolveHapticBinary()
   if (!binary) return
 
@@ -405,7 +470,9 @@ ipcMain.handle('trigger-haptic', () => {
     if (msg.includes('not permitted') || msg.includes('Operation not permitted')) {
       if (!hapticPermissionWarned) {
         hapticPermissionWarned = true
-        console.warn('[Haptic] Taptic Engine unavailable (accessibility/entitlements). Feedback disabled.')
+        console.warn(
+          '[Haptic] Taptic Engine unavailable (accessibility/entitlements). Feedback disabled.'
+        )
       }
       return
     }

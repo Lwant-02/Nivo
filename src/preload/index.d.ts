@@ -44,7 +44,29 @@ declare global {
         }>
       >
       triggerHaptic: () => Promise<void>
+      getSettings: () => Promise<AppSettings | null>
+      updateSetting: <K extends keyof AppSettings>(
+        key: K,
+        value: AppSettings[K]
+      ) => Promise<AppSettings | null>
+      onSettingsUpdate: (callback: (settings: AppSettings) => void) => () => void
       openExternal: (url: string) => Promise<void>
     }
   }
+
+  type ThemeId = 'midnight' | 'graphite' | 'ocean' | 'forest' | 'sunset' | 'berry'
+  type BatteryThreshold = 10 | 20
+
+  interface AppSettings {
+    theme: ThemeId
+    launchAtLogin: boolean
+    hideInFullscreen: boolean
+    hideFromScreenCapture: boolean
+    hapticFeedback: boolean
+    hideWhenPaused: boolean
+    showAlbumArt: boolean
+    showVisualizer: boolean
+  }
 }
+
+export {}
