@@ -16,8 +16,7 @@ import {
   Monitor,
   ChevronsLeft,
   ChevronsRight,
-  Headphones,
-  Video
+  Headphones
 } from 'lucide-react'
 import cn from 'clsx'
 
@@ -34,6 +33,7 @@ import { MusicVisualizer } from './ui/MusicVisualizer'
 import { SourceBadge } from './ui/SourceBadge'
 import { LottieVisualizer } from './ui/LottieVisualizer'
 import { IdleView } from './ui/IdleView'
+import { DotLottieReact } from '@lottiefiles/dotlottie-react'
 
 const bounceTransition: Transition = { type: 'spring', stiffness: 400, damping: 28, mass: 0.8 }
 
@@ -300,7 +300,7 @@ export default function NotchUI() {
       className={cn(
         'relative overflow-hidden origin-top transition-shadow duration-500',
         isExpanded
-          ? 'bg-black/85 backdrop-blur-2xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8),0_0_20px_var(--lume-accent-glow)]'
+          ? 'bg-black/85 backdrop-blur-2xl border border-white/10'
           : 'bg-black border-none shadow-none'
       )}
       style={{
@@ -357,12 +357,19 @@ export default function NotchUI() {
                 className="absolute inset-0 z-200 flex items-center justify-center p-4 bg-black/40 backdrop-blur-3xl rounded-[inherit]"
               >
                 <div className="flex flex-col items-center gap-1 text-center">
-                  <div className="size-12 rounded-full bg-(--lume-accent) flex items-center justify-center text-white shadow-[0_0_20px_(--lume-accent-glow)] mb-1">
-                    <Video size={24} strokeWidth={2.5} />
+                  <div className="rounded-full" style={{ backgroundColor: 'var(--lume-accent)' }}>
+                    <div className="relative size-[135px] shrink-0">
+                      <DotLottieReact
+                        src="https://lottie.host/35d8a45e-69c7-47f2-b712-34a7d743d088/quPIsQA9QD.lottie"
+                        loop
+                        autoplay
+                        style={{ width: '100%', height: '100%' }}
+                      />
+                    </div>
                   </div>
-                  <h3 className="text-white text-lg font-bold leading-tight">{toast.body}</h3>
+                  <h3 className="text-white text-lg font-bold leading-tight">{toast.title}</h3>
                   <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em]">
-                    {toast.title}
+                    {toast.body}
                   </p>
                 </div>
               </motion.div>
