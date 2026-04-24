@@ -95,3 +95,16 @@ button, a, input, select, textarea, [role="button"], .no-drag {
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
+
+@keyframes music-bar {
+  0%, 100% { transform: scaleY(var(--bar-0, 0.2)); }
+  25%      { transform: scaleY(var(--bar-1, 1)); }
+  50%      { transform: scaleY(var(--bar-2, 0.4)); }
+  75%      { transform: scaleY(var(--bar-3, 0.8)); }
+}
+
+.music-bar-animate {
+  animation-name: music-bar;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}

@@ -6,19 +6,38 @@ import {
   Tray,
   nativeImage,
   Menu,
-  powerMonitor
+  powerMonitor,
+  shell,
+  Notification
 } from 'electron'
 import { join } from 'path'
-import { exec } from 'child_process'
+import { existsSync, chmodSync } from 'fs'
+import { execFile } from 'child_process'
 import { is } from '@electron-toolkit/utils'
 import { MediaService } from './services/MediaService'
 import { AudioService } from './services/AudioService'
+import { SettingsService, Settings } from './services/SettingsService'
 import { fetchMacEvents } from './services/calendarService'
 import { LicenseService } from './services/LicenseService'
+
+// Keep the renderer running full-speed even though the notch window is
+// non-focusable + always-on-top. Without these, Chromium throttles rAF and
+// the music visualizer / drag animations stall in packaged builds.
+app.commandLine.appendSwitch('disable-renderer-backgrounding')
+app.commandLine.appendSwitch('disable-background-timer-throttling')
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows')
+app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion')
+
+// Force GPU acceleration for the transparent always-on-top surface.
+app.commandLine.appendSwitch('ignore-gpu-blocklist')
+app.commandLine.appendSwitch('enable-gpu-rasterization')
+app.commandLine.appendSwitch('enable-accelerated-video-decode')
+app.commandLine.appendSwitch('enable-zero-copy')
 
 let mediaService: MediaService | null = null
 let audioService: AudioService | null = null
 let licenseService: LicenseService | null = null
+let settingsService: SettingsService | null = null
 
 let mainWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
@@ -50,20 +69,16 @@ function createMainWindow(): void {
     hiddenInMissionControl: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      backgroundThrottling: false
     }
-  })
-
-  mainWindow.setAlwaysOnTop(true, 'screen-saver', 1)
-
-  mainWindow.setVisibleOnAllWorkspaces(true, {
-    visibleOnFullScreen: true,
-    skipTransformProcessType: true
   })
 
   mainWindow.setWindowButtonVisibility(false)
 
   mainWindow.setIgnoreMouseEvents(true, { forward: true })
+
+  applyWindowSettings(mainWindow, settingsService?.getAll() ?? null)
 
   let hoverActive = false
 
@@ -83,9 +98,16 @@ function createMainWindow(): void {
     if (over && !hoverActive) {
       hoverActive = true
       mainWindow.setIgnoreMouseEvents(false)
+      // Always promote to front on hover so the user can interact
+      mainWindow.setAlwaysOnTop(true, 'screen-saver', 1)
     } else if (!over && hoverActive) {
       hoverActive = false
       mainWindow.setIgnoreMouseEvents(true, { forward: true })
+      // Restore level if we were popping over
+      const hideFS = !!settingsService?.get('hideInFullscreen')
+      const hidePaused = !!settingsService?.get('hideWhenPaused') && !mediaService?.isMediaPlaying()
+      const level = hideFS || hidePaused ? 'floating' : 'screen-saver'
+      mainWindow.setAlwaysOnTop(true, level, 1)
     }
   }, 16)
 
@@ -110,6 +132,36 @@ function createMainWindow(): void {
   })
 }
 
+function applyWindowSettings(win: BrowserWindow, settings: Settings | null | undefined): void {
+  if (win.isDestroyed()) return
+  const s = settings ?? null
+
+  // When hideInFullscreen or hideWhenPaused is on, drop to 'floating' so
+  // fullscreen apps (or simply the desktop) cover the notch.
+  const hidePaused = !!s?.hideWhenPaused && !mediaService?.isMediaPlaying()
+  const shouldHide = !!s?.hideInFullscreen || hidePaused
+
+  const level: 'screen-saver' | 'floating' = shouldHide ? 'floating' : 'screen-saver'
+  win.setAlwaysOnTop(true, level, 1)
+
+  win.setVisibleOnAllWorkspaces(true, {
+    visibleOnFullScreen: true,
+    skipTransformProcessType: true
+  })
+  win.setContentProtection(!!s?.hideFromScreenCapture)
+}
+
+function applyLaunchAtLogin(enabled: boolean): void {
+  if (process.platform !== 'darwin' && process.platform !== 'win32') return
+  app.setLoginItemSettings({ openAtLogin: enabled, openAsHidden: true })
+}
+
+function broadcastSettings(settings: Settings): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) win.webContents.send('settings-update', settings)
+  }
+}
+
 // Settings window
 function createSettingsWindow(): void {
   if (settingsWindow) {
@@ -128,7 +180,8 @@ function createSettingsWindow(): void {
     visualEffectState: 'active',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      backgroundThrottling: false
     }
   })
 
@@ -173,7 +226,8 @@ function createOnboardingWindow(): void {
     hasShadow: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      backgroundThrottling: false
     }
   })
 
@@ -203,7 +257,7 @@ function refreshTrayMenu(): void {
   const activated = licenseService?.isActivated() ?? false
 
   const template: Electron.MenuItemConstructorOptions[] = [
-    { label: `Version ${app.getVersion()}`, enabled: false },
+    { label: `Lume Settings`, enabled: false },
     { type: 'separator' }
   ]
 
@@ -238,6 +292,18 @@ app.whenReady().then(() => {
     licenseService = new LicenseService()
   } catch (err: any) {
     console.error('[main] Failed to initialize LicenseService:', err.message)
+  }
+
+  try {
+    settingsService = new SettingsService()
+    applyLaunchAtLogin(settingsService.get('launchAtLogin'))
+    settingsService.on('change', (next: Settings) => {
+      applyLaunchAtLogin(next.launchAtLogin)
+      if (mainWindow) applyWindowSettings(mainWindow, next)
+      broadcastSettings(next)
+    })
+  } catch (err: any) {
+    console.error('[main] Failed to initialize SettingsService:', err.message)
   }
 
   try {
@@ -337,24 +403,90 @@ ipcMain.handle('media-control', (_event, command: MediaCommand) => {
 
 ipcMain.handle('set-system-volume', (_event, level: number) => mediaService?.setVolume(level))
 
+ipcMain.handle('get-settings', () => {
+  return settingsService?.getAll() ?? null
+})
+
+ipcMain.handle('update-setting', (_event, key: keyof Settings, value: Settings[keyof Settings]) => {
+  if (!settingsService) return null
+  return settingsService.set(key, value)
+})
+
 ipcMain.handle('get-calendar-events', async () => {
   try {
-    return await fetchMacEvents()
+    const events = await fetchMacEvents()
+
+    return events
   } catch (err: any) {
     console.error('[main] get-calendar-events failed:', err.message)
     return []
   }
 })
 
-ipcMain.handle('trigger-haptic', () => {
-  const binaryPath = app.isPackaged
-    ? join(process.resourcesPath, 'bin', 'haptic-cli')
-    : join(process.cwd(), 'resources', 'bin', 'haptic-cli')
+ipcMain.on('calendar:join', (_event, url: string) => {
+  if (!url) return
+  shell.openExternal(url)
+})
 
-  exec(`"${binaryPath}"`, (err) => {
-    if (err) {
-      console.error('[Haptic] Command failed:', err.message)
+ipcMain.on('show-notification', (_event, title: string, body: string) => {
+  const n = new Notification({ title, body, silent: false })
+  n.show()
+})
+
+ipcMain.on('lume-toast', (_event, title: string, body: string) => {
+  mainWindow?.webContents.send('lume-toast', { title, body })
+})
+
+let hapticBinaryPath: string | null = null
+let hapticBinaryResolved = false
+let hapticPermissionWarned = false
+
+function resolveHapticBinary(): string | null {
+  if (hapticBinaryResolved) return hapticBinaryPath
+  hapticBinaryResolved = true
+
+  if (process.platform !== 'darwin') return null
+
+  const candidate = app.isPackaged
+    ? join(process.resourcesPath, 'bin', 'haptic-cli')
+    : join(app.getAppPath(), 'resources', 'bin', 'haptic-cli')
+
+  if (!existsSync(candidate)) {
+    console.warn('[Haptic] binary not found at', candidate)
+    return null
+  }
+
+  // Packaging / notarization occasionally strips the executable bit from
+  // extraResources. Re-apply it defensively — silent if already set.
+  try {
+    chmodSync(candidate, 0o755)
+  } catch {
+    // fall through; execFile will surface a clearer error if it matters
+  }
+
+  hapticBinaryPath = candidate
+  return hapticBinaryPath
+}
+
+ipcMain.handle('trigger-haptic', () => {
+  if (settingsService && !settingsService.get('hapticFeedback')) return
+
+  const binary = resolveHapticBinary()
+  if (!binary) return
+
+  execFile(binary, [], { timeout: 1000 }, (err) => {
+    if (!err) return
+    const msg = err.message || ''
+    if (msg.includes('not permitted') || msg.includes('Operation not permitted')) {
+      if (!hapticPermissionWarned) {
+        hapticPermissionWarned = true
+        console.warn(
+          '[Haptic] Taptic Engine unavailable (accessibility/entitlements). Feedback disabled.'
+        )
+      }
+      return
     }
+    console.warn('[Haptic] invocation failed:', msg)
   })
 })
 

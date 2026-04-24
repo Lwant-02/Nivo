@@ -1,4 +1,4 @@
-import { Globe, MessageSquare, Heart, Code2, ChevronRight } from 'lucide-react'
+import { Globe, MessageSquare, Heart, ChevronRight } from 'lucide-react'
 import { SettingCard } from './SettingCard'
 import { SectionLabel } from './SectionLabel'
 import { Pill } from './Pill'
@@ -137,7 +137,7 @@ export function AboutPanel() {
               in 2026
             </div>
           </div>
-          <Pill variant="soft">Solo dev</Pill>
+          <Pill variant="soft">Solo Dev</Pill>
         </div>
       </SettingCard>
 
@@ -159,47 +159,6 @@ export function AboutPanel() {
         />
       </SettingCard>
 
-      {/* Tech */}
-      <SectionLabel text="Under the hood" />
-      <SettingCard>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            paddingLeft: 18,
-            paddingRight: 18,
-            paddingTop: 14,
-            paddingBottom: 14,
-            minHeight: 52
-          }}
-        >
-          <div
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 8,
-              background: 'rgba(255,255,255,0.055)',
-              color: 'rgba(255,255,255,0.7)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
-            <Code2 size={15} strokeWidth={2} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 500, color: '#fff' }}>
-              Built with Electron · React · TypeScript
-            </div>
-            <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.42)', marginTop: 2 }}>
-              Crafted for performance and a native feel.
-            </div>
-          </div>
-        </div>
-      </SettingCard>
-
       {/* Footer */}
       <p
         style={{
@@ -210,7 +169,7 @@ export function AboutPanel() {
           letterSpacing: 0.2
         }}
       >
-        © {year} Nawmain · All rights reserved.
+        © {year} Lume · All rights reserved.
       </p>
     </>
   )

@@ -1,33 +1,27 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Settings, Zap, Moon, Play, Calendar, ShieldCheck, Info } from 'lucide-react'
+import { Settings, Play, Calendar, ShieldCheck, Info } from 'lucide-react'
 import { SidebarItem } from './settings/SidebarItem'
 import { LicensePanel } from './settings/LicensePanel'
 import { AboutPanel } from './settings/AboutPanel'
 import { NowPlayingPanel } from './settings/NowPlayingPanel'
 import { CalendarPanel } from './settings/CalendarPanel'
-import { BatteryPanel } from './settings/BatteryPanel'
-import { FocusPanel } from './settings/FocusPanel'
 import { GeneralPanel } from './settings/GeneralPanel'
 import { PlaceholderPanel } from './settings/PlaceholderPanel'
+import { VisualizerPanel } from './settings/VisualizerPanel'
+import { Sparkles } from 'lucide-react'
 
 const NAV_GROUPS = [
   {
     label: 'General',
-    items: [{ id: 'general', icon: Settings, label: 'General', color: '#636366' }]
-  },
-  {
-    label: 'Notifications',
-    items: [
-      { id: 'battery', icon: Zap, label: 'Battery', color: '#FF9F0A' },
-      { id: 'focus', icon: Moon, label: 'Focus', color: '#5E5CE6' }
-    ]
+    items: [{ id: 'general', icon: Settings, label: 'General', color: 'var(--lume-accent)' }]
   },
   {
     label: 'Live Activities',
     items: [
       { id: 'nowplaying', icon: Play, label: 'Now Playing', color: '#FF3B30' },
-      { id: 'calendar', icon: Calendar, label: 'Calendar', color: '#FF3B30' }
+      { id: 'calendar', icon: Calendar, label: 'Calendar', color: '#FF3B30' },
+      { id: 'visualizer', icon: Sparkles, label: 'Visualizer', color: 'var(--lume-accent)' }
     ]
   },
   {
@@ -165,21 +159,14 @@ export default function SettingsUI() {
               }}
             >
               {active === 'general' && <GeneralPanel />}
-              {active === 'battery' && <BatteryPanel />}
-              {active === 'focus' && <FocusPanel />}
               {active === 'nowplaying' && <NowPlayingPanel />}
               {active === 'calendar' && <CalendarPanel />}
+              {active === 'visualizer' && <VisualizerPanel />}
               {active === 'license' && <LicensePanel />}
               {active === 'about' && <AboutPanel />}
-              {![
-                'general',
-                'battery',
-                'focus',
-                'nowplaying',
-                'calendar',
-                'license',
-                'about'
-              ].includes(active) && <PlaceholderPanel id={active} />}
+              {!['general', 'nowplaying', 'calendar', 'license', 'about', 'visualizer'].includes(
+                active
+              ) && <PlaceholderPanel id={active} />}
             </motion.div>
           </AnimatePresence>
         </div>

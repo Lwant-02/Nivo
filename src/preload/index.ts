@@ -7,6 +7,14 @@ const api = {
   playPause: () => ipcRenderer.invoke('media-control', 'playPause'),
   mediaNext: () => ipcRenderer.invoke('media-control', 'next'),
   mediaPrevious: () => ipcRenderer.invoke('media-control', 'previous'),
+  joinMeeting: (title: string) => ipcRenderer.send('calendar:join', title),
+  showNotification: (title: string, body: string) => ipcRenderer.send('show-notification', title, body),
+  showLumeToast: (title: string, body: string) => ipcRenderer.send('lume-toast', title, body),
+  onLumeToast: (callback: (data: any) => void) => {
+    const wrapper = (_: any, data: any) => callback(data)
+    ipcRenderer.on('lume-toast', wrapper)
+    return () => ipcRenderer.removeListener('lume-toast', wrapper)
+  },
 
   // Volume
   setVolume: (level: number) => ipcRenderer.invoke('set-system-volume', level),
@@ -40,6 +48,17 @@ const api = {
 
   // Haptic
   triggerHaptic: () => ipcRenderer.invoke('trigger-haptic'),
+
+  // Settings
+  getSettings: () => ipcRenderer.invoke('get-settings'),
+  updateSetting: (key: string, value: unknown) =>
+    ipcRenderer.invoke('update-setting', key, value),
+  onSettingsUpdate: (callback: (data: any) => void) => {
+    const wrapper = (_: any, data: any) => callback(data)
+    ipcRenderer.on('settings-update', wrapper)
+    return () => ipcRenderer.removeListener('settings-update', wrapper)
+  },
+
 
   // Navigation
   openExternal: (url: string) => shell.openExternal(url)

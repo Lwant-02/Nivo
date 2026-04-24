@@ -12,6 +12,8 @@ export interface CalendarEvent {
   progress: number
   startMs: number
   endMs: number
+  url: string
+  description: string
 }
 
 // Clean single-path scanner. Avoids: (1) single-letter vars (`c`, `s`, `h`, `m`)
@@ -41,9 +43,13 @@ tell application "Calendar"
                     set matchEvents to (every event of aCal whose start date < todayEnd and end date > todayStart)
                     repeat with anEvent in matchEvents
                         set summStr to summary of anEvent
+                        set dStr to description of anEvent
+                        if dStr is missing value then set dStr to ""
+                        set uStr to url of anEvent
+                        if uStr is missing value then set uStr to ""
                         set sStr to my formatDate(start date of anEvent)
                         set eStr to my formatDate(end date of anEvent)
-                        set output to output & summStr & "|||" & sStr & "|||" & eStr & linefeed
+                        set output to output & summStr & "|||" & sStr & "|||" & eStr & "|||" & dStr & "|||" & uStr & linefeed
                     end repeat
                 end if
             end try
@@ -153,7 +159,7 @@ async function runAppleScript(script: string): Promise<string> {
 // for Calendar.app and producing random failures.
 let inFlight: Promise<CalendarEvent[]> | null = null
 let cache: { at: number; data: CalendarEvent[] } | null = null
-const CACHE_MS = 120_000 // 2 mins
+const CACHE_MS = 30_000 // 30 seconds (reduced for better responsiveness)
 
 export async function fetchMacEvents(): Promise<CalendarEvent[]> {
   if (cache && Date.now() - cache.at < CACHE_MS) return cache.data
@@ -161,7 +167,8 @@ export async function fetchMacEvents(): Promise<CalendarEvent[]> {
 
   inFlight = (async () => {
     try {
-      return await doFetch()
+      const events = await doFetch()
+      return events
     } finally {
       inFlight = null
     }
@@ -173,7 +180,7 @@ async function doFetch(): Promise<CalendarEvent[]> {
   try {
     const raw = await runAppleScript(CALENDAR_SCRIPT)
     if (!raw || raw.trim() === '') return []
-    
+
     if (raw.trim() === 'PERMISSION_DENIED') {
       console.error('[CalendarService] Access denied. Grant permissions in System Settings.')
       return []
@@ -193,7 +200,7 @@ async function doFetch(): Promise<CalendarEvent[]> {
       const parts = line.split('|||')
       if (parts.length < 3) continue
       const [rawTitle, startStr, endStr] = parts
-      
+
       const key = `${rawTitle}-${startStr}-${endStr}`
       if (seen.has(key)) continue
       seen.add(key)
@@ -201,27 +208,31 @@ async function doFetch(): Promise<CalendarEvent[]> {
       // The AppleScript returns y-m-d h:m:s which Date() parses well
       const start = new Date(startStr.replace(/-/g, '/')) // '/' is more stable in many environments
       const end = new Date(endStr.replace(/-/g, '/'))
-      
+
       if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-          // Try without replacement
-          const s2 = new Date(startStr)
-          const e2 = new Date(endStr)
-          if (isNaN(s2.getTime()) || isNaN(e2.getTime())) continue
-          events.push({
-            title: rawTitle.trim() || 'Untitled',
-            time: formatTimeRange(s2, e2),
-            progress: computeProgress(s2, e2, now),
-            startMs: s2.getTime(),
-            endMs: e2.getTime()
-          })
+        // Try without replacement
+        const s2 = new Date(startStr)
+        const e2 = new Date(endStr)
+        if (isNaN(s2.getTime()) || isNaN(e2.getTime())) continue
+        events.push({
+          title: rawTitle.trim() || 'Untitled',
+          time: formatTimeRange(s2, e2),
+          progress: computeProgress(s2, e2, now),
+          startMs: s2.getTime(),
+          endMs: e2.getTime(),
+          description: parts[3] || '',
+          url: parts[4] || ''
+        })
       } else {
-          events.push({
-            title: rawTitle.trim() || 'Untitled',
-            time: formatTimeRange(start, end),
-            progress: computeProgress(start, end, now),
-            startMs: start.getTime(),
-            endMs: end.getTime()
-          })
+        events.push({
+          title: rawTitle.trim() || 'Untitled',
+          time: formatTimeRange(start, end),
+          progress: computeProgress(start, end, now),
+          startMs: start.getTime(),
+          endMs: end.getTime(),
+          description: parts[3] || '',
+          url: parts[4] || ''
+        })
       }
     }
 

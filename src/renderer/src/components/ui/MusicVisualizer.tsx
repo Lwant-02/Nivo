@@ -1,38 +1,54 @@
-import { motion } from 'framer-motion'
 import cn from 'clsx'
+import type { CSSProperties } from 'react'
 
 interface MusicVisualizerProps {
   isPlaying?: boolean
   className?: string
+  isStatic?: boolean
 }
 
 const bars = [
-  { duration: 0.8, heights: ['20%', '100%', '40%', '80%', '20%'] },
-  { duration: 0.6, heights: ['30%', '100%', '50%', '90%', '30%'] },
-  { duration: 0.9, heights: ['25%', '75%', '45%', '95%', '25%'] },
-  { duration: 0.7, heights: ['40%', '90%', '20%', '100%', '40%'] },
-  { duration: 0.85, heights: ['20%', '100%', '40%', '80%', '20%'] }
+  { duration: 0.8, heights: [0.2, 1.0, 0.4, 0.8] },
+  { duration: 0.6, heights: [0.3, 1.0, 0.5, 0.9] },
+  { duration: 0.9, heights: [0.25, 0.75, 0.45, 0.95] },
+  { duration: 0.7, heights: [0.4, 0.9, 0.2, 1.0] },
+  { duration: 0.85, heights: [0.2, 1.0, 0.4, 0.8] }
 ]
 
-export const MusicVisualizer = ({ isPlaying = false, className = '' }: MusicVisualizerProps) => {
+export const MusicVisualizer = ({
+  isPlaying = false,
+  className = '',
+  isStatic = false
+}: MusicVisualizerProps) => {
   return (
-    <div className={cn('flex items-center gap-[2px] h-4', className)}>
-      {bars.map((bar, i) => (
-        <motion.div
-          key={i}
-          initial={false}
-          animate={{
-            height: isPlaying ? bar.heights : '2px'
-          }}
-          transition={{
-            duration: isPlaying ? bar.duration : 0.3,
-            repeat: isPlaying ? Infinity : 0,
-            ease: 'easeInOut',
-            times: [0, 0.25, 0.5, 0.75, 1]
-          }}
-          className="w-[3px] bg-white/50 rounded-full"
-        />
-      ))}
+    <div className={cn('flex items-center gap-[2px] h-3', className)}>
+      {bars.map((bar, i) => {
+        const style = {
+          '--bar-0': bar.heights[0],
+          '--bar-1': bar.heights[1],
+          '--bar-2': bar.heights[2],
+          '--bar-3': bar.heights[3],
+          animationDuration: `${bar.duration}s`,
+          animationDelay: `-${i * 0.07}s`,
+          animationPlayState: isPlaying && !isStatic ? 'running' : 'paused',
+          transform: isPlaying && !isStatic ? undefined : 'scaleY(0.2)',
+          opacity: isPlaying && !isStatic ? 1 : 0.4,
+          transformOrigin: 'center',
+          willChange: 'transform, opacity',
+          transition: 'opacity 0.3s ease, transform 0.3s ease'
+        } as CSSProperties
+
+        return (
+          <div
+            key={i}
+            style={{ ...style, background: 'var(--lume-accent, #fff)' }}
+            className={cn(
+              'w-[3px] h-full rounded-full',
+              isPlaying && !isStatic && 'music-bar-animate'
+            )}
+          />
+        )
+      })}
     </div>
   )
 }

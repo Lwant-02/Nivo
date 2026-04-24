@@ -29,7 +29,7 @@ export const VolumeSwitcher = ({
         onChange={handleVolumeChange}
         className="flex-1 h-[5px] rounded-full appearance-none outline-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-md transition-all duration-75"
         style={{
-          background: `linear-gradient(to right, rgba(255,255,255,0.9) ${volumeLevel}%, var(--color-gray) ${volumeLevel}%)`
+          background: `linear-gradient(to right, var(--lume-accent, rgba(255,255,255,0.9)) ${volumeLevel}%, var(--color-gray) ${volumeLevel}%)`
         }}
       />
       <Volume2 size={16} />

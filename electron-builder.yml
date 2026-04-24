@@ -1,7 +1,8 @@
-appId: com.electron.app
-productName: lume
+appId: dev.nawmain.lume
+productName: Lume
 directories:
   buildResources: build
+  output: dist
 files:
   - '!**/.vscode/*'
   - '!src/*'
@@ -11,6 +12,11 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - resources/**
+extraResources:
+  - from: resources/bin
+    to: bin
+    filter:
+      - "**/*"
 win:
   executableName: lume
 nsis:
@@ -19,7 +25,16 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
-  entitlementsInherit: build/entitlements.mac.plist
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.inherit.plist
+  category: public.app-category.productivity
+  icon: resources/icon.png
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  target:
+    - target: dmg
+      arch:
+        - arm64
   extendInfo:
     - NSCameraUsageDescription: Application requests access to the device's camera.
     - NSMicrophoneUsageDescription: Application requests access to the device's microphone.

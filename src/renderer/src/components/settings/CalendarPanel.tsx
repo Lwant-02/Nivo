@@ -1,16 +1,16 @@
-import { useState } from 'react'
-import { CalendarDays, Hourglass, Timer, Video, Bell } from 'lucide-react'
+import { useSettings } from '../../hooks/useSettings'
+import { CalendarDays, Hourglass, Video, Bell } from 'lucide-react'
 import { SettingCard } from './SettingCard'
 import { SectionLabel } from './SectionLabel'
 import { SettingRow } from './SettingRow'
-import { Pill } from './Pill'
 
 export function CalendarPanel() {
-  const [enabled, setEnabled] = useState(true)
-  const [nextOnly, setNextOnly] = useState(true)
-  const [countdown, setCountdown] = useState(true)
-  const [clickToJoin, setClickToJoin] = useState(true)
-  const [reminderBeforeMin, setReminderBeforeMin] = useState<5 | 10 | 15>(5)
+  const { settings, update } = useSettings()
+
+  const enabled = settings.enableCalendar
+  const nextOnly = settings.calendarNextEventOnly
+  const clickToJoin = settings.calendarClickToJoin
+  const reminderBeforeMin = settings.calendarReminderMin
 
   const iconStyle = { size: 15, strokeWidth: 2 }
   const reminderOptions: (5 | 10 | 15)[] = [5, 10, 15]
@@ -50,45 +50,33 @@ export function CalendarPanel() {
           label="Enable Calendar on Lume"
           description="Pull events from macOS Calendar and show them in the Island."
           enabled={enabled}
-          onToggle={() => setEnabled((v) => !v)}
+          onToggle={() => update('enableCalendar', !enabled)}
           isFirst
         />
       </SettingCard>
 
       {/* Display */}
       <SectionLabel text="Display" />
-      <SettingCard
-        style={{ opacity: enabled ? 1 : 0.5, pointerEvents: enabled ? 'auto' : 'none' }}
-      >
+      <SettingCard style={{ opacity: enabled ? 1 : 0.5, pointerEvents: enabled ? 'auto' : 'none' }}>
         <SettingRow
           icon={<Hourglass {...iconStyle} />}
           label="Show next event only"
           description="Keep the Island compact — only what's happening now or in the next 30 minutes."
           enabled={nextOnly}
-          onToggle={() => setNextOnly((v) => !v)}
+          onToggle={() => update('calendarNextEventOnly', !nextOnly)}
           isFirst
-        />
-        <SettingRow
-          icon={<Timer {...iconStyle} />}
-          label="Meeting countdown"
-          description="Live timer in the Island — “Starts in 5m”."
-          enabled={countdown}
-          onToggle={() => setCountdown((v) => !v)}
         />
       </SettingCard>
 
       {/* Meeting */}
       <SectionLabel text="Meetings" />
-      <SettingCard
-        style={{ opacity: enabled ? 1 : 0.5, pointerEvents: enabled ? 'auto' : 'none' }}
-      >
+      <SettingCard style={{ opacity: enabled ? 1 : 0.5, pointerEvents: enabled ? 'auto' : 'none' }}>
         <SettingRow
           icon={<Video {...iconStyle} />}
           label="Click to join"
           description="Open Zoom, Meet, or Teams links when you click the Island."
           enabled={clickToJoin}
-          onToggle={() => setClickToJoin((v) => !v)}
-          right={<Pill variant="accent">Pro</Pill>}
+          onToggle={() => update('calendarClickToJoin', !clickToJoin)}
           isFirst
         />
         <SettingRow
@@ -113,7 +101,7 @@ export function CalendarPanel() {
                     key={n}
                     onClick={(e) => {
                       e.stopPropagation()
-                      setReminderBeforeMin(n)
+                      update('calendarReminderMin', n)
                     }}
                     className="cursor-pointer"
                     style={{

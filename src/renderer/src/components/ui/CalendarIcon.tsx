@@ -103,8 +103,8 @@ export const CalendarIcon: React.FC<CalendarIconProps> = ({ className, date }) =
             y2="44"
             gradientUnits="userSpaceOnUse"
           >
-            <stop stopColor="#FF5F5F" />
-            <stop offset="1" stopColor="#E63946" />
+            <stop stopColor="var(--lume-accent)" />
+            <stop offset="1" stopColor="var(--lume-accent)" stopOpacity={0.8} />
           </linearGradient>
 
           <filter id="textShadow" x="0" y="0" width="128" height="128" filterUnits="userSpaceOnUse">
