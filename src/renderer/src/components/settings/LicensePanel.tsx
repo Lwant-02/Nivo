@@ -154,7 +154,7 @@ export function LicensePanel() {
                   letterSpacing: -0.2
                 }}
               >
-                {activated ? 'Lume Pro — Activated' : 'Not activated'}
+                {activated ? 'Lume Activated' : 'Not activated'}
               </span>
               <Pill variant={activated ? 'accent' : 'default'}>
                 {activated ? 'Lifetime' : 'Inactive'}

@@ -33,6 +33,11 @@ export const LOTTIE_STYLES: LottieStyle[] = [
     src: 'https://lottie.host/f0a68f44-d307-4f14-918b-14c7c53b491b/RKTzkNFXga.lottie',
     figureSize: 30,
     scale: 1.4
+  },
+  {
+    src: 'https://lottie.host/90a279ed-888f-4581-8f4e-b4755fc4cc11/YvpW7cQ4oz.lottie',
+    figureSize: 40,
+    scale: 1.4
   }
 ]
 

@@ -275,10 +275,10 @@ export class MediaService {
       const elapsedRaw = raw['kMRMediaRemoteNowPlayingInfoElapsedTime'] || ''
       const playbackRateStr = raw['kMRMediaRemoteNowPlayingInfoPlaybackRate'] || ''
 
-      const playbackRate = playbackRateStr ? parseFloat(playbackRateStr) || 0 : 0
-      
+      let playbackRate = playbackRateStr ? parseFloat(playbackRateStr) || 0 : 0
+
       const rawIsPlaying = raw['kMRMediaRemoteNowPlayingInfoIsPlaying']
-      let isPlaying = rawIsPlaying !== undefined 
+      let isPlaying = rawIsPlaying !== undefined
         ? (rawIsPlaying === '1' || rawIsPlaying === 'true')
         : playbackRate > 0
 
@@ -290,13 +290,24 @@ export class MediaService {
         raw['kMRMediaRemoteNowPlayingInfoClientBundleIdentifier'] || ''
       ).toLowerCase()
 
-      // Spotify/Music Correction: Sometimes nowplaying-cli gets stuck on 'playing' 
-      // even after pause. Force a quick AppleScript check for these apps.
+      // Spotify/Music Correction: nowplaying-cli's elapsed time is a snapshot
+      // taken when playback last changed (so it can read 0 even mid-track), and
+      // its isPlaying can lag a real pause. Pull both live values from AppleScript.
       if (bundleId.includes('spotify') || bundleId.includes('music')) {
         const appName = bundleId.includes('spotify') ? 'Spotify' : 'Music'
         try {
-          const { stdout: pState } = await execAsync(`osascript -e 'tell application "${appName}" to get player state as string'`)
-          isPlaying = pState.trim().toLowerCase().includes('playing')
+          const { stdout } = await execAsync(
+            `osascript -e 'tell application "${appName}" to return (player state as string) & "@@@" & (player position as string)'`
+          )
+          const [pState, posStr] = stdout.trim().split('@@@')
+          isPlaying = pState.toLowerCase().includes('playing')
+          // Keep playbackRate in lockstep with isPlaying so the renderer stops
+          // its smooth-progress animation the moment we pause.
+          playbackRate = isPlaying ? 1 : 0
+          const livePos = parseFloat(posStr)
+          if (!isNaN(livePos) && livePos >= 0) {
+            elapsed = Math.round(livePos * 100) / 100
+          }
         } catch {
           // Fallback to CLI if AppleScript fails
         }
@@ -671,9 +682,11 @@ return "none"`
         this.lastBrowserIsPlaying = !this.lastBrowserIsPlaying
       }
 
-      // Optimistic Update
+      // Optimistic Update — flip playbackRate too so the renderer's smooth
+      // progress animation (driven by playbackRate) stops in lockstep.
       if (this.lastState && this.mainWindow) {
         this.lastState.isPlaying = !this.lastState.isPlaying
+        this.lastState.playbackRate = this.lastState.isPlaying ? 1 : 0
         this.mainWindow.webContents.send('media-update', this.lastState)
       }
 
@@ -703,19 +716,19 @@ return "none"`
 
   private async dispatchControl(action: 'playpause' | 'next' | 'previous') {
     const source = this.lastState?.source
-    const cliCmd = action === 'playpause' ? 'togglePlayPause' : action === 'next' ? 'next' : 'previous'
 
-    // 1. Universal Command via nowplaying-cli (Primary)
-    // The user prefers the CLI as it handles system-level media events natively.
-    await execAsync(`"${this.binaryPath}" ${cliCmd}`).catch(() => {})
-
-    // 2. App-Specific Authoritative Fallbacks
+    // For Spotify/Music, use AppleScript exclusively. Sending both nowplaying-cli
+    // and AppleScript toggles the state twice (pauses, then immediately resumes).
     if (source === 'spotify' || source === 'music') {
       const appName = source === 'spotify' ? 'Spotify' : 'Music'
       const cmd = action === 'playpause' ? 'playpause' : action === 'next' ? 'next track' : 'previous track'
       await execAsync(`osascript -e 'tell application "${appName}" to ${cmd}'`).catch(() => {})
       return
     }
+
+    // 1. Universal Command via nowplaying-cli (Primary) for system/other sources
+    const cliCmd = action === 'playpause' ? 'togglePlayPause' : action === 'next' ? 'next' : 'previous'
+    await execAsync(`"${this.binaryPath}" ${cliCmd}`).catch(() => {})
 
     // 3. Browser-specific Fallback via JavaScript Injection
     const isBrowser = this.BROWSER_SOURCES.includes(source)
