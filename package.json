@@ -1,5 +1,5 @@
 {
-  "name": "lume",
+  "name": "nivo",
   "version": "1.0.0",
   "description": "Premium macOS Dynamic Island utility for the Mac notch",
   "main": "./out/main/index.js",
