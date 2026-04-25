@@ -47,7 +47,7 @@ export function CalendarPanel() {
       <SettingCard>
         <SettingRow
           icon={<CalendarDays {...iconStyle} />}
-          label="Enable Calendar on Lume"
+          label="Enable Calendar on Nivo"
           description="Pull events from macOS Calendar and show them in the Island."
           enabled={enabled}
           onToggle={() => update('enableCalendar', !enabled)}

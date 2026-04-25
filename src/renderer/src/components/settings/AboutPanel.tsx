@@ -45,7 +45,7 @@ export function AboutPanel() {
               marginBottom: 14
             }}
           >
-            <img src={iconSrc} className="object-cover" alt="Lume" />
+            <img src={iconSrc} className="object-cover" alt="Nivo" />
           </div>
           <h1
             style={{
@@ -56,7 +56,7 @@ export function AboutPanel() {
               lineHeight: 1
             }}
           >
-            Lume
+            Nivo
           </h1>
           <p
             style={{
@@ -169,7 +169,7 @@ export function AboutPanel() {
           letterSpacing: 0.2
         }}
       >
-        © {year} Lume · All rights reserved.
+        © {year} Nivo · All rights reserved.
       </p>
     </>
   )

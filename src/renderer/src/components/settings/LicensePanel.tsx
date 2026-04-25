@@ -90,7 +90,7 @@ export function LicensePanel() {
             letterSpacing: -0.1
           }}
         >
-          Your Lume activation for this Mac.
+          Your Nivo activation for this Mac.
         </p>
       </div>
 
@@ -154,7 +154,7 @@ export function LicensePanel() {
                   letterSpacing: -0.2
                 }}
               >
-                {activated ? 'Lume Activated' : 'Not activated'}
+                {activated ? 'Nivo Activated' : 'Not activated'}
               </span>
               <Pill variant={activated ? 'accent' : 'default'}>
                 {activated ? 'Lifetime' : 'Inactive'}
@@ -168,7 +168,7 @@ export function LicensePanel() {
               }}
             >
               {activated
-                ? 'Thanks for supporting Lume. Enjoy every feature, forever.'
+                ? 'Thanks for supporting Nivo. Enjoy every feature, forever.'
                 : 'Enter a valid license key to unlock the full experience.'}
             </p>
           </div>

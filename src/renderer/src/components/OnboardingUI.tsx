@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import cn from 'clsx'
 import { Spinner } from './ui/Spinner'
 
-const GET_LICENSE_URL = 'https://nawmain.dev'
-const RECOVER_LICENSE_URL = 'https://nawmain.dev'
+const GET_LICENSE_URL = 'https://nivo.nawmain.dev'
+const RECOVER_LICENSE_URL = 'https://nivo.nawmain.dev/recover-license'
 
 export const OnboardingUI = () => {
   const [licenseKey, setLicenseKey] = useState('')
@@ -58,7 +58,7 @@ export const OnboardingUI = () => {
             className="text-[30px] font-bold text-white tracking-tight"
             style={{ marginBottom: '8px' }}
           >
-            Ready For <span className="text-purple">Lume?</span>
+            Ready For <span className="text-purple">Nivo?</span>
           </h1>
           <p
             className="text-[14px] text-white/70 text-center max-w-[320px] leading-snug"
@@ -164,7 +164,7 @@ export const OnboardingUI = () => {
                   : 'bg-white/3 border-white/8 text-white/40 cursor-not-allowed'
               )}
             >
-              {submitting ? <Spinner size="size-11" /> : 'Activate Lume'}
+              {submitting ? <Spinner size="size-11" /> : 'Activate Nivo'}
             </button>
           </div>
         </motion.div>

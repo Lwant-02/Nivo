@@ -257,7 +257,7 @@ function refreshTrayMenu(): void {
   const activated = licenseService?.isActivated() ?? false
 
   const template: Electron.MenuItemConstructorOptions[] = [
-    { label: `Lume Settings`, enabled: false },
+    { label: `Nivo Settings`, enabled: false },
     { type: 'separator' }
   ]
 
@@ -269,7 +269,7 @@ function refreshTrayMenu(): void {
     })
   } else {
     template.push({
-      label: 'Activate Lume...',
+      label: 'Activate Nivo...',
       click: () => createOnboardingWindow()
     })
   }
@@ -277,7 +277,7 @@ function refreshTrayMenu(): void {
   template.push(
     { type: 'separator' },
     {
-      label: 'Quit Lume',
+      label: 'Quit Nivo',
       accelerator: 'Command+Q',
       click: () => app.quit()
     }

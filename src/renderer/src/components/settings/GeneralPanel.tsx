@@ -1,6 +1,6 @@
 import type { JSX } from 'react'
 import { motion } from 'framer-motion'
-import { Maximize2, ShieldOff, Vibrate, LogIn, Pointer } from 'lucide-react'
+import { Maximize2, ShieldOff, Vibrate, LogIn, ChevronRight, ChevronLeft } from 'lucide-react'
 import { SettingCard } from './SettingCard'
 import { SectionLabel } from './SectionLabel'
 import { ThemePicker } from './ThemePicker'
@@ -73,7 +73,7 @@ export function GeneralPanel(): JSX.Element {
             letterSpacing: -0.1
           }}
         >
-          System-wide preferences for how Lume behaves on your Mac.
+          System-wide preferences for how nivo behaves on your Mac.
         </p>
       </div>
 
@@ -82,7 +82,7 @@ export function GeneralPanel(): JSX.Element {
         <SettingRow
           icon={<LogIn {...ICON_STYLE} />}
           label="Launch at login"
-          description="Open Lume automatically when you sign in."
+          description="Open nivo automatically when you sign in."
           enabled={settings.launchAtLogin}
           onToggle={() => update('launchAtLogin', !settings.launchAtLogin)}
           isFirst
@@ -119,38 +119,9 @@ export function GeneralPanel(): JSX.Element {
 
       <SectionLabel text="Gestures" />
       <SettingCard>
-        <div className="grid grid-cols-2 gap-2" style={{ padding: '20px 14px' }}>
-          <div className="flex flex-col justify-center items-center gap-4">
-            <div className="w-16 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden group">
-              <motion.div
-                animate={{ x: [-15, 15, -15] }}
-                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                className="text-(--lume-accent) drop-shadow-[0_0_8px_(--lume-accent)]"
-              >
-                <Pointer size={20} fill="currentColor" className="-rotate-45" />
-              </motion.div>
-            </div>
-            <div className="flex flex-col text-center">
-              <span className="text-white text-[13px] font-semibold">Swipe Right</span>
-              <span className="text-white/40 text-[10px] leading-tight mt-0.5">Next Track</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col justify-center items-center gap-4">
-            <div className="w-16 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden group">
-              <motion.div
-                animate={{ x: [15, -15, 15] }}
-                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                className="text-(--lume-accent) drop-shadow-[0_0_8px_(--lume-accent)]"
-              >
-                <Pointer size={20} fill="currentColor" className="-rotate-45" />
-              </motion.div>
-            </div>
-            <div className="flex flex-col text-center">
-              <span className="text-white text-[13px] font-semibold">Swipe Left</span>
-              <span className="text-white/40 text-[10px] leading-tight mt-0.5">Prev Track</span>
-            </div>
-          </div>
+        <div className="grid grid-cols-2" style={{ gap: 10, padding: 12 }}>
+          <GestureCard direction="right" label="Swipe Right" description="Next Track" />
+          <GestureCard direction="left" label="Swipe Left" description="Prev Track" />
         </div>
       </SettingCard>
 
@@ -165,5 +136,83 @@ export function GeneralPanel(): JSX.Element {
         />
       </SettingCard>
     </>
+  )
+}
+
+function GestureCard({
+  direction,
+  label,
+  description
+}: {
+  direction: 'left' | 'right'
+  label: string
+  description: string
+}): JSX.Element {
+  const isRight = direction === 'right'
+  const Chevron = isRight ? ChevronRight : ChevronLeft
+
+  return (
+    <div
+      className="relative rounded-xl border border-white/[0.07] overflow-hidden"
+      style={{
+        background:
+          'linear-gradient(180deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.012) 100%)',
+        padding: '14px 14px 12px'
+      }}
+    >
+      <div
+        className="relative h-11 rounded-lg overflow-hidden flex items-center justify-center"
+        style={{
+          background: 'rgba(0,0,0,0.35)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03), inset 0 0 0 1px rgba(255,255,255,0.04)'
+        }}
+      >
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            background: isRight
+              ? 'linear-gradient(90deg, transparent 30%, var(--nivo-accent-glow, rgba(168,85,247,0.35)) 100%)'
+              : 'linear-gradient(90deg, var(--nivo-accent-glow, rgba(168,85,247,0.35)) 0%, transparent 70%)',
+            opacity: 0.55
+          }}
+        />
+
+        <div className="flex items-center gap-[3px] relative z-10">
+          {[0, 1, 2, 3].map((i) => {
+            const order = isRight ? i : 3 - i
+            return (
+              <motion.span
+                key={i}
+                initial={false}
+                animate={{ opacity: [0.18, 1, 0.18] }}
+                transition={{
+                  duration: 1.4,
+                  repeat: Infinity,
+                  delay: order * 0.13,
+                  ease: 'easeInOut'
+                }}
+                style={{
+                  color: 'var(--nivo-accent, #a855f7)',
+                  filter: 'drop-shadow(0 0 4px var(--nivo-accent-glow, rgba(168,85,247,0.5)))'
+                }}
+              >
+                <Chevron size={14} strokeWidth={2.6} />
+              </motion.span>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center text-center" style={{ marginTop: 12 }}>
+        <span className="text-white text-[13px] font-semibold tracking-tight">{label}</span>
+        <span
+          className="text-white/45 text-[11px] tracking-tight"
+          style={{ marginTop: 2, letterSpacing: -0.05 }}
+        >
+          {description}
+        </span>
+      </div>
+    </div>
   )
 }

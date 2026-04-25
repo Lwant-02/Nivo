@@ -3,9 +3,9 @@ import { randomUUID, createHash } from 'node:crypto'
 import { execSync } from 'node:child_process'
 import { getDatabase } from './database'
 
-export const TEST_LICENSE_KEY = 'LUME-TEST-2026'
+export const TEST_LICENSE_KEY = 'NIVO-TEST-2026'
 
-const SECRET_SALT = 'lume_secret_2026'
+const SECRET_SALT = 'nivo_secret_2026'
 
 export interface AuthState {
   licenseKey: string | null
