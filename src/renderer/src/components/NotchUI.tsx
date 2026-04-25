@@ -301,7 +301,7 @@ export default function NotchUI() {
         'relative overflow-hidden origin-top transition-shadow duration-500',
         isExpanded
           ? 'bg-black/85 backdrop-blur-2xl border border-white/10'
-          : 'bg-black border-none shadow-none'
+          : 'border-none shadow-none'
       )}
       style={{
         borderTopLeftRadius: 0,
