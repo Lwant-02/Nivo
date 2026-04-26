@@ -1,5 +1,4 @@
 import type { JSX } from 'react'
-import { motion } from 'framer-motion'
 import { Maximize2, ShieldOff, Vibrate, LogIn, ChevronRight, ChevronLeft } from 'lucide-react'
 import { SettingCard } from './SettingCard'
 import { SectionLabel } from './SectionLabel'
@@ -182,23 +181,17 @@ function GestureCard({
           {[0, 1, 2, 3].map((i) => {
             const order = isRight ? i : 3 - i
             return (
-              <motion.span
+              <span
                 key={i}
-                initial={false}
-                animate={{ opacity: [0.18, 1, 0.18] }}
-                transition={{
-                  duration: 1.4,
-                  repeat: Infinity,
-                  delay: order * 0.13,
-                  ease: 'easeInOut'
-                }}
+                className="animate-gesture-arrow"
                 style={{
                   color: 'var(--nivo-accent, #a855f7)',
-                  filter: 'drop-shadow(0 0 4px var(--nivo-accent-glow, rgba(168,85,247,0.5)))'
+                  filter: 'drop-shadow(0 0 4px var(--nivo-accent-glow, rgba(168,85,247,0.5)))',
+                  animationDelay: `${order * 0.13}s`
                 }}
               >
                 <Chevron size={14} strokeWidth={2.6} />
-              </motion.span>
+              </span>
             )
           })}
         </div>

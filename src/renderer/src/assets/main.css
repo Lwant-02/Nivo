@@ -108,3 +108,12 @@ button, a, input, select, textarea, [role="button"], .no-drag {
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
 }
+
+@keyframes gesture-arrow {
+  0%, 100% { opacity: 0.18; }
+  50% { opacity: 1; }
+}
+
+.animate-gesture-arrow {
+  animation: gesture-arrow 1.4s ease-in-out infinite;
+}

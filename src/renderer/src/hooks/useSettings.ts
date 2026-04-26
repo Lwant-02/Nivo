@@ -14,7 +14,8 @@ const DEFAULTS: AppSettings = {
   calendarClickToJoin: true,
   calendarReminderMin: 5,
   showLottieOnPause: false,
-  lottieStyle: 0
+  lottieStyle: 0,
+  hasSeenWelcome: false
 }
 
 export function useSettings(): {

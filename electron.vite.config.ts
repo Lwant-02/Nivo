@@ -12,6 +12,10 @@ export default defineConfig({
         '@renderer': resolve('src/renderer/src')
       }
     },
-    plugins: [react(), tailwindcss()]
+    assetsInclude: ['**/*.lottie'],
+    plugins: [react(), tailwindcss()],
+    build: {
+      assetsInlineLimit: 0
+    }
   }
 })

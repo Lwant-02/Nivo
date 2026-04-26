@@ -21,6 +21,7 @@ export interface Settings {
   calendarReminderMin: number
   showLottieOnPause: boolean
   lottieStyle: number
+  hasSeenWelcome: boolean
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -37,7 +38,8 @@ export const DEFAULT_SETTINGS: Settings = {
   calendarClickToJoin: true,
   calendarReminderMin: 5,
   showLottieOnPause: false,
-  lottieStyle: 0
+  lottieStyle: 0,
+  hasSeenWelcome: false
 }
 
 const VALID_THEMES: ReadonlySet<ThemeId> = new Set([
@@ -64,6 +66,7 @@ type Column =
   | 'calendar_reminder_min'
   | 'show_lottie_on_pause'
   | 'lottie_style'
+  | 'has_seen_welcome'
 
 type Kind = 'bool' | 'int' | 'theme'
 
@@ -86,7 +89,8 @@ const FIELDS: { [K in keyof Settings]: FieldSpec } = {
   calendarClickToJoin: { column: 'calendar_click_to_join', kind: 'bool' },
   calendarReminderMin: { column: 'calendar_reminder_min', kind: 'int' },
   showLottieOnPause: { column: 'show_lottie_on_pause', kind: 'bool' },
-  lottieStyle: { column: 'lottie_style', kind: 'int' }
+  lottieStyle: { column: 'lottie_style', kind: 'int' },
+  hasSeenWelcome: { column: 'has_seen_welcome', kind: 'bool' }
 }
 
 const SELECT_ALIASES = (Object.keys(FIELDS) as (keyof Settings)[])

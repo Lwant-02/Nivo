@@ -15,6 +15,7 @@ export function useAppliedTheme(theme: ThemeId): void {
     const root = document.documentElement
     root.style.setProperty('--lume-accent', accent)
     root.style.setProperty('--lume-accent-glow', glow)
+    root.style.setProperty('--lume-accent-soft', glow)
     root.style.setProperty('--lume-purple', accent)
     root.style.setProperty('--lume-purple-glow', glow)
   }, [theme])

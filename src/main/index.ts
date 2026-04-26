@@ -153,6 +153,7 @@ function applyWindowSettings(win: BrowserWindow, settings: Settings | null | und
 
 function applyLaunchAtLogin(enabled: boolean): void {
   if (process.platform !== 'darwin' && process.platform !== 'win32') return
+  if (is.dev) return
   app.setLoginItemSettings({ openAtLogin: enabled, openAsHidden: true })
 }
 
@@ -254,14 +255,15 @@ function createOnboardingWindow(): void {
 function refreshTrayMenu(): void {
   if (!tray) return
 
-  const activated = licenseService?.isActivated() ?? false
+  const auth = licenseService?.getAuth()
+  const hasAccess = auth?.hasAccess ?? false
 
   const template: Electron.MenuItemConstructorOptions[] = [
     { label: `Nivo Settings`, enabled: false },
     { type: 'separator' }
   ]
 
-  if (activated) {
+  if (hasAccess) {
     template.push({
       label: 'Settings...',
       accelerator: 'Command+,',
@@ -344,12 +346,39 @@ app.whenReady().then(() => {
     setNotchOpacity(1)
   })
 
-  if (licenseService?.isActivated()) {
+  if (licenseService?.hasAccess()) {
     createMainWindow()
   } else {
     createOnboardingWindow()
   }
+
+  // Monitor access (trial expiry) and switch windows if necessary
+  setInterval(() => {
+    const hasAccess = licenseService?.hasAccess() ?? false
+    if (hasAccess && !mainWindow && !onboardingWindow) {
+      createMainWindow()
+    } else if (!hasAccess && (mainWindow || settingsWindow)) {
+      if (mainWindow) {
+        mainWindow.destroy()
+        mainWindow = null
+      }
+      if (settingsWindow) {
+        settingsWindow.destroy()
+        settingsWindow = null
+      }
+      createOnboardingWindow()
+      refreshTrayMenu()
+    }
+  }, 5000)
 })
+
+function broadcastLicenseUpdate(): void {
+  const state = licenseService?.getAuth()
+  if (!state) return
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) win.webContents.send('license-update', state)
+  }
+}
 
 ipcMain.handle('get-audio-output', () => audioService?.getState())
 
@@ -361,7 +390,7 @@ ipcMain.handle('open-settings', () => {
 
 ipcMain.handle('activate-license', async (_event, key: string) => {
   if (!licenseService) {
-    return { ok: false, error: 'License service unavailable. Please restart Lume.' }
+    return { ok: false, error: 'License service unavailable. Please restart Nivo.' }
   }
 
   // Simulate network round-trip so the UI's "Activating…" state is visible.
@@ -376,12 +405,42 @@ ipcMain.handle('activate-license', async (_event, key: string) => {
   }
   createMainWindow()
   refreshTrayMenu()
+  broadcastLicenseUpdate()
 
   return { ok: true }
 })
 
+ipcMain.handle('start-trial', () => {
+  if (!licenseService) {
+    return { ok: false, error: 'License service unavailable. Please restart Nivo.' }
+  }
+
+  const result = licenseService.startTrial()
+  if (!result.ok) return result
+
+  if (onboardingWindow) {
+    onboardingWindow.destroy()
+    onboardingWindow = null
+  }
+  createMainWindow()
+  refreshTrayMenu()
+  broadcastLicenseUpdate()
+
+  return result
+})
+
 ipcMain.handle('get-license-state', () => {
-  return licenseService?.getAuth() ?? { licenseKey: null, isActivated: false, instanceId: null }
+  return (
+    licenseService?.getAuth() ?? {
+      licenseKey: null,
+      isActivated: false,
+      instanceId: null,
+      trialStartedAt: null,
+      trialEndsAt: null,
+      isInTrial: false,
+      hasAccess: false
+    }
+  )
 })
 
 type MediaCommand = 'playPause' | 'next' | 'previous'

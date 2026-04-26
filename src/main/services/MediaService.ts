@@ -178,7 +178,7 @@ export class MediaService {
     const doPoll = async () => {
       if (!window || window.isDestroyed()) return
 
-      // Debounce: Skip polling for 2s after user interaction to prevent stale system states 
+      // Debounce: Skip polling for 2s after user interaction to prevent stale system states
       // from overwriting our optimistic UI updates (Spotify/system lag).
       if (Date.now() - this.lastInteractionTime < 2000) return
 
@@ -278,9 +278,10 @@ export class MediaService {
       let playbackRate = playbackRateStr ? parseFloat(playbackRateStr) || 0 : 0
 
       const rawIsPlaying = raw['kMRMediaRemoteNowPlayingInfoIsPlaying']
-      let isPlaying = rawIsPlaying !== undefined
-        ? (rawIsPlaying === '1' || rawIsPlaying === 'true')
-        : playbackRate > 0
+      let isPlaying =
+        rawIsPlaying !== undefined
+          ? rawIsPlaying === '1' || rawIsPlaying === 'true'
+          : playbackRate > 0
 
       // Browser Correction: Chrome often reports incorrect durations or "stuck" end-times
       let duration = Math.round((parseFloat(durationRaw) || 0) * 100) / 100
@@ -721,20 +722,23 @@ return "none"`
     // and AppleScript toggles the state twice (pauses, then immediately resumes).
     if (source === 'spotify' || source === 'music') {
       const appName = source === 'spotify' ? 'Spotify' : 'Music'
-      const cmd = action === 'playpause' ? 'playpause' : action === 'next' ? 'next track' : 'previous track'
+      const cmd =
+        action === 'playpause' ? 'playpause' : action === 'next' ? 'next track' : 'previous track'
       await execAsync(`osascript -e 'tell application "${appName}" to ${cmd}'`).catch(() => {})
       return
     }
 
     // 1. Universal Command via nowplaying-cli (Primary) for system/other sources
-    const cliCmd = action === 'playpause' ? 'togglePlayPause' : action === 'next' ? 'next' : 'previous'
+    const cliCmd =
+      action === 'playpause' ? 'togglePlayPause' : action === 'next' ? 'next' : 'previous'
     await execAsync(`"${this.binaryPath}" ${cliCmd}`).catch(() => {})
 
     // 3. Browser-specific Fallback via JavaScript Injection
     const isBrowser = this.BROWSER_SOURCES.includes(source)
     if (isBrowser) {
-      const appName = source === 'brave' ? 'Brave Browser' : source === 'chrome' ? 'Google Chrome' : 'Safari'
-      
+      const appName =
+        source === 'brave' ? 'Brave Browser' : source === 'chrome' ? 'Google Chrome' : 'Safari'
+
       let jsCode = ''
       if (action === 'playpause') {
         jsCode = `(function() {
@@ -754,9 +758,10 @@ return "none"`
         })()`
       }
 
-      const script = source === 'safari' 
-        ? `tell application "Safari" to do JavaScript "${jsCode}" in current tab of front window`
-        : `tell application "${appName}" to execute active tab of front window javascript "${jsCode.replace(/"/g, '\\"')}"`
+      const script =
+        source === 'safari'
+          ? `tell application "Safari" to do JavaScript "${jsCode}" in current tab of front window`
+          : `tell application "${appName}" to execute active tab of front window javascript "${jsCode.replace(/"/g, '\\"')}"`
 
       await execAsync(`osascript -e '${script}'`).catch(() => {})
       return

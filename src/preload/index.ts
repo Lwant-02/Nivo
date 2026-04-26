@@ -25,7 +25,13 @@ const api = {
 
   // License activation
   activateLicense: (key: string) => ipcRenderer.invoke('activate-license', key),
+  startTrial: () => ipcRenderer.invoke('start-trial'),
   getLicenseState: () => ipcRenderer.invoke('get-license-state'),
+  onLicenseUpdate: (callback: (data: any) => void) => {
+    const wrapper = (_: any, data: any) => callback(data)
+    ipcRenderer.on('license-update', wrapper)
+    return () => ipcRenderer.removeListener('license-update', wrapper)
+  },
 
   // Events
   onMediaUpdate: (callback: (data: any) => void) => {

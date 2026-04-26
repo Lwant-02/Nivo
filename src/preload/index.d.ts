@@ -15,11 +15,14 @@ declare global {
       openSettings: () => Promise<void>
       getAppVersion: () => Promise<string>
       activateLicense: (key: string) => Promise<{ ok: boolean; error?: string }>
-      getLicenseState: () => Promise<{
-        licenseKey: string | null
-        isActivated: boolean
-        instanceId: string | null
+      startTrial: () => Promise<{
+        ok: boolean
+        error?: string
+        trialStartedAt?: number
+        trialEndsAt?: number
       }>
+      getLicenseState: () => Promise<LicenseState>
+      onLicenseUpdate: (callback: (state: LicenseState) => void) => () => void
       onMediaUpdate: (
         callback: (data: {
           title: string
@@ -63,6 +66,16 @@ declare global {
   type ThemeId = 'midnight' | 'graphite' | 'ocean' | 'forest' | 'sunset' | 'berry'
   type BatteryThreshold = 10 | 20
 
+  interface LicenseState {
+    licenseKey: string | null
+    isActivated: boolean
+    instanceId: string | null
+    trialStartedAt: number | null
+    trialEndsAt: number | null
+    isInTrial: boolean
+    hasAccess: boolean
+  }
+
   interface AppSettings {
     theme: ThemeId
     launchAtLogin: boolean
@@ -78,6 +91,7 @@ declare global {
     calendarReminderMin: number
     showLottieOnPause: boolean
     lottieStyle: number
+    hasSeenWelcome: boolean
   }
 }
 
