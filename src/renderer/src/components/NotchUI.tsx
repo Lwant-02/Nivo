@@ -98,9 +98,20 @@ export default function NotchUI() {
   const [displayArt, setDisplayArt] = useState<string | null>(null)
 
   // Sync position and volume when media updates
+  const hasSyncedInitial = useRef(false)
   useEffect(() => {
-    setPosition(duration > 0 ? Math.min(initialPosition, duration) : initialPosition)
-  }, [initialPosition, duration])
+    const valid = duration > 0
+    const pos = valid ? Math.min(initialPosition, duration) : initialPosition
+    
+    // Force snap on first load or song change
+    if (!hasSyncedInitial.current || title !== prevTitleRef.current) {
+      setPosition(pos)
+      if (title) hasSyncedInitial.current = true
+    } else {
+      // Regular periodic sync from backend
+      setPosition(pos)
+    }
+  }, [initialPosition, duration, title])
 
   useEffect(() => {
     setVolumeLevel(volume)
