@@ -109,16 +109,24 @@ function createMainWindow(): void {
       mainWindow.setIgnoreMouseEvents(false)
       // Always promote to front on hover so the user can interact
       mainWindow.setAlwaysOnTop(true, 'screen-saver', 1)
+      mainWindow.setOpacity(1)
     } else if (!over && hoverActive) {
       hoverActive = false
       mainWindow.setIgnoreMouseEvents(true, { forward: true })
       
       const s = settingsService?.getAll()
       const hideFS = !!s?.hideInFullscreen
-      const hidePaused = !!s?.hideWhenPaused && !mediaService?.isMediaPlaying() && !isNotchActive
+      const isMediaActive = !!mediaService?.isMediaPlaying() || isNotchActive
+      const hidePaused = !!s?.hideWhenPaused && !isMediaActive
       
-      const level = hideFS || hidePaused ? 'floating' : 'screen-saver'
+      // If hideInFullscreen is false, we MUST stay at screen-saver level or macOS
+      // will hide the window when any app goes fullscreen.
+      const level = hideFS ? 'floating' : 'screen-saver'
       mainWindow.setAlwaysOnTop(true, level, 1)
+
+      // Use opacity to "hide" when paused instead of changing levels.
+      // This preserves the window's position in the macOS window stack.
+      mainWindow.setOpacity(hidePaused ? 0 : 1)
     }
   }, 16)
 
@@ -147,13 +155,14 @@ function applyWindowSettings(win: BrowserWindow, settings: Settings | null | und
   if (win.isDestroyed()) return
   const s = settings ?? null
 
-  // When hideInFullscreen or hideWhenPaused is on, drop to 'floating' so
-  // fullscreen apps (or simply the desktop) cover the notch.
+  const hideFS = !!s?.hideInFullscreen
   const hidePaused = !!s?.hideWhenPaused && !mediaService?.isMediaPlaying() && !isNotchActive
-  const shouldHide = !!s?.hideInFullscreen || hidePaused
 
-  const level: 'screen-saver' | 'floating' = shouldHide ? 'floating' : 'screen-saver'
+  // Maintain screen-saver level unless hideInFullscreen is enabled.
+  const level: 'screen-saver' | 'floating' = hideFS ? 'floating' : 'screen-saver'
   win.setAlwaysOnTop(true, level, 1)
+
+  win.setOpacity(hidePaused ? 0 : 1)
 
   win.setVisibleOnAllWorkspaces(true, {
     visibleOnFullScreen: true,
