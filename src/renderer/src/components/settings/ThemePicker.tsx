@@ -11,14 +11,20 @@ interface ThemePickerProps<T extends string> {
   value: T
   onChange: (id: T) => void
   options: ThemeOption<T>[]
+  columns?: number
 }
 
-export function ThemePicker<T extends string>({ value, onChange, options }: ThemePickerProps<T>) {
+export function ThemePicker<T extends string>({
+  value,
+  onChange,
+  options,
+  columns = 3
+}: ThemePickerProps<T>) {
   return (
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+        gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
         gap: 8,
         padding: 8,
         background: 'rgba(0,0,0,0.22)',

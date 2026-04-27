@@ -3,11 +3,13 @@ import { EventEmitter } from 'node:events'
 import { getDatabase } from './database'
 
 export type ThemeId = 'midnight' | 'graphite' | 'ocean' | 'forest' | 'sunset' | 'berry'
+export type NotchThemeId = 'obsidian' | 'frost' | 'aurora' | 'sand' | 'lavender' | 'crimson' | 'emerald' | 'amber'
 export type BatteryThreshold = 10 | 20
 
 export interface Settings {
   // General
   theme: ThemeId
+  notchTheme: NotchThemeId
   launchAtLogin: boolean
   hideInFullscreen: boolean
   hideFromScreenCapture: boolean
@@ -21,11 +23,15 @@ export interface Settings {
   calendarReminderMin: number
   showLottieOnPause: boolean
   lottieStyle: number
+  focusDuration: number
+  showWeather: boolean
+  showWeatherInCalendar: boolean
   hasSeenWelcome: boolean
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'midnight',
+  notchTheme: 'obsidian',
   launchAtLogin: false,
   hideInFullscreen: true,
   hideFromScreenCapture: false,
@@ -39,6 +45,9 @@ export const DEFAULT_SETTINGS: Settings = {
   calendarReminderMin: 5,
   showLottieOnPause: false,
   lottieStyle: 0,
+  focusDuration: 25,
+  showWeather: true,
+  showWeatherInCalendar: true,
   hasSeenWelcome: false
 }
 
@@ -51,8 +60,20 @@ const VALID_THEMES: ReadonlySet<ThemeId> = new Set([
   'berry'
 ])
 
+const VALID_NOTCH_THEMES: ReadonlySet<NotchThemeId> = new Set([
+  'obsidian',
+  'frost',
+  'aurora',
+  'sand',
+  'lavender',
+  'crimson',
+  'emerald',
+  'amber'
+])
+
 type Column =
   | 'theme'
+  | 'notch_theme'
   | 'launch_at_login'
   | 'hide_in_fullscreen'
   | 'hide_from_screen_capture'
@@ -66,9 +87,12 @@ type Column =
   | 'calendar_reminder_min'
   | 'show_lottie_on_pause'
   | 'lottie_style'
+  | 'focus_duration'
+  | 'show_weather'
+  | 'show_weather_in_calendar'
   | 'has_seen_welcome'
 
-type Kind = 'bool' | 'int' | 'theme'
+type Kind = 'bool' | 'int' | 'theme' | 'notchTheme'
 
 interface FieldSpec {
   column: Column
@@ -77,6 +101,7 @@ interface FieldSpec {
 
 const FIELDS: { [K in keyof Settings]: FieldSpec } = {
   theme: { column: 'theme', kind: 'theme' },
+  notchTheme: { column: 'notch_theme', kind: 'notchTheme' },
   launchAtLogin: { column: 'launch_at_login', kind: 'bool' },
   hideInFullscreen: { column: 'hide_in_fullscreen', kind: 'bool' },
   hideFromScreenCapture: { column: 'hide_from_screen_capture', kind: 'bool' },
@@ -90,6 +115,9 @@ const FIELDS: { [K in keyof Settings]: FieldSpec } = {
   calendarReminderMin: { column: 'calendar_reminder_min', kind: 'int' },
   showLottieOnPause: { column: 'show_lottie_on_pause', kind: 'bool' },
   lottieStyle: { column: 'lottie_style', kind: 'int' },
+  focusDuration: { column: 'focus_duration', kind: 'int' },
+  showWeather: { column: 'show_weather', kind: 'bool' },
+  showWeatherInCalendar: { column: 'show_weather_in_calendar', kind: 'bool' },
   hasSeenWelcome: { column: 'has_seen_welcome', kind: 'bool' }
 }
 
@@ -104,6 +132,11 @@ function toStored<K extends keyof Settings>(key: K, value: Settings[K]): string 
     if (!VALID_THEMES.has(v)) throw new Error(`Invalid theme: ${v}`)
     return v
   }
+  if (kind === 'notchTheme') {
+    const v = value as NotchThemeId
+    if (!VALID_NOTCH_THEMES.has(v)) throw new Error(`Invalid notch theme: ${v}`)
+    return v
+  }
   if (kind === 'bool') return value ? 1 : 0
   return Number(value)
 }
@@ -113,6 +146,12 @@ function fromStored<K extends keyof Settings>(key: K, raw: unknown): Settings[K]
   if (kind === 'theme') {
     const v = raw as string
     return (VALID_THEMES.has(v as ThemeId) ? v : DEFAULT_SETTINGS.theme) as Settings[K]
+  }
+  if (kind === 'notchTheme') {
+    const v = raw as string
+    return (VALID_NOTCH_THEMES.has(v as NotchThemeId)
+      ? v
+      : DEFAULT_SETTINGS.notchTheme) as Settings[K]
   }
   if (kind === 'bool') return (!!raw) as Settings[K]
   return Number(raw) as unknown as Settings[K]

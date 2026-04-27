@@ -2,7 +2,7 @@
 
 Premium macOS Dynamic Island utility for the Mac notch. Nivo transforms your MacBook's notch into a sleek, interactive, and intelligent "Live Activity" hub that feels like a native part of macOS.
 
-![Nivo](https://img.shields.io/badge/version-1.0.0-purple)
+![Nivo](https://img.shields.io/badge/version-1.1.0-purple)
 ![License](https://img.shields.io/badge/license-Proprietary-purple)
 
 ## ✨ Main Features
@@ -14,28 +14,41 @@ Premium macOS Dynamic Island utility for the Mac notch. Nivo transforms your Mac
 - **Quick Controls**: Play, pause, skip tracks, and adjust volume directly from the expanded Notch.
 - **Audio Output**: Displays your active audio device (Speakers, AirPods, or Headsets) with high-fidelity 3D icons.
 
+### 🌤️ Atmospheric Aura (Weather)
+
+- **Real-time Reactions**: The Notch background and indicators react to your local weather with beautiful "Atmospheric Aura" animations (Rain, Snow, Sun, Night, Golden Hour).
+- **Privacy-First**: No GPS tracking or sensitive API keys required. Nivo uses coarse, privacy-preserving geo-location via your IP to fetch local conditions.
+- **Visual Indicators**: A subtle glowing ring in the collapsed view indicates the current temperature and atmospheric state.
+
 ### 🗓️ Smart Calendar & Meetings
 
-- **Quiet Assistant**: Pulls upcoming events from your macOS Calendar.
-- **Meeting Reminders**: Auto-expands the Notch 5–15 minutes before a meeting starts with a gentle "Nivo Toast" notification.
-- **Click-to-Join**: Detects Zoom, Google Meet, and Microsoft Teams links for one-click joining.
+- **Quiet Assistant**: Pulls upcoming events from your macOS Calendar via a high-performance native AppleScript bridge.
+- **Integrated Weather**: View your daily agenda alongside real-time weather forecasts in the expanded Calendar Pane.
+- **Click-to-Join**: Detects Zoom, Google Meet, and Microsoft Teams links for one-click joining directly from the Notch.
+- **Smart Reminders**: Auto-expands the Notch before a meeting starts with a gentle "Nivo Toast" notification.
 
-### 🚶‍♂️ Idle Visualizer (Lottie)
+### 🧘‍♂️ Zen Bar (Productivity)
 
-- **Always Alive**: When nothing is playing, Nivo keeps your Notch lively with high-performance vector animations.
-- **Custom Styles**: Choose from 5 different Lottie animation styles (including walking characters and abstract physics).
-- **Seamless Transitions**: Animations stay active across the top even when the Notch is expanded.
+- **Focus Timer**: Integrated Pomodoro & Focus Timer with a subtle glowing progress bar at the base of the Notch.
+- **Tactile Feedback**: Every session completion is reinforced with high-quality haptic feedback and custom system notifications.
+- **Session Tracking**: Customizable durations to fit your deep-work workflow.
 
-### 🧭 Intuitive Gestures
+### 🔋 System Intelligence & Customization
 
-- **Swipe Right**: Skip to the next track.
-- **Swipe Left**: Go back to the previous track.
-- **Hover to Expand**: Native Apple-style spring animations for smooth expansion and collapse.
+- **Adaptive Themes**: 8+ curated premium themes (Obsidian, Frost, Aurora, Sand, Lavender, Crimson, Emerald, Amber) that unify the entire UI, including Toasts and Welcome screens.
+- **Haptic Feedback**: Subtle, tactile taps via Force Touch trackpads for every interaction, from swipes to button clicks.
+- **Fullscreen Stability**: Configurable visibility that allows Nivo to stay active even when you're working in fullscreen apps.
 
-### 🔋 System Intelligence
+## ✨ Upcoming Roadmap
 
-- **Adaptive Theme**: 6 curated themes (Midnight, Graphite, Ocean, Forest, Sunset, Berry) to match your setup.
-- **Haptic Feedback**: Subtle, tactile taps via Force Touch trackpads for every interaction.
+### 📥 Intelligence Shelf (Utility)
+
+- **Contextual Drop Zone**: Drag files or text to the Notch to "pin" them temporarily.
+- **Seamless Transfer**: Easily drag pinned items out into other apps or fullscreen windows.
+
+### 🎨 Companion Companion
+
+- **Reactive Lottie**: Your Notch companion reacts to your focus state (meditating while working, celebrating on break).
 
 ## 🛠️ Tech Stack
 
@@ -43,6 +56,7 @@ Premium macOS Dynamic Island utility for the Mac notch. Nivo transforms your Mac
 - **UI Architecture**: React 19 + Tailwind CSS v4
 - **Animation Engine**: Framer Motion (Apple-style spring physics)
 - **Data Persistence**: SQLite (offline-first local storage)
+- **Weather Provider**: Privacy-focused Open-Meteo Integration
 - **Licensing**: Integrated activation via Lemon Squeezy
 
 ## 🎨 Design Philosophy: "Quiet Luxury"
@@ -51,7 +65,7 @@ Nivo is designed to be felt, not just seen. It follows a minimalist aesthetic ch
 
 - **Glassmorphism**: Sophisticated frosted glass effects with dynamic backdrop blurs.
 - **Apple-Style Physics**: Every movement uses high-stiffness, low-damping springs for a snappy, organic feel.
-- **Non-Intrusive**: Automatically hides in fullscreen or when recording your screen to preserve privacy.
+- **Non-Intrusive**: Automatically hides when recording your screen to preserve privacy, with toggleable fullscreen persistence.
 
 ## 🚀 Getting Started
 

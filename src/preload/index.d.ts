@@ -12,6 +12,7 @@ declare global {
       showLumeToast: (title: string, body: string) => void
       onLumeToast: (callback: (data: { title: string; body: string }) => void) => () => void
       setVolume: (level: number) => Promise<void>
+      setNotchActive: (active: boolean) => void
       openSettings: () => Promise<void>
       getAppVersion: () => Promise<string>
       activateLicense: (key: string) => Promise<{ ok: boolean; error?: string }>
@@ -53,6 +54,7 @@ declare global {
         }>
       >
       triggerHaptic: () => Promise<void>
+      getWeather: () => Promise<Atmosphere | null>
       getSettings: () => Promise<AppSettings | null>
       updateSetting: <K extends keyof AppSettings>(
         key: K,
@@ -63,7 +65,15 @@ declare global {
     }
   }
 
+  type WeatherCondition = 'sunny' | 'rainy' | 'cloudy' | 'snowy'
+  interface Atmosphere {
+    temp: number
+    isDay: boolean
+    condition: WeatherCondition
+  }
+
   type ThemeId = 'midnight' | 'graphite' | 'ocean' | 'forest' | 'sunset' | 'berry'
+  type NotchThemeId = 'obsidian' | 'frost' | 'aurora' | 'sand' | 'lavender' | 'crimson' | 'emerald' | 'amber'
   type BatteryThreshold = 10 | 20
 
   interface LicenseState {
@@ -78,6 +88,7 @@ declare global {
 
   interface AppSettings {
     theme: ThemeId
+    notchTheme: NotchThemeId
     launchAtLogin: boolean
     hideInFullscreen: boolean
     hideFromScreenCapture: boolean
@@ -91,6 +102,9 @@ declare global {
     calendarReminderMin: number
     showLottieOnPause: boolean
     lottieStyle: number
+    focusDuration: number
+    showWeather: boolean
+    showWeatherInCalendar: boolean
     hasSeenWelcome: boolean
   }
 }

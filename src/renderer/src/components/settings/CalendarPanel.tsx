@@ -1,5 +1,5 @@
 import { useSettings } from '../../hooks/useSettings'
-import { CalendarDays, Hourglass, Video, Bell } from 'lucide-react'
+import { CalendarDays, Hourglass, Video, Bell, CloudSun } from 'lucide-react'
 import { SettingCard } from './SettingCard'
 import { SectionLabel } from './SectionLabel'
 import { SettingRow } from './SettingRow'
@@ -65,6 +65,15 @@ export function CalendarPanel() {
           enabled={nextOnly}
           onToggle={() => update('calendarNextEventOnly', !nextOnly)}
           isFirst
+        />
+        <SettingRow
+          icon={<CloudSun {...iconStyle} />}
+          label="Weather on today's date"
+          description="Overlay a small weather glyph on the current date."
+          enabled={settings.showWeatherInCalendar}
+          onToggle={() =>
+            update('showWeatherInCalendar', !settings.showWeatherInCalendar)
+          }
         />
       </SettingCard>
 

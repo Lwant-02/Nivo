@@ -33,12 +33,12 @@ export const LOTTIE_STYLES: LottieStyle[] = [
   },
   {
     src: musicMan,
-    figureSize: 40,
+    figureSize: 30,
     scale: 1.4
   },
   {
     src: moodyDog,
-    figureSize: 30,
+    figureSize: 40,
     scale: 1.4
   },
   {

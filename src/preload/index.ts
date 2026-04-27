@@ -18,6 +18,7 @@ const api = {
 
   // Volume
   setVolume: (level: number) => ipcRenderer.invoke('set-system-volume', level),
+  setNotchActive: (active: boolean) => ipcRenderer.send('set-notch-active', active),
 
   // Events & Windows
   openSettings: () => ipcRenderer.invoke('open-settings'),
@@ -54,6 +55,9 @@ const api = {
 
   // Haptic
   triggerHaptic: () => ipcRenderer.invoke('trigger-haptic'),
+
+  // Weather
+  getWeather: () => ipcRenderer.invoke('get-weather'),
 
   // Settings
   getSettings: () => ipcRenderer.invoke('get-settings'),

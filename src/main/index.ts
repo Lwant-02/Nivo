@@ -19,6 +19,7 @@ import { AudioService } from './services/AudioService'
 import { SettingsService, Settings } from './services/SettingsService'
 import { fetchMacEvents } from './services/calendarService'
 import { LicenseService } from './services/LicenseService'
+import { WeatherService } from './services/WeatherService'
 
 // Keep the renderer running full-speed even though the notch window is
 // non-focusable + always-on-top. Without these, Chromium throttles rAF and
@@ -38,11 +39,13 @@ let mediaService: MediaService | null = null
 let audioService: AudioService | null = null
 let licenseService: LicenseService | null = null
 let settingsService: SettingsService | null = null
+let weatherService: WeatherService | null = null
 
 let mainWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
 let onboardingWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+let isNotchActive = false
 
 // Notch window
 function createMainWindow(): void {
@@ -82,32 +85,51 @@ function createMainWindow(): void {
 
   let hoverActive = false
 
+  ipcMain.on('set-notch-active', (_event, active: boolean) => {
+    isNotchActive = active
+    if (mainWindow) applyWindowSettings(mainWindow, settingsService?.getAll())
+  })
+
   const pollInterval = setInterval(() => {
     if (!mainWindow || mainWindow.isDestroyed()) return
 
     const cursor = screen.getCursorScreenPoint()
     const { x: wx, y: wy, width: ww } = mainWindow.getBounds()
 
-    const pw = hoverActive ? 651 : 270
-    const ph = hoverActive ? 270 : 34
+    // Detect if we are over the notch.
+    // The notch is centered in the 800px window.
+    // We use a slightly larger area than the actual UI for better UX.
+    const pw = hoverActive ? 651 : 380 // Increased collapsed detection width
+    const ph = hoverActive ? 270 : 40  // Increased collapsed detection height
     const px = wx + Math.floor((ww - pw) / 2)
 
     const over =
-      cursor.x >= px - 8 && cursor.x <= px + pw + 8 && cursor.y >= wy && cursor.y <= wy + ph + 8
+      cursor.x >= px - 10 && cursor.x <= px + pw + 10 && cursor.y >= wy && cursor.y <= wy + ph + 10
 
     if (over && !hoverActive) {
       hoverActive = true
       mainWindow.setIgnoreMouseEvents(false)
-      // Always promote to front on hover so the user can interact
       mainWindow.setAlwaysOnTop(true, 'screen-saver', 1)
+      mainWindow.setOpacity(1)
     } else if (!over && hoverActive) {
       hoverActive = false
-      mainWindow.setIgnoreMouseEvents(true, { forward: true })
-      // Restore level if we were popping over
-      const hideFS = !!settingsService?.get('hideInFullscreen')
-      const hidePaused = !!settingsService?.get('hideWhenPaused') && !mediaService?.isMediaPlaying()
-      const level = hideFS || hidePaused ? 'floating' : 'screen-saver'
-      mainWindow.setAlwaysOnTop(true, level, 1)
+      if (isNotchActive) {
+        mainWindow.setIgnoreMouseEvents(false)
+        mainWindow.setOpacity(1)
+      } else {
+        mainWindow.setIgnoreMouseEvents(true, { forward: true })
+        const s = settingsService?.getAll()
+        const hideFS = !!s?.hideInFullscreen
+        const isMediaActive = !!mediaService?.isMediaPlaying()
+        const hidePaused = !!s?.hideWhenPaused && !isMediaActive
+        const level = hideFS ? 'floating' : 'screen-saver'
+        mainWindow.setAlwaysOnTop(true, level, 1)
+        mainWindow.setOpacity(hidePaused ? 0 : 1)
+      }
+    } else if (isNotchActive && !hoverActive) {
+      // Force visibility if active but not hovered
+      mainWindow.setIgnoreMouseEvents(false)
+      mainWindow.setOpacity(1)
     }
   }, 16)
 
@@ -136,13 +158,14 @@ function applyWindowSettings(win: BrowserWindow, settings: Settings | null | und
   if (win.isDestroyed()) return
   const s = settings ?? null
 
-  // When hideInFullscreen or hideWhenPaused is on, drop to 'floating' so
-  // fullscreen apps (or simply the desktop) cover the notch.
-  const hidePaused = !!s?.hideWhenPaused && !mediaService?.isMediaPlaying()
-  const shouldHide = !!s?.hideInFullscreen || hidePaused
+  const hideFS = !!s?.hideInFullscreen
+  const hidePaused = !!s?.hideWhenPaused && !mediaService?.isMediaPlaying() && !isNotchActive
 
-  const level: 'screen-saver' | 'floating' = shouldHide ? 'floating' : 'screen-saver'
+  // Maintain screen-saver level unless hideInFullscreen is enabled.
+  const level: 'screen-saver' | 'floating' = hideFS ? 'floating' : 'screen-saver'
   win.setAlwaysOnTop(true, level, 1)
+
+  win.setOpacity(hidePaused ? 0 : 1)
 
   win.setVisibleOnAllWorkspaces(true, {
     visibleOnFullScreen: true,
@@ -320,6 +343,12 @@ app.whenReady().then(() => {
     console.error('[main] Failed to initialize AudioService:', err.message)
   }
 
+  try {
+    weatherService = new WeatherService()
+  } catch (err: any) {
+    console.error('[main] Failed to initialize WeatherService:', err.message)
+  }
+
   if (app.dock) {
     app.dock.hide()
   }
@@ -480,6 +509,10 @@ ipcMain.handle('get-calendar-events', async () => {
     console.error('[main] get-calendar-events failed:', err.message)
     return []
   }
+})
+
+ipcMain.handle('get-weather', async () => {
+  return weatherService?.getAtmosphere() ?? null
 })
 
 ipcMain.on('calendar:join', (_event, url: string) => {
