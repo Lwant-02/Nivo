@@ -25,6 +25,8 @@ import { useFocusTimer } from '../hooks/useFocusTimer'
 import { ExpandedMediaView } from './ui/ExpandedMediaView'
 import { NotchToast } from './ui/NotchToast'
 import { CollapsedNotchView } from './ui/CollapsedNotchView'
+import { AtmosphericAura } from './ui/AtmosphericAura'
+import { useWeather } from '../hooks/useWeather'
 
 const bounceTransition: Transition = { type: 'spring', stiffness: 400, damping: 28, mass: 0.8 }
 
@@ -151,10 +153,11 @@ export default function NotchUI() {
     }
   }, [title])
 
-  // Auto-show welcome notch for 5s on first launch after license activation
+  // Inform main process when notch should be visible/active (e.g. welcome, focus, or toast)
   useEffect(() => {
-    window.api.setNotchActive(focusTimer.isActive)
-  }, [focusTimer.isActive])
+    const active = isAutoExpanded || isWelcoming || focusTimer.isActive
+    window.api.setNotchActive(active)
+  }, [isAutoExpanded, isWelcoming, focusTimer.isActive])
 
   useEffect(() => {
     if (!settingsReady || settings.hasSeenWelcome) return
@@ -319,6 +322,7 @@ export default function NotchUI() {
   const showFocusView = isExpanded && focusTimer.isActive
 
   const notchTheme = getNotchTheme(settings.notchTheme)
+  const { weatherState } = useWeather()
 
   return (
     <motion.div
@@ -369,6 +373,9 @@ export default function NotchUI() {
             className="absolute inset-0 pointer-events-none"
             style={{ background: notchTheme.innerOverlay }}
           />
+        )}
+        {isExpanded && settings.showWeather && weatherState && (
+          <AtmosphericAura weatherState={weatherState} variant="background" />
         )}
         {showLottie && <LottieVisualizer width={isExpanded ? totalWidth : collapsedWidth} />}
         <div
@@ -451,7 +458,7 @@ export default function NotchUI() {
                 className="flex flex-col h-full p-[22px] justify-between relative z-10"
               >
                 {showWelcome ? (
-                  <WelcomeView />
+                  <WelcomeView notchTheme={notchTheme} />
                 ) : showFocusView ? (
                   <FocusView
                     {...focusTimer}

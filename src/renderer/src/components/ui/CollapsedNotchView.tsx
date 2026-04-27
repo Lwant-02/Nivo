@@ -25,10 +25,10 @@ export const CollapsedNotchView: React.FC<CollapsedNotchViewProps> = ({
   showLottie
 }) => {
   return (
-    <div className="flex items-center px-6 h-full justify-between w-full">
+    <div className="relative flex items-center px-6 h-full justify-between w-full">
       {focusTimer.isActive ? (
         <div
-          className="flex items-center w-full justify-between h-full"
+          className="relative z-10 flex items-center w-full justify-between h-full"
           style={{ paddingLeft: '16px', paddingRight: '12px' }}
         >
           <div className="flex items-center" style={{ gap: '10px' }}>
@@ -73,7 +73,7 @@ export const CollapsedNotchView: React.FC<CollapsedNotchViewProps> = ({
         </div>
       ) : (
         !showLottie && (
-          <div className="flex items-center justify-between w-full">
+          <div className="relative z-10 flex items-center justify-between w-full">
             <Thumbnail
               src={settings.showAlbumArt ? displayArt : null}
               alt={title}

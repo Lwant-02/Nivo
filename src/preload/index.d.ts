@@ -54,6 +54,7 @@ declare global {
         }>
       >
       triggerHaptic: () => Promise<void>
+      getWeather: () => Promise<Atmosphere | null>
       getSettings: () => Promise<AppSettings | null>
       updateSetting: <K extends keyof AppSettings>(
         key: K,
@@ -62,6 +63,13 @@ declare global {
       onSettingsUpdate: (callback: (settings: AppSettings) => void) => () => void
       openExternal: (url: string) => Promise<void>
     }
+  }
+
+  type WeatherCondition = 'sunny' | 'rainy' | 'cloudy' | 'snowy'
+  interface Atmosphere {
+    temp: number
+    isDay: boolean
+    condition: WeatherCondition
   }
 
   type ThemeId = 'midnight' | 'graphite' | 'ocean' | 'forest' | 'sunset' | 'berry'
@@ -95,6 +103,8 @@ declare global {
     showLottieOnPause: boolean
     lottieStyle: number
     focusDuration: number
+    showWeather: boolean
+    showWeatherInCalendar: boolean
     hasSeenWelcome: boolean
   }
 }

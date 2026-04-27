@@ -1,5 +1,13 @@
 import type { JSX } from 'react'
-import { Maximize2, ShieldOff, Vibrate, LogIn, ChevronRight, ChevronLeft } from 'lucide-react'
+import {
+  Maximize2,
+  ShieldOff,
+  Vibrate,
+  LogIn,
+  ChevronRight,
+  ChevronLeft,
+  CloudSun
+} from 'lucide-react'
 import { SettingCard } from './SettingCard'
 import { SectionLabel } from './SectionLabel'
 import { SettingRow } from './SettingRow'
@@ -81,6 +89,18 @@ export function GeneralPanel(): JSX.Element {
           description="Subtle taps on interaction via Force Touch trackpads."
           enabled={settings.hapticFeedback}
           onToggle={() => update('hapticFeedback', !settings.hapticFeedback)}
+        />
+      </SettingCard>
+
+      <SectionLabel text="Atmospheric" />
+      <SettingCard>
+        <SettingRow
+          icon={<CloudSun {...ICON_STYLE} />}
+          label="Ambient weather aura"
+          description="Soft glows and rain when the notch is expanded."
+          enabled={settings.showWeather}
+          onToggle={() => update('showWeather', !settings.showWeather)}
+          isFirst
         />
       </SettingCard>
     </>

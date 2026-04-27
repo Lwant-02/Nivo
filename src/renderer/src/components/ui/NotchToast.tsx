@@ -17,20 +17,10 @@ export const NotchToast: React.FC<NotchToastProps> = ({ toast }) => {
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.96 }}
-      className="absolute inset-0 z-200 flex items-center justify-center px-4 rounded-[inherit] backdrop-blur-3xl"
-      style={{
-        background:
-          'radial-gradient(120% 80% at 50% 0%, var(--lume-accent-glow, rgba(168,85,247,0.25)) 0%, rgba(0,0,0,1) 60%, rgba(0,0,0,1) 100%)'
-      }}
+      className="absolute inset-0 z-200 flex items-center justify-center px-4 bg-transparent"
     >
       <div className="flex items-center gap-3 text-left">
-        <div
-          className="relative size-[96px] shrink-0 rounded-full overflow-hidden"
-          style={{
-            background:
-              'radial-gradient(circle, var(--lume-accent-glow, rgba(168,85,247,0.35)) 0%, transparent 70%)'
-          }}
-        >
+        <div className="relative size-[96px] shrink-0 rounded-full overflow-hidden">
           <DotLottieReact
             src="https://lottie.host/35d8a45e-69c7-47f2-b712-34a7d743d088/quPIsQA9QD.lottie"
             loop
@@ -39,15 +29,12 @@ export const NotchToast: React.FC<NotchToastProps> = ({ toast }) => {
           />
         </div>
         <div className="flex flex-col min-w-0 flex-1">
-          <span
-            className="text-[10px] font-bold uppercase tracking-[0.22em]"
-            style={{ color: 'var(--lume-accent, #a855f7)' }}
-          >
-            {toast.body}
-          </span>
-          <h3 className="text-white text-[18px] font-bold tracking-tight leading-tight mt-1">
+          <h3 className="text-text text-[18px] text-center font-bold tracking-tight leading-tight mt-1">
             {toast.title}
           </h3>
+          <span className="text-text font-bold uppercase tracking-[0.22em] text-[10px] text-center">
+            {toast.body}
+          </span>
         </div>
       </div>
     </motion.div>

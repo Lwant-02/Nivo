@@ -17,6 +17,8 @@ const DEFAULTS: AppSettings = {
   showLottieOnPause: false,
   lottieStyle: 0,
   focusDuration: 25,
+  showWeather: true,
+  showWeatherInCalendar: true,
   hasSeenWelcome: false
 }
 

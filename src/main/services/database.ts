@@ -82,6 +82,8 @@ export function getDatabase(): Database.Database {
   addColumn('show_lottie_on_pause', 'show_lottie_on_pause INTEGER NOT NULL DEFAULT 0')
   addColumn('lottie_style', 'lottie_style INTEGER NOT NULL DEFAULT 0')
   addColumn('focus_duration', 'focus_duration INTEGER NOT NULL DEFAULT 25')
+  addColumn('show_weather', 'show_weather INTEGER NOT NULL DEFAULT 1')
+  addColumn('show_weather_in_calendar', 'show_weather_in_calendar INTEGER NOT NULL DEFAULT 1')
   addColumn('has_seen_welcome', 'has_seen_welcome INTEGER NOT NULL DEFAULT 0')
 
   dbInstance = db

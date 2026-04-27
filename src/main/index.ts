@@ -19,6 +19,7 @@ import { AudioService } from './services/AudioService'
 import { SettingsService, Settings } from './services/SettingsService'
 import { fetchMacEvents } from './services/calendarService'
 import { LicenseService } from './services/LicenseService'
+import { WeatherService } from './services/WeatherService'
 
 // Keep the renderer running full-speed even though the notch window is
 // non-focusable + always-on-top. Without these, Chromium throttles rAF and
@@ -38,6 +39,7 @@ let mediaService: MediaService | null = null
 let audioService: AudioService | null = null
 let licenseService: LicenseService | null = null
 let settingsService: SettingsService | null = null
+let weatherService: WeatherService | null = null
 
 let mainWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
@@ -107,26 +109,27 @@ function createMainWindow(): void {
     if (over && !hoverActive) {
       hoverActive = true
       mainWindow.setIgnoreMouseEvents(false)
-      // Always promote to front on hover so the user can interact
       mainWindow.setAlwaysOnTop(true, 'screen-saver', 1)
       mainWindow.setOpacity(1)
     } else if (!over && hoverActive) {
       hoverActive = false
-      mainWindow.setIgnoreMouseEvents(true, { forward: true })
-      
-      const s = settingsService?.getAll()
-      const hideFS = !!s?.hideInFullscreen
-      const isMediaActive = !!mediaService?.isMediaPlaying() || isNotchActive
-      const hidePaused = !!s?.hideWhenPaused && !isMediaActive
-      
-      // If hideInFullscreen is false, we MUST stay at screen-saver level or macOS
-      // will hide the window when any app goes fullscreen.
-      const level = hideFS ? 'floating' : 'screen-saver'
-      mainWindow.setAlwaysOnTop(true, level, 1)
-
-      // Use opacity to "hide" when paused instead of changing levels.
-      // This preserves the window's position in the macOS window stack.
-      mainWindow.setOpacity(hidePaused ? 0 : 1)
+      if (isNotchActive) {
+        mainWindow.setIgnoreMouseEvents(false)
+        mainWindow.setOpacity(1)
+      } else {
+        mainWindow.setIgnoreMouseEvents(true, { forward: true })
+        const s = settingsService?.getAll()
+        const hideFS = !!s?.hideInFullscreen
+        const isMediaActive = !!mediaService?.isMediaPlaying()
+        const hidePaused = !!s?.hideWhenPaused && !isMediaActive
+        const level = hideFS ? 'floating' : 'screen-saver'
+        mainWindow.setAlwaysOnTop(true, level, 1)
+        mainWindow.setOpacity(hidePaused ? 0 : 1)
+      }
+    } else if (isNotchActive && !hoverActive) {
+      // Force visibility if active but not hovered
+      mainWindow.setIgnoreMouseEvents(false)
+      mainWindow.setOpacity(1)
     }
   }, 16)
 
@@ -340,6 +343,12 @@ app.whenReady().then(() => {
     console.error('[main] Failed to initialize AudioService:', err.message)
   }
 
+  try {
+    weatherService = new WeatherService()
+  } catch (err: any) {
+    console.error('[main] Failed to initialize WeatherService:', err.message)
+  }
+
   if (app.dock) {
     app.dock.hide()
   }
@@ -500,6 +509,10 @@ ipcMain.handle('get-calendar-events', async () => {
     console.error('[main] get-calendar-events failed:', err.message)
     return []
   }
+})
+
+ipcMain.handle('get-weather', async () => {
+  return weatherService?.getAtmosphere() ?? null
 })
 
 ipcMain.on('calendar:join', (_event, url: string) => {

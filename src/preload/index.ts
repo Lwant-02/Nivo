@@ -56,6 +56,9 @@ const api = {
   // Haptic
   triggerHaptic: () => ipcRenderer.invoke('trigger-haptic'),
 
+  // Weather
+  getWeather: () => ipcRenderer.invoke('get-weather'),
+
   // Settings
   getSettings: () => ipcRenderer.invoke('get-settings'),
   updateSetting: (key: string, value: unknown) =>
