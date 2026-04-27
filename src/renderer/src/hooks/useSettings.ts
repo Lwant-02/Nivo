@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 const DEFAULTS: AppSettings = {
   theme: 'midnight',
+  notchTheme: 'obsidian',
   launchAtLogin: false,
   hideInFullscreen: true,
   hideFromScreenCapture: false,
@@ -15,6 +16,7 @@ const DEFAULTS: AppSettings = {
   calendarReminderMin: 5,
   showLottieOnPause: false,
   lottieStyle: 0,
+  focusDuration: 25,
   hasSeenWelcome: false
 }
 

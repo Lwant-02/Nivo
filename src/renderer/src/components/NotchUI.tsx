@@ -13,10 +13,11 @@ import {
   Pause,
   Rewind,
   FastForward,
-  Monitor,
+  Headphones,
   ChevronsLeft,
   ChevronsRight,
-  Settings
+  Settings,
+  Timer
 } from 'lucide-react'
 import cn from 'clsx'
 
@@ -26,6 +27,7 @@ import { useSound } from '../hooks/useSound'
 import { useSettings } from '../hooks/useSettings'
 import { Thumbnail } from './ui/Thumbnail'
 import { formatTime } from '@renderer/util'
+import { getNotchTheme } from '@renderer/util/notchThemes'
 import { VolumeSwitcher } from './ui/VolumeSwitcher'
 import { DevicePannel } from './ui/DevicePannel'
 import { CalendarPane } from './ui/CalendarPane'
@@ -34,6 +36,8 @@ import { SourceBadge } from './ui/SourceBadge'
 import { LottieVisualizer } from './ui/LottieVisualizer'
 import { IdleView } from './ui/IdleView'
 import { WelcomeView } from './ui/WelcomeView'
+import { FocusView } from './ui/FocusView'
+import { useFocusTimer } from '../hooks/useFocusTimer'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
 
 const bounceTransition: Transition = { type: 'spring', stiffness: 400, damping: 28, mass: 0.8 }
@@ -67,9 +71,22 @@ export default function NotchUI() {
   const welcomeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [sidePanel, setSidePanel] = useState<SidePanel>(null)
   const [volumeLevel, setVolumeLevel] = useState(50)
-  const { playExpand } = useSound()
+  const { playExpand, playNotification } = useSound()
 
-  const collapsedWidth = 280
+  const focusTimer = useFocusTimer({
+    defaultMinutes: settings.focusDuration ?? 25,
+    onComplete: () => {
+      const mins = settings.focusDuration ?? 25
+      window.api.showLumeToast(
+        'Focus Complete',
+        mins === 1 ? 'Test session done' : `${mins} min session done`
+      )
+      if (settings.hapticFeedback) window.api.triggerHaptic()
+      playNotification()
+    }
+  })
+
+  const collapsedWidth = focusTimer.isActive ? 360 : 280
 
   const showVolume = sidePanel === 'volume'
   const showDevice = sidePanel === 'device'
@@ -102,7 +119,7 @@ export default function NotchUI() {
   useEffect(() => {
     const valid = duration > 0
     const pos = valid ? Math.min(initialPosition, duration) : initialPosition
-    
+
     // Force snap on first load or song change
     if (!hasSyncedInitial.current || title !== prevTitleRef.current) {
       setPosition(pos)
@@ -151,6 +168,10 @@ export default function NotchUI() {
   }, [title])
 
   // Auto-show welcome notch for 5s on first launch after license activation
+  useEffect(() => {
+    window.api.setNotchActive(focusTimer.isActive)
+  }, [focusTimer.isActive])
+
   useEffect(() => {
     if (!settingsReady || settings.hasSeenWelcome) return
 
@@ -308,9 +329,12 @@ export default function NotchUI() {
   const expandedHeight = showDevice || showVolume ? 270 : showSidePane ? 240 : 180
 
   const isIdle = !title || title === 'Not Playing'
-  const showLottie = !isPlaying && !isExpanded && settings.showLottieOnPause
+  const showLottie = !isPlaying && !isExpanded && settings.showLottieOnPause && !focusTimer.isActive
   const showWelcome = isExpanded && !settings.hasSeenWelcome
-  const showIdleView = isExpanded && isIdle && settings.hasSeenWelcome
+  const showIdleView = isExpanded && isIdle && settings.hasSeenWelcome && !focusTimer.isActive
+  const showFocusView = isExpanded && focusTimer.isActive
+
+  const notchTheme = getNotchTheme(settings.notchTheme)
 
   return (
     <motion.div
@@ -336,9 +360,7 @@ export default function NotchUI() {
       transition={bounceTransition}
       className={cn(
         'relative overflow-hidden origin-top transition-shadow duration-500',
-        isExpanded
-          ? 'bg-black/85 backdrop-blur-2xl border border-white/10'
-          : 'border-none shadow-none'
+        isExpanded ? 'backdrop-blur-2xl' : ''
       )}
       style={{
         borderTopLeftRadius: 0,
@@ -346,10 +368,24 @@ export default function NotchUI() {
         borderBottomLeftRadius: isExpanded ? 40 : 17,
         borderBottomRightRadius: isExpanded ? 40 : 17,
         borderTop: 'none',
-        marginTop: '-1px'
+        marginTop: '-1px',
+        background: isExpanded ? notchTheme.outerBg : 'transparent',
+        border: isExpanded ? `1px solid ${notchTheme.outerBorder}` : 'none',
+        borderTopWidth: 0,
+        boxShadow: 'none'
       }}
     >
-      <div className="flex h-full backdrop-blur-2xl shadow-inner bg-black">
+      <div
+        className="relative flex h-full backdrop-blur-2xl shadow-inner"
+        style={{ background: isExpanded ? notchTheme.innerBg : notchTheme.collapsedBg }}
+      >
+        {isExpanded && notchTheme.innerOverlay && (
+          <div
+            aria-hidden
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: notchTheme.innerOverlay }}
+          />
+        )}
         {showLottie && <LottieVisualizer width={isExpanded ? totalWidth : collapsedWidth} />}
         <div
           className="relative shrink-0 h-full"
@@ -388,33 +424,48 @@ export default function NotchUI() {
           <AnimatePresence>
             {toast && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="absolute inset-0 z-200 flex items-center justify-center p-4 bg-black/40 backdrop-blur-3xl rounded-[inherit]"
+                exit={{ opacity: 0, scale: 0.96 }}
+                className="absolute inset-0 z-200 flex items-center justify-center px-4 rounded-[inherit] backdrop-blur-3xl"
+                style={{
+                  background:
+                    'radial-gradient(120% 80% at 50% 0%, var(--lume-accent-glow, rgba(168,85,247,0.25)) 0%, rgba(0,0,0,1) 60%, rgba(0,0,0,1) 100%)'
+                }}
               >
-                <div className="flex flex-col items-center gap-1 text-center">
-                  <div className="rounded-full" style={{ backgroundColor: 'var(--lume-accent)' }}>
-                    <div className="relative size-[135px] shrink-0">
-                      <DotLottieReact
-                        src="https://lottie.host/35d8a45e-69c7-47f2-b712-34a7d743d088/quPIsQA9QD.lottie"
-                        loop
-                        autoplay
-                        style={{ width: '100%', height: '100%' }}
-                      />
-                    </div>
+                <div className="flex items-center gap-3 text-left">
+                  <div
+                    className="relative size-[96px] shrink-0 rounded-full overflow-hidden"
+                    style={{
+                      background:
+                        'radial-gradient(circle, var(--lume-accent-glow, rgba(168,85,247,0.35)) 0%, transparent 70%)'
+                    }}
+                  >
+                    <DotLottieReact
+                      src="https://lottie.host/35d8a45e-69c7-47f2-b712-34a7d743d088/quPIsQA9QD.lottie"
+                      loop
+                      autoplay
+                      style={{ width: '100%', height: '100%' }}
+                    />
                   </div>
-                  <h3 className="text-white text-lg font-bold leading-tight">{toast.title}</h3>
-                  <p className="text-white/60 text-[10px] font-bold uppercase tracking-[0.2em]">
-                    {toast.body}
-                  </p>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span
+                      className="text-[10px] font-bold uppercase tracking-[0.22em]"
+                      style={{ color: 'var(--lume-accent, #a855f7)' }}
+                    >
+                      {toast.body}
+                    </span>
+                    <h3 className="text-white text-[18px] font-bold tracking-tight leading-tight mt-1">
+                      {toast.title}
+                    </h3>
+                  </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
           <AnimatePresence mode="wait">
-            {!isExpanded ? (
+            {toast ? null : !isExpanded ? (
               <motion.div
                 key="collapsed"
                 initial={{ opacity: 0 }}
@@ -422,16 +473,65 @@ export default function NotchUI() {
                 exit={{ opacity: 0 }}
                 className={cn('flex items-center px-6 h-full justify-between')}
               >
-                {!showLottie && (
-                  <>
-                    <Thumbnail
-                      src={settings.showAlbumArt ? displayArt : null}
-                      alt={title}
-                      size="pill"
-                      isPlaying={isPlaying}
-                    />
-                    <MusicVisualizer isPlaying={isPlaying} isStatic={!settings.showVisualizer} />
-                  </>
+                {focusTimer.isActive ? (
+                  <div
+                    className="flex items-center w-full justify-between h-full"
+                    style={{ paddingLeft: '16px', paddingRight: '12px' }}
+                  >
+                    <div className="flex items-center" style={{ gap: '10px' }}>
+                      <span
+                        className="text-[10px] font-bold uppercase tracking-[0.24em]"
+                        style={{ color: 'var(--lume-accent, #a855f7)' }}
+                      >
+                        {focusTimer.isPaused ? 'Paused' : 'Focus'}
+                      </span>
+                    </div>
+
+                    {/* Right side circular progress */}
+                    <div className="relative size-6 flex items-center justify-center">
+                      <svg width="20" height="20" viewBox="0 0 20 20" className="-rotate-90">
+                        <circle
+                          cx="10"
+                          cy="10"
+                          r="8"
+                          stroke="rgba(255,255,255,0.1)"
+                          strokeWidth="2"
+                          fill="transparent"
+                        />
+                        <motion.circle
+                          cx="10"
+                          cy="10"
+                          r="8"
+                          stroke="var(--lume-accent, #a855f7)"
+                          strokeWidth="2"
+                          strokeDasharray={2 * Math.PI * 8}
+                          initial={false}
+                          animate={{
+                            strokeDashoffset:
+                              2 * Math.PI * 8 - focusTimer.progress * 2 * Math.PI * 8
+                          }}
+                          transition={{ duration: 0.9, ease: 'linear' }}
+                          strokeLinecap="round"
+                          fill="transparent"
+                          style={{
+                            filter: 'drop-shadow(0 0 4px var(--lume-accent))'
+                          }}
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                ) : (
+                  !showLottie && (
+                    <>
+                      <Thumbnail
+                        src={settings.showAlbumArt ? displayArt : null}
+                        alt={title}
+                        size="pill"
+                        isPlaying={isPlaying}
+                      />
+                      <MusicVisualizer isPlaying={isPlaying} isStatic={!settings.showVisualizer} />
+                    </>
+                  )
                 )}
               </motion.div>
             ) : (
@@ -459,11 +559,33 @@ export default function NotchUI() {
               >
                 {showWelcome ? (
                   <WelcomeView />
+                ) : showFocusView ? (
+                  <FocusView
+                    {...focusTimer}
+                    onPause={focusTimer.pause}
+                    onResume={focusTimer.resume}
+                    onStop={focusTimer.stop}
+                  />
                 ) : showIdleView ? (
-                  <IdleView />
+                  <IdleView
+                    onStartFocus={() => focusTimer.start()}
+                    focusMinutes={settings.focusDuration ?? 25}
+                  />
                 ) : (
                   <>
-                    <div className="flex items-center justify-between">
+                    <div className="flex relative items-center justify-between">
+                      <button
+                        onClick={() => window.api.openSettings()}
+                        className="absolute -top-6 right-2.5 flex items-center justify-center cursor-pointer"
+                      >
+                        <Settings
+                          size={15}
+                          className="transition-colors duration-200"
+                          style={{
+                            color: 'var(--lume-text-dim)'
+                          }}
+                        />
+                      </button>
                       <div className="flex items-center gap-4">
                         <div className="relative">
                           <div className="w-14 h-9 bg-gray rounded-md flex items-center justify-center overflow-hidden shadow-lg border border-white/5 relative">
@@ -574,7 +696,7 @@ export default function NotchUI() {
                           onClick={handleShowVolume}
                           className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-all hover:bg-white/10 active:scale-95"
                         >
-                          <Monitor
+                          <Headphones
                             size={20}
                             className="transition-colors duration-200"
                             style={{
@@ -611,11 +733,11 @@ export default function NotchUI() {
                       </div>
 
                       <button
-                        onClick={() => window.api.openSettings()}
+                        onClick={() => focusTimer.start()}
                         className="absolute right-0 size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-all hover:bg-white/20 active:scale-95"
                       >
-                        <Settings
-                          size={20}
+                        <Timer
+                          size={22}
                           className="transition-colors duration-200"
                           style={{
                             color: 'var(--lume-text-dim)'

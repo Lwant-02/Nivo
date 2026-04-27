@@ -43,6 +43,7 @@ let mainWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
 let onboardingWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+let isNotchActive = false
 
 // Notch window
 function createMainWindow(): void {
@@ -82,18 +83,26 @@ function createMainWindow(): void {
 
   let hoverActive = false
 
+  ipcMain.on('set-notch-active', (_event, active: boolean) => {
+    isNotchActive = active
+    if (mainWindow) applyWindowSettings(mainWindow, settingsService?.getAll())
+  })
+
   const pollInterval = setInterval(() => {
     if (!mainWindow || mainWindow.isDestroyed()) return
 
     const cursor = screen.getCursorScreenPoint()
     const { x: wx, y: wy, width: ww } = mainWindow.getBounds()
 
-    const pw = hoverActive ? 651 : 270
-    const ph = hoverActive ? 270 : 34
+    // Detect if we are over the notch.
+    // The notch is centered in the 800px window.
+    // We use a slightly larger area than the actual UI for better UX.
+    const pw = hoverActive ? 651 : 380 // Increased collapsed detection width
+    const ph = hoverActive ? 270 : 40  // Increased collapsed detection height
     const px = wx + Math.floor((ww - pw) / 2)
 
     const over =
-      cursor.x >= px - 8 && cursor.x <= px + pw + 8 && cursor.y >= wy && cursor.y <= wy + ph + 8
+      cursor.x >= px - 10 && cursor.x <= px + pw + 10 && cursor.y >= wy && cursor.y <= wy + ph + 10
 
     if (over && !hoverActive) {
       hoverActive = true
@@ -103,9 +112,11 @@ function createMainWindow(): void {
     } else if (!over && hoverActive) {
       hoverActive = false
       mainWindow.setIgnoreMouseEvents(true, { forward: true })
-      // Restore level if we were popping over
-      const hideFS = !!settingsService?.get('hideInFullscreen')
-      const hidePaused = !!settingsService?.get('hideWhenPaused') && !mediaService?.isMediaPlaying()
+      
+      const s = settingsService?.getAll()
+      const hideFS = !!s?.hideInFullscreen
+      const hidePaused = !!s?.hideWhenPaused && !mediaService?.isMediaPlaying() && !isNotchActive
+      
       const level = hideFS || hidePaused ? 'floating' : 'screen-saver'
       mainWindow.setAlwaysOnTop(true, level, 1)
     }
@@ -138,7 +149,7 @@ function applyWindowSettings(win: BrowserWindow, settings: Settings | null | und
 
   // When hideInFullscreen or hideWhenPaused is on, drop to 'floating' so
   // fullscreen apps (or simply the desktop) cover the notch.
-  const hidePaused = !!s?.hideWhenPaused && !mediaService?.isMediaPlaying()
+  const hidePaused = !!s?.hideWhenPaused && !mediaService?.isMediaPlaying() && !isNotchActive
   const shouldHide = !!s?.hideInFullscreen || hidePaused
 
   const level: 'screen-saver' | 'floating' = shouldHide ? 'floating' : 'screen-saver'

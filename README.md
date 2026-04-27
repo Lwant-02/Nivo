@@ -34,8 +34,25 @@ Premium macOS Dynamic Island utility for the Mac notch. Nivo transforms your Mac
 
 ### 🔋 System Intelligence
 
-- **Adaptive Theme**: 6 curated themes (Midnight, Graphite, Ocean, Forest, Sunset, Berry) to match your setup.
+- **Adaptive Themes**: 8 curated premium themes (Obsidian, Frost, Aurora, Sand, Lavender, Crimson, Emerald, Amber) to match your setup.
 - **Haptic Feedback**: Subtle, tactile taps via Force Touch trackpads for every interaction.
+
+## ✨ Upcoming Roadmap
+
+### 🧘‍♂️ The Zen Bar (Productivity)
+
+- **Focus Timer**: Integrated Pomodoro & Focus Timer with a subtle glowing progress bar at the base of the Notch.
+- **Reactive Lottie**: Your Notch companion reacts to your focus state (meditating while working, celebrating on break).
+
+### 📥 Intelligence Shelf (Utility)
+
+- **Contextual Drop Zone**: Drag files or text to the Notch to "pin" them temporarily.
+- **Seamless Transfer**: Easily drag pinned items out into other apps or fullscreen windows.
+
+### 🌤️ Atmospheric Idle (Aesthetic)
+
+- **Environmental Awareness**: Notch animations and themes that react to your local weather and time of day.
+- **Dynamic Lighting**: Subtle glows that match the "golden hour" or moonlit nights.
 
 ## 🛠️ Tech Stack
 
@@ -93,3 +110,21 @@ nivo/
 ## 📄 License
 
 Proprietary software. Purchase at [nawmain.dev](https://nawmain.dev)
+
+
+🧘‍♂️ The Zen Bar: Implementation Summary
+1. The "Pulse" (Collapsed State)
+
+Visual: When Focus is active, a 2px-thin glowing progress bar appears at the very bottom edge of the Notch.
+Animation: The Notch companion (Lottie) enters a "Deep Work" animation (e.g., a character typing or meditating).
+Status: A tiny, elegant countdown (e.g., "18m") appears only when you hover near the Notch.
+2. The "Control Center" (Expanded State)
+
+Timer Display: A premium, high-contrast countdown timer using your "Quiet Luxury" typography.
+Focus Ring: A circular progress ring that fills up as you get closer to your goal.
+Quick Actions: Simple, Apple-style buttons to Pause or End the session.
+3. The Interaction Flow
+
+Activation: You can start a Focus session directly from the expanded Notch when no music is playing.
+Completion: When the timer hits 0, the Notch expands automatically with a gentle "Haptic Tap" and a "Focus Complete" celebration animation.
+Intelligent Priority: If you start playing music, the timer shrinks to a small indicator to let the Media Controls take center stage.

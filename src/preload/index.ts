@@ -18,6 +18,7 @@ const api = {
 
   // Volume
   setVolume: (level: number) => ipcRenderer.invoke('set-system-volume', level),
+  setNotchActive: (active: boolean) => ipcRenderer.send('set-notch-active', active),
 
   // Events & Windows
   openSettings: () => ipcRenderer.invoke('open-settings'),
