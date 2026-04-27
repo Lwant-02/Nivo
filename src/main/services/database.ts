@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3'
 import { app } from 'electron'
 import { join } from 'path'
-import { mkdirSync } from 'fs'
+import { existsSync, mkdirSync, renameSync } from 'fs'
 
 let dbInstance: Database.Database | null = null
 
@@ -10,7 +10,20 @@ export function getDatabase(): Database.Database {
 
   const dir = app.getPath('userData')
   mkdirSync(dir, { recursive: true })
-  const db = new Database(join(dir, 'lume.db'))
+
+  const dbPath = join(dir, 'nivo.db')
+  const legacyPath = join(dir, 'lume.db')
+
+  // Rename legacy DB (and its WAL/SHM siblings) from the pre-rename product name.
+  if (!existsSync(dbPath) && existsSync(legacyPath)) {
+    renameSync(legacyPath, dbPath)
+    for (const suffix of ['-wal', '-shm']) {
+      const legacy = legacyPath + suffix
+      if (existsSync(legacy)) renameSync(legacy, dbPath + suffix)
+    }
+  }
+
+  const db = new Database(dbPath)
   db.pragma('journal_mode = WAL')
 
   db.exec(`
@@ -18,7 +31,8 @@ export function getDatabase(): Database.Database {
       id INTEGER PRIMARY KEY CHECK (id = 1),
       license_key TEXT,
       validation_hash TEXT,
-      instance_id TEXT
+      instance_id TEXT,
+      trial_started_at INTEGER
     );
 
     CREATE TABLE IF NOT EXISTS settings (
@@ -30,14 +44,18 @@ export function getDatabase(): Database.Database {
       haptic_feedback INTEGER NOT NULL DEFAULT 1,
       hide_when_paused INTEGER NOT NULL DEFAULT 1,
       show_lottie_on_pause INTEGER NOT NULL DEFAULT 0,
-      lottie_style INTEGER NOT NULL DEFAULT 0
+      lottie_style INTEGER NOT NULL DEFAULT 0,
+      has_seen_welcome INTEGER NOT NULL DEFAULT 0
     );
   `)
 
-  // Forward-migrate older `auth` schemas that lacked validation_hash.
+  // Forward-migrate older `auth` schemas.
   const authCols = db.prepare('PRAGMA table_info(auth)').all() as { name: string }[]
   if (!authCols.some((c) => c.name === 'validation_hash')) {
     db.exec('ALTER TABLE auth ADD COLUMN validation_hash TEXT')
+  }
+  if (!authCols.some((c) => c.name === 'trial_started_at')) {
+    db.exec('ALTER TABLE auth ADD COLUMN trial_started_at INTEGER')
   }
 
   // Forward-migrate older `settings` schemas (previously only had theme + launch_at_login).
@@ -60,6 +78,7 @@ export function getDatabase(): Database.Database {
   addColumn('calendar_reminder_min', 'calendar_reminder_min INTEGER NOT NULL DEFAULT 5')
   addColumn('show_lottie_on_pause', 'show_lottie_on_pause INTEGER NOT NULL DEFAULT 0')
   addColumn('lottie_style', 'lottie_style INTEGER NOT NULL DEFAULT 0')
+  addColumn('has_seen_welcome', 'has_seen_welcome INTEGER NOT NULL DEFAULT 0')
 
   dbInstance = db
   return db

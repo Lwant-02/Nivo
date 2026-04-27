@@ -2,6 +2,13 @@ import { motion } from 'framer-motion'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
 import { useSettings } from '../../hooks/useSettings'
 
+import walkingCat from '@renderer/assets/lottie/Walking Cat.lottie'
+import walkingDuck from '@renderer/assets/lottie/Walking Duck.lottie'
+import walkingTommy from '@renderer/assets/lottie/Walking Tommy.lottie'
+import musicMan from '@renderer/assets/lottie/Music Man.lottie'
+import moodyDog from '@renderer/assets/lottie/Moody Dog.lottie'
+import joyWalking from '@renderer/assets/lottie/Joy Walking with Phone.lottie'
+
 export interface LottieStyle {
   src: string
   figureSize: number
@@ -10,33 +17,33 @@ export interface LottieStyle {
 
 export const LOTTIE_STYLES: LottieStyle[] = [
   {
-    src: 'https://lottie.host/ce3cd7e7-10b2-4105-9da9-7af484c75037/Y5R2r4rXlp.lottie',
+    src: walkingCat,
     figureSize: 40,
     scale: 1.4
   },
   {
-    src: 'https://lottie.host/aa15cb89-2d5f-4037-9918-5d53719b4c16/BOCGt2pRik.lottie',
+    src: walkingDuck,
     figureSize: 40,
     scale: 1.4
   },
   {
-    src: 'https://lottie.host/67d290a0-b085-4c67-b92b-44367c0b2d03/rPqDUXC2lg.lottie',
+    src: walkingTommy,
     figureSize: 40,
     scale: 1.4
   },
   {
-    src: 'https://lottie.host/78f4b8fa-f675-4461-96f9-6b1d9aee1c71/jV1RnEAZJM.lottie',
+    src: musicMan,
     figureSize: 40,
     scale: 1.4
   },
   {
-    src: 'https://lottie.host/f0a68f44-d307-4f14-918b-14c7c53b491b/RKTzkNFXga.lottie',
+    src: moodyDog,
     figureSize: 30,
     scale: 1.4
   },
   {
-    src: 'https://lottie.host/90a279ed-888f-4581-8f4e-b4755fc4cc11/YvpW7cQ4oz.lottie',
-    figureSize: 40,
+    src: joyWalking,
+    figureSize: 30,
     scale: 1.4
   }
 ]

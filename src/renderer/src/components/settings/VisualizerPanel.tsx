@@ -65,6 +65,7 @@ export function VisualizerPanel() {
               >
                 <div className="flex items-center justify-center w-full h-full p-2">
                   <DotLottieReact
+                    key={style.src}
                     src={style.src}
                     loop
                     autoplay

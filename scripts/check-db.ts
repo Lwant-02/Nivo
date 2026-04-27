@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
-const dbPath = join(homedir(), 'Library', 'Application Support', 'lume', 'lume.db')
+const dbPath = join(homedir(), 'Library', 'Application Support', 'nivo', 'nivo.db')
 
 if (!existsSync(dbPath)) {
   console.log(`No database at ${dbPath}`)

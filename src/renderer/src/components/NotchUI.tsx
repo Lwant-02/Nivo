@@ -16,7 +16,7 @@ import {
   Monitor,
   ChevronsLeft,
   ChevronsRight,
-  Headphones
+  Settings
 } from 'lucide-react'
 import cn from 'clsx'
 
@@ -33,6 +33,7 @@ import { MusicVisualizer } from './ui/MusicVisualizer'
 import { SourceBadge } from './ui/SourceBadge'
 import { LottieVisualizer } from './ui/LottieVisualizer'
 import { IdleView } from './ui/IdleView'
+import { WelcomeView } from './ui/WelcomeView'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
 
 const bounceTransition: Transition = { type: 'spring', stiffness: 400, damping: 28, mass: 0.8 }
@@ -57,11 +58,13 @@ const MEDIA_PANE_WIDTH = 350
 const CALENDAR_PANE_WIDTH = 300
 
 export default function NotchUI() {
-  const { settings } = useSettings()
+  const { settings, ready: settingsReady, update: updateSetting } = useSettings()
   const [isHovering, setIsHovering] = useState(false)
   const [toast, setToast] = useState<{ title: string; body: string } | null>(null)
   const toastTimeout = useRef<NodeJS.Timeout | null>(null)
   const [isAutoExpanded, setIsAutoExpanded] = useState(false)
+  const [isWelcoming, setIsWelcoming] = useState(false)
+  const welcomeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [sidePanel, setSidePanel] = useState<SidePanel>(null)
   const [volumeLevel, setVolumeLevel] = useState(50)
   const { playExpand } = useSound()
@@ -71,7 +74,7 @@ export default function NotchUI() {
   const showVolume = sidePanel === 'volume'
   const showDevice = sidePanel === 'device'
 
-  const isExpanded = isHovering || isAutoExpanded
+  const isExpanded = isHovering || isAutoExpanded || isWelcoming
   const showSidePane = isExpanded && settings.enableCalendar
 
   const isHoveringRef = useRef(false)
@@ -95,10 +98,24 @@ export default function NotchUI() {
   const [displayArt, setDisplayArt] = useState<string | null>(null)
 
   // Sync position and volume when media updates
+  const hasSyncedInitial = useRef(false)
   useEffect(() => {
-    setPosition(duration > 0 ? Math.min(initialPosition, duration) : initialPosition)
+    const valid = duration > 0
+    const pos = valid ? Math.min(initialPosition, duration) : initialPosition
+    
+    // Force snap on first load or song change
+    if (!hasSyncedInitial.current || title !== prevTitleRef.current) {
+      setPosition(pos)
+      if (title) hasSyncedInitial.current = true
+    } else {
+      // Regular periodic sync from backend
+      setPosition(pos)
+    }
+  }, [initialPosition, duration, title])
+
+  useEffect(() => {
     setVolumeLevel(volume)
-  }, [initialPosition, volume, duration])
+  }, [volume])
 
   // Auto-expand announcement on song change
   useEffect(() => {
@@ -132,6 +149,26 @@ export default function NotchUI() {
       }
     }
   }, [title])
+
+  // Auto-show welcome notch for 5s on first launch after license activation
+  useEffect(() => {
+    if (!settingsReady || settings.hasSeenWelcome) return
+
+    setIsWelcoming(true)
+    playExpand()
+
+    welcomeTimerRef.current = setTimeout(() => {
+      setIsWelcoming(false)
+      updateSetting('hasSeenWelcome', true)
+    }, 8000)
+
+    return () => {
+      if (welcomeTimerRef.current) {
+        clearTimeout(welcomeTimerRef.current)
+        welcomeTimerRef.current = null
+      }
+    }
+  }, [settingsReady, settings.hasSeenWelcome])
 
   useEffect(() => {
     const unsub = window.api.onLumeToast((data) => {
@@ -262,7 +299,6 @@ export default function NotchUI() {
   }
 
   const handleShowVolume = (): void => setSidePanel((p) => (p === 'volume' ? null : 'volume'))
-  const handleToggleDevice = (): void => setSidePanel((p) => (p === 'device' ? null : 'device'))
 
   const progressPct = duration > 0 ? (position / duration) * 100 : 0
 
@@ -273,7 +309,8 @@ export default function NotchUI() {
 
   const isIdle = !title || title === 'Not Playing'
   const showLottie = !isPlaying && !isExpanded && settings.showLottieOnPause
-  const showIdleView = isExpanded && isIdle
+  const showWelcome = isExpanded && !settings.hasSeenWelcome
+  const showIdleView = isExpanded && isIdle && settings.hasSeenWelcome
 
   return (
     <motion.div
@@ -420,7 +457,9 @@ export default function NotchUI() {
                 whileDrag={{ cursor: 'grabbing' }}
                 className="flex flex-col h-full p-[22px] justify-between relative z-10"
               >
-                {showIdleView ? (
+                {showWelcome ? (
+                  <WelcomeView />
+                ) : showIdleView ? (
                   <IdleView />
                 ) : (
                   <>
@@ -532,14 +571,14 @@ export default function NotchUI() {
                     <div className="flex items-center justify-center relative mt-1">
                       <div className="absolute left-0">
                         <button
-                          onClick={handleToggleDevice}
+                          onClick={handleShowVolume}
                           className="size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-all hover:bg-white/10 active:scale-95"
                         >
-                          <Headphones
+                          <Monitor
                             size={20}
                             className="transition-colors duration-200"
                             style={{
-                              color: showDevice ? 'var(--lume-accent)' : 'var(--lume-text-dim)'
+                              color: showVolume ? 'var(--lume-accent)' : 'var(--lume-text-dim)'
                             }}
                           />
                         </button>
@@ -572,14 +611,14 @@ export default function NotchUI() {
                       </div>
 
                       <button
-                        onClick={handleShowVolume}
+                        onClick={() => window.api.openSettings()}
                         className="absolute right-0 size-[40px] rounded-xl flex items-center justify-center cursor-pointer transition-all hover:bg-white/20 active:scale-95"
                       >
-                        <Monitor
+                        <Settings
                           size={20}
                           className="transition-colors duration-200"
                           style={{
-                            color: showVolume ? 'var(--lume-accent)' : 'var(--lume-text-dim)'
+                            color: 'var(--lume-text-dim)'
                           }}
                         />
                       </button>

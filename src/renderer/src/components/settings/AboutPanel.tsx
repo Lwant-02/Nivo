@@ -1,11 +1,10 @@
-import { Globe, MessageSquare, Heart, ChevronRight } from 'lucide-react'
+import { ChevronRight, MessageSquare } from 'lucide-react'
 import { SettingCard } from './SettingCard'
 import { SectionLabel } from './SectionLabel'
 import { Pill } from './Pill'
 import iconSrc from '../../../../../resources/icon.png'
 
-const WEBSITE = 'https://nawmain.dev'
-const FEEDBACK = 'https://nawmain.dev'
+const FEEDBACK = 'https://nivo.nawmain.dev/faqs'
 
 export function AboutPanel() {
   const year = new Date().getFullYear()
@@ -45,19 +44,27 @@ export function AboutPanel() {
               marginBottom: 14
             }}
           >
-            <img src={iconSrc} className="object-cover" alt="Lume" />
+            <img src={iconSrc} className="object-cover" alt="Nivo" />
           </div>
-          <h1
+          <div
             style={{
-              fontSize: 26,
-              fontWeight: 700,
-              letterSpacing: -0.8,
-              color: '#fff',
-              lineHeight: 1
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
             }}
           >
-            Lume
-          </h1>
+            <h1
+              style={{
+                fontSize: 26,
+                fontWeight: 700,
+                letterSpacing: -0.8,
+                color: '#fff',
+                lineHeight: 1
+              }}
+            >
+              Nivo
+            </h1>
+          </div>
           <p
             style={{
               marginTop: 6,
@@ -76,86 +83,15 @@ export function AboutPanel() {
         </div>
       </SettingCard>
 
-      {/* Developer */}
-      <SectionLabel text="Developer" />
-      <SettingCard>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            paddingLeft: 18,
-            paddingRight: 18,
-            paddingTop: 16,
-            paddingBottom: 16
-          }}
-        >
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: 'linear-gradient(135deg, #1f2937 0%, #0f172a 100%)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              flexShrink: 0,
-              fontSize: 16,
-              fontWeight: 700,
-              letterSpacing: -0.2
-            }}
-          >
-            L
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: '#fff',
-                letterSpacing: -0.2
-              }}
-            >
-              Lwant
-            </div>
-            <div
-              style={{
-                marginTop: 2,
-                fontSize: 11.5,
-                color: 'rgba(255,255,255,0.48)'
-              }}
-            >
-              Independent developer · Built with
-              <Heart
-                size={10}
-                color="#ff3b5c"
-                fill="#ff3b5c"
-                style={{ display: 'inline-block', margin: '0 4px', verticalAlign: -1 }}
-              />
-              in 2026
-            </div>
-          </div>
-          <Pill variant="soft">Solo Dev</Pill>
-        </div>
-      </SettingCard>
-
       {/* Links */}
       <SectionLabel text="Resources" />
       <SettingCard>
         <LinkRow
-          icon={<Globe size={15} strokeWidth={2} />}
-          label="Website"
-          description="nawmain.dev"
-          onClick={() => window.api.openExternal(WEBSITE)}
-          isFirst
-        />
-        <LinkRow
           icon={<MessageSquare size={15} strokeWidth={2} />}
-          label="Share feedback"
-          description="Ideas, bugs, and suggestions welcome."
+          label="Send feedback"
+          description="If you encounter issues or have ideas, feel free to share."
           onClick={() => window.api.openExternal(FEEDBACK)}
+          isFirst
         />
       </SettingCard>
 
@@ -169,7 +105,7 @@ export function AboutPanel() {
           letterSpacing: 0.2
         }}
       >
-        © {year} Lume · All rights reserved.
+        © {year} Nivo · All rights reserved.
       </p>
     </>
   )

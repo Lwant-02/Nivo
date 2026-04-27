@@ -1,5 +1,5 @@
 {
-  "name": "lume",
+  "name": "nivo",
   "version": "1.0.0",
   "description": "Premium macOS Dynamic Island utility for the Mac notch",
   "main": "./out/main/index.js",
@@ -20,7 +20,7 @@
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:linux": "electron-vite build && electron-builder --linux",
     "db:check": "ts-node --project scripts/tsconfig.json scripts/check-db.ts",
-    "db:reset": "rm -f \"$HOME/Library/Application Support/lume/lume.db\" \"$HOME/Library/Application Support/lume/lume.db-shm\" \"$HOME/Library/Application Support/lume/lume.db-wal\""
+    "db:reset": "rm -f \"$HOME/Library/Application Support/nivo/nivo.db\" \"$HOME/Library/Application Support/nivo/nivo.db-shm\" \"$HOME/Library/Application Support/nivo/nivo.db-wal\""
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
