@@ -66,7 +66,7 @@ export default function NotchUI() {
     onComplete: () => {
       const mins = settings.focusDuration ?? 25
       window.api.showLumeToast(
-        'Focus Complete',
+        'Nivo | Focus Complete',
         mins === 1 ? 'Test session done' : `${mins} min session done`
       )
       if (settings.hapticFeedback) window.api.triggerHaptic()

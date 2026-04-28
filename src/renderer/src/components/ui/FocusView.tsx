@@ -94,37 +94,42 @@ export function FocusView({
         </div>
       </div>
 
-      <div className="flex items-center" style={{ gap: '16px' }}>
-        <div className="flex flex-col items-center justify-center gap-1">
-          <button
-            onClick={onStop}
-            className="flex flex-col gap-2 items-center justify-center size-14 rounded-full bg-white/8 hover:bg-white/14 border border-white/8 transition-all active:scale-95 shadow-lg"
-            aria-label="End session"
-          >
-            <Square size={20} className="text-text" fill="currentColor" />
-          </button>
-          <p className="text-xs font-bold tracking-tight text-text">Cancel</p>
-        </div>
+      <div className="flex flex-col gap-4">
+        <h1 className="text-[13px] text-center font-bold tracking-[0.24em] text-text uppercase">
+          Zen Bar
+        </h1>
+        <div className="flex items-center" style={{ gap: '16px' }}>
+          <div className="flex flex-col items-center justify-center gap-1">
+            <button
+              onClick={onStop}
+              className="flex flex-col gap-2 items-center justify-center size-14 rounded-full bg-white/8 hover:bg-white/14 border border-white/8 transition-all active:scale-95 shadow-lg"
+              aria-label="End session"
+            >
+              <Square size={20} className="text-text" fill="currentColor" />
+            </button>
+            <p className="text-xs font-bold tracking-tight text-text">Cancel</p>
+          </div>
 
-        <div className="flex flex-col items-center justify-center gap-1">
-          <button
-            onClick={isPaused ? onResume : onPause}
-            className="flex items-center justify-center size-14 rounded-full transition-all active:scale-95 shadow-xl"
-            style={{
-              background: 'var(--lume-accent, #a855f7)',
-              boxShadow: '0 8px 24px var(--lume-accent-glow, rgba(168,85,247,0.5))'
-            }}
-            aria-label={isPaused ? 'Resume' : 'Pause'}
-          >
-            {isPaused ? (
-              <Play size={20} fill="currentColor" className="text-text translate-x-px" />
-            ) : (
-              <Pause size={20} fill="currentColor" className="text-text" />
-            )}
-          </button>
-          <p className="text-xs font-bold tracking-tight text-text">
-            {isPaused ? 'Resume' : 'Pause'}
-          </p>
+          <div className="flex flex-col items-center justify-center gap-1">
+            <button
+              onClick={isPaused ? onResume : onPause}
+              className="flex items-center justify-center size-14 rounded-full transition-all active:scale-95 shadow-xl"
+              style={{
+                background: 'var(--lume-accent, #a855f7)',
+                boxShadow: '0 8px 24px var(--lume-accent-glow, rgba(168,85,247,0.5))'
+              }}
+              aria-label={isPaused ? 'Resume' : 'Pause'}
+            >
+              {isPaused ? (
+                <Play size={20} fill="currentColor" className="text-text translate-x-px" />
+              ) : (
+                <Pause size={20} fill="currentColor" className="text-text" />
+              )}
+            </button>
+            <p className="text-xs font-bold tracking-tight text-text">
+              {isPaused ? 'Resume' : 'Pause'}
+            </p>
+          </div>
         </div>
       </div>
     </div>

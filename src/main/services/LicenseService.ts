@@ -7,8 +7,7 @@ export const TEST_LICENSE_KEY = 'NIVO-TEST-2026'
 
 const SECRET_SALT = 'nivo_secret_2026'
 
-// export const TRIAL_DURATION_MS = 48 * 60 * 60 * 1000 // 48 hours
-export const TRIAL_DURATION_MS = 2 * 60 * 1000 // 2 minutes
+export const TRIAL_DURATION_MS = 3 * 24 * 60 * 60 * 1000 // 3 days
 
 export interface AuthState {
   licenseKey: string | null

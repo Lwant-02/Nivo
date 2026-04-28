@@ -70,6 +70,7 @@ declare global {
     temp: number
     isDay: boolean
     condition: WeatherCondition
+    location?: string
   }
 
   type ThemeId = 'midnight' | 'graphite' | 'ocean' | 'forest' | 'sunset' | 'berry'
@@ -104,7 +105,6 @@ declare global {
     lottieStyle: number
     focusDuration: number
     showWeather: boolean
-    showWeatherInCalendar: boolean
     hasSeenWelcome: boolean
   }
 }
