@@ -25,7 +25,6 @@ export interface Settings {
   lottieStyle: number
   focusDuration: number
   showWeather: boolean
-  showWeatherInCalendar: boolean
   hasSeenWelcome: boolean
 }
 
@@ -47,7 +46,6 @@ export const DEFAULT_SETTINGS: Settings = {
   lottieStyle: 0,
   focusDuration: 25,
   showWeather: true,
-  showWeatherInCalendar: true,
   hasSeenWelcome: false
 }
 
@@ -89,7 +87,6 @@ type Column =
   | 'lottie_style'
   | 'focus_duration'
   | 'show_weather'
-  | 'show_weather_in_calendar'
   | 'has_seen_welcome'
 
 type Kind = 'bool' | 'int' | 'theme' | 'notchTheme'
@@ -117,7 +114,6 @@ const FIELDS: { [K in keyof Settings]: FieldSpec } = {
   lottieStyle: { column: 'lottie_style', kind: 'int' },
   focusDuration: { column: 'focus_duration', kind: 'int' },
   showWeather: { column: 'show_weather', kind: 'bool' },
-  showWeatherInCalendar: { column: 'show_weather_in_calendar', kind: 'bool' },
   hasSeenWelcome: { column: 'has_seen_welcome', kind: 'bool' }
 }
 

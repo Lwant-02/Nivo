@@ -340,7 +340,7 @@ const WeatherTab = ({
             className="text-white/45 text-[10px] tracking-tight"
             style={{ whiteSpace: 'nowrap' }}
           >
-            {weather.isDay ? 'Daylight' : 'After dark'} · live in your area
+            {weather.isDay ? 'Daylight' : 'After dark'} · live in {weather.location || 'your area'}
           </span>
         </div>
       </div>

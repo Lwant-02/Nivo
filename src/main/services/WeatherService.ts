@@ -6,6 +6,7 @@ export interface NivoAtmosphere {
   temp: number
   isDay: boolean
   condition: WeatherCondition
+  location?: string
 }
 
 /**
@@ -38,7 +39,7 @@ export class OpenMeteoProvider implements AtmosphereProvider {
   async fetchWeather(): Promise<NivoAtmosphere | null> {
     try {
       // 1. Get coarse location via IP (No API key, anonymous)
-      const locData = await this.requestJSON('http://ip-api.com/json/?fields=lat,lon')
+      const locData = await this.requestJSON('http://ip-api.com/json/?fields=lat,lon,city')
       if (!locData?.lat || !locData?.lon) return null
 
       // 2. Fetch weather data from Open-Meteo
@@ -50,7 +51,8 @@ export class OpenMeteoProvider implements AtmosphereProvider {
       return {
         temp: Math.round(data.current.temperature_2m),
         isDay: data.current.is_day === 1,
-        condition: this.mapCondition(data.current.weather_code)
+        condition: this.mapCondition(data.current.weather_code),
+        location: locData.city
       }
     } catch (err) {
       console.error('[OpenMeteoProvider] Failed to fetch weather:', err)

@@ -14,7 +14,10 @@ export const OnboardingUI = () => {
   const [licenseKey, setLicenseKey] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [authState, setAuthState] = useState<{ isInTrial: boolean; trialStartedAt: number | null } | null>(null)
+  const [authState, setAuthState] = useState<{
+    isInTrial: boolean
+    trialStartedAt: number | null
+  } | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -89,7 +92,7 @@ export const OnboardingUI = () => {
             className="text-[14px] text-white/70 text-center max-w-[320px] leading-snug"
             style={{ marginBottom: '22px' }}
           >
-            One payment. Lifetime access. Or kick the tires for 48 hours, free.
+            One payment. Lifetime access. Or kick the tires for 72 hours, free.
           </p>
 
           <div
@@ -149,7 +152,7 @@ export const OnboardingUI = () => {
                 <Clock className="size-[18px] text-white/40 shrink-0" />
                 <div className="flex flex-col min-w-0">
                   <span className="text-[13px] text-white/85 font-semibold">
-                    48 hours, every feature.
+                    72 hours, every feature.
                   </span>
                 </div>
               </div>
