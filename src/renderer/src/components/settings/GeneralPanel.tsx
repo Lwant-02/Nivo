@@ -2,6 +2,7 @@ import type { JSX } from 'react'
 import {
   Maximize2,
   ShieldOff,
+  Vibrate,
   LogIn,
   ChevronRight,
   ChevronLeft,
@@ -78,6 +79,17 @@ export function GeneralPanel(): JSX.Element {
           <GestureCard direction="right" label="Swipe Right" description="Next Track" />
           <GestureCard direction="left" label="Swipe Left" description="Prev Track" />
         </div>
+      </SettingCard>
+      <SectionLabel text="Behaviour" />
+      <SettingCard>
+        <SettingRow
+          icon={<Vibrate {...ICON_STYLE} />}
+          label="Haptic feedback"
+          description="Subtle taps on interaction via Force Touch trackpads."
+          enabled={settings.hapticFeedback}
+          onToggle={() => update('hapticFeedback', !settings.hapticFeedback)}
+          isFirst
+        />
       </SettingCard>
 
 

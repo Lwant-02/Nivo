@@ -52,7 +52,7 @@ const CALENDAR_PANE_WIDTH = 300
 
 export default function NotchUI() {
   const { settings, ready: settingsReady, update: updateSetting } = useSettings()
-  useSonicFeedback(settings.sonicFeedback)
+  useSonicFeedback(settings.sonicFeedback, settings.sonicSoundPack)
   const [isHovering, setIsHovering] = useState(false)
   const [toast, setToast] = useState<{ title: string; body: string } | null>(null)
   const toastTimeout = useRef<NodeJS.Timeout | null>(null)

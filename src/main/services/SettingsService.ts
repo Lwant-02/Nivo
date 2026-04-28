@@ -2,8 +2,51 @@ import type Database from 'better-sqlite3'
 import { EventEmitter } from 'node:events'
 import { getDatabase } from './database'
 
-export type ThemeId = 'midnight' | 'graphite' | 'ocean' | 'forest' | 'sunset' | 'berry'
-export type NotchThemeId = 'obsidian' | 'frost' | 'aurora' | 'sand' | 'lavender' | 'crimson' | 'emerald' | 'amber'
+export type ThemeId =
+  | 'midnight'
+  | 'graphite'
+  | 'ocean'
+  | 'forest'
+  | 'sunset'
+  | 'berry'
+  | 'indigo'
+  | 'rose'
+  | 'teal'
+  | 'gold'
+  | 'mint'
+  | 'sky'
+  | 'lavender'
+  | 'coral'
+  | 'silver'
+  | 'plum'
+export type NotchThemeId =
+  | 'obsidian'
+  | 'frost'
+  | 'aurora'
+  | 'sand'
+  | 'lavender'
+  | 'crimson'
+  | 'emerald'
+  | 'amber'
+  | 'nebula'
+  | 'midnight'
+  | 'sakura'
+  | 'cyber'
+  | 'solar'
+  | 'oceanic'
+  | 'vulcan'
+  | 'prism'
+export type SonicSoundPackId =
+  | 'cherrymx-black-abs'
+  | 'cherrymx-black-pbt'
+  | 'cherrymx-blue-abs'
+  | 'cherrymx-blue-pbt'
+  | 'cherrymx-brown-abs'
+  | 'cherrymx-brown-pbt'
+  | 'cherrymx-red-abs'
+  | 'cherrymx-red-pbt'
+  | 'eg-crystal-purple'
+  | 'eg-oreo'
 export type BatteryThreshold = 10 | 20
 
 export interface Settings {
@@ -26,6 +69,7 @@ export interface Settings {
   focusDuration: number
   showWeather: boolean
   sonicFeedback: boolean
+  sonicSoundPack: SonicSoundPackId
   hasSeenWelcome: boolean
 }
 
@@ -48,6 +92,7 @@ export const DEFAULT_SETTINGS: Settings = {
   focusDuration: 25,
   showWeather: true,
   sonicFeedback: false,
+  sonicSoundPack: 'cherrymx-black-abs',
   hasSeenWelcome: false
 }
 
@@ -57,7 +102,17 @@ const VALID_THEMES: ReadonlySet<ThemeId> = new Set([
   'ocean',
   'forest',
   'sunset',
-  'berry'
+  'berry',
+  'indigo',
+  'rose',
+  'teal',
+  'gold',
+  'mint',
+  'sky',
+  'lavender',
+  'coral',
+  'silver',
+  'plum'
 ])
 
 const VALID_NOTCH_THEMES: ReadonlySet<NotchThemeId> = new Set([
@@ -68,7 +123,28 @@ const VALID_NOTCH_THEMES: ReadonlySet<NotchThemeId> = new Set([
   'lavender',
   'crimson',
   'emerald',
-  'amber'
+  'amber',
+  'nebula',
+  'midnight',
+  'sakura',
+  'cyber',
+  'solar',
+  'oceanic',
+  'vulcan',
+  'prism'
+])
+
+const VALID_SONIC_SOUND_PACKS: ReadonlySet<SonicSoundPackId> = new Set([
+  'cherrymx-black-abs',
+  'cherrymx-black-pbt',
+  'cherrymx-blue-abs',
+  'cherrymx-blue-pbt',
+  'cherrymx-brown-abs',
+  'cherrymx-brown-pbt',
+  'cherrymx-red-abs',
+  'cherrymx-red-pbt',
+  'eg-crystal-purple',
+  'eg-oreo'
 ])
 
 type Column =
@@ -90,9 +166,10 @@ type Column =
   | 'focus_duration'
   | 'show_weather'
   | 'sonic_feedback'
+  | 'sonic_sound_pack'
   | 'has_seen_welcome'
 
-type Kind = 'bool' | 'int' | 'theme' | 'notchTheme'
+type Kind = 'bool' | 'int' | 'theme' | 'notchTheme' | 'sonicSoundPack'
 
 interface FieldSpec {
   column: Column
@@ -118,6 +195,7 @@ const FIELDS: { [K in keyof Settings]: FieldSpec } = {
   focusDuration: { column: 'focus_duration', kind: 'int' },
   showWeather: { column: 'show_weather', kind: 'bool' },
   sonicFeedback: { column: 'sonic_feedback', kind: 'bool' },
+  sonicSoundPack: { column: 'sonic_sound_pack', kind: 'sonicSoundPack' },
   hasSeenWelcome: { column: 'has_seen_welcome', kind: 'bool' }
 }
 
@@ -137,6 +215,11 @@ function toStored<K extends keyof Settings>(key: K, value: Settings[K]): string 
     if (!VALID_NOTCH_THEMES.has(v)) throw new Error(`Invalid notch theme: ${v}`)
     return v
   }
+  if (kind === 'sonicSoundPack') {
+    const v = value as SonicSoundPackId
+    if (!VALID_SONIC_SOUND_PACKS.has(v)) throw new Error(`Invalid sonic sound pack: ${v}`)
+    return v
+  }
   if (kind === 'bool') return value ? 1 : 0
   return Number(value)
 }
@@ -152,6 +235,12 @@ function fromStored<K extends keyof Settings>(key: K, raw: unknown): Settings[K]
     return (VALID_NOTCH_THEMES.has(v as NotchThemeId)
       ? v
       : DEFAULT_SETTINGS.notchTheme) as Settings[K]
+  }
+  if (kind === 'sonicSoundPack') {
+    const v = raw as string
+    return (VALID_SONIC_SOUND_PACKS.has(v as SonicSoundPackId)
+      ? v
+      : DEFAULT_SETTINGS.sonicSoundPack) as Settings[K]
   }
   if (kind === 'bool') return (!!raw) as Settings[K]
   return Number(raw) as unknown as Settings[K]

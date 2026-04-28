@@ -19,6 +19,7 @@ const DEFAULTS: AppSettings = {
   focusDuration: 25,
   showWeather: true,
   sonicFeedback: false,
+  sonicSoundPack: 'cherrymx-black-abs',
   hasSeenWelcome: false
 }
 
