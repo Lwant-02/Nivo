@@ -2,12 +2,10 @@ import type { JSX } from 'react'
 import {
   Maximize2,
   ShieldOff,
-  Vibrate,
   LogIn,
   ChevronRight,
   ChevronLeft,
-  CloudSun,
-  Keyboard
+  CloudSun
 } from 'lucide-react'
 import { SettingCard } from './SettingCard'
 import { SectionLabel } from './SectionLabel'
@@ -82,24 +80,6 @@ export function GeneralPanel(): JSX.Element {
         </div>
       </SettingCard>
 
-      <SectionLabel text="Behaviour" />
-      <SettingCard>
-        <SettingRow
-          icon={<Vibrate {...ICON_STYLE} />}
-          label="Haptic feedback"
-          description="Subtle taps on interaction via Force Touch trackpads."
-          enabled={settings.hapticFeedback}
-          onToggle={() => update('hapticFeedback', !settings.hapticFeedback)}
-          isFirst
-        />
-        <SettingRow
-          icon={<Keyboard {...ICON_STYLE} />}
-          label="Sonic Feedback"
-          description="Play a mechanical keyboard click on every keystroke, system-wide."
-          enabled={settings.sonicFeedback}
-          onToggle={() => update('sonicFeedback', !settings.sonicFeedback)}
-        />
-      </SettingCard>
 
       <SectionLabel text="Atmospheric" />
       <SettingCard>
