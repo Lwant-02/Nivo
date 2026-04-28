@@ -28,7 +28,7 @@ export const NotchToast: React.FC<NotchToastProps> = ({ toast }) => {
             style={{ width: '100%', height: '100%' }}
           />
         </div>
-        <div className="flex flex-col min-w-0 flex-1">
+        <div className="flex flex-col min-w-0 flex-1 gap-2">
           <h3 className="text-text text-[18px] text-center font-bold tracking-tight leading-tight mt-1">
             {toast.title}
           </h3>

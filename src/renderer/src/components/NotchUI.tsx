@@ -14,6 +14,7 @@ import cn from 'clsx'
 import { useMedia } from '../hooks/useMedia'
 import { useSound } from '../hooks/useSound'
 import { useSettings } from '../hooks/useSettings'
+import { useSonicFeedback } from '../hooks/useSonicFeedback'
 import { getNotchTheme } from '@renderer/util/notchThemes'
 import { VolumeSwitcher } from './ui/VolumeSwitcher'
 import { CalendarPane } from './ui/CalendarPane'
@@ -51,6 +52,7 @@ const CALENDAR_PANE_WIDTH = 300
 
 export default function NotchUI() {
   const { settings, ready: settingsReady, update: updateSetting } = useSettings()
+  useSonicFeedback(settings.sonicFeedback)
   const [isHovering, setIsHovering] = useState(false)
   const [toast, setToast] = useState<{ title: string; body: string } | null>(null)
   const toastTimeout = useRef<NodeJS.Timeout | null>(null)
@@ -347,7 +349,7 @@ export default function NotchUI() {
       }}
       transition={bounceTransition}
       className={cn(
-        'relative overflow-hidden origin-top transition-shadow duration-500',
+        'relative overflow-hidden origin-top transition-shadow duration-500 z-1000',
         isExpanded ? 'backdrop-blur-3xl' : ''
       )}
       style={{

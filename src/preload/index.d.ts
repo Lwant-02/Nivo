@@ -54,6 +54,7 @@ declare global {
         }>
       >
       triggerHaptic: () => Promise<void>
+      onSonicKey: (callback: (keycode: number) => void) => () => void
       getWeather: () => Promise<Atmosphere | null>
       getSettings: () => Promise<AppSettings | null>
       updateSetting: <K extends keyof AppSettings>(
@@ -105,6 +106,7 @@ declare global {
     lottieStyle: number
     focusDuration: number
     showWeather: boolean
+    sonicFeedback: boolean
     hasSeenWelcome: boolean
   }
 }

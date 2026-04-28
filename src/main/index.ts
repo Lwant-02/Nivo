@@ -20,6 +20,7 @@ import { SettingsService, Settings } from './services/SettingsService'
 import { fetchMacEvents } from './services/calendarService'
 import { LicenseService } from './services/LicenseService'
 import { WeatherService } from './services/WeatherService'
+import { SonicFeedbackService } from './services/SonicFeedbackService'
 
 // Keep the renderer running full-speed even though the notch window is
 // non-focusable + always-on-top. Without these, Chromium throttles rAF and
@@ -35,11 +36,16 @@ app.commandLine.appendSwitch('enable-gpu-rasterization')
 app.commandLine.appendSwitch('enable-accelerated-video-decode')
 app.commandLine.appendSwitch('enable-zero-copy')
 
+// Sonic Feedback plays Web Audio without an explicit user gesture in the
+// non-focusable notch window — Chromium would otherwise suspend the context.
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
+
 let mediaService: MediaService | null = null
 let audioService: AudioService | null = null
 let licenseService: LicenseService | null = null
 let settingsService: SettingsService | null = null
 let weatherService: WeatherService | null = null
+let sonicFeedbackService: SonicFeedbackService | null = null
 
 let mainWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
@@ -172,6 +178,12 @@ function applyWindowSettings(win: BrowserWindow, settings: Settings | null | und
     skipTransformProcessType: true
   })
   win.setContentProtection(!!s?.hideFromScreenCapture)
+}
+
+function applySonicFeedback(enabled: boolean): void {
+  if (!sonicFeedbackService) return
+  if (enabled) sonicFeedbackService.start()
+  else sonicFeedbackService.stop()
 }
 
 function applyLaunchAtLogin(enabled: boolean): void {
@@ -325,10 +337,20 @@ app.whenReady().then(() => {
     settingsService.on('change', (next: Settings) => {
       applyLaunchAtLogin(next.launchAtLogin)
       if (mainWindow) applyWindowSettings(mainWindow, next)
+      applySonicFeedback(next.sonicFeedback)
       broadcastSettings(next)
     })
   } catch (err: any) {
     console.error('[main] Failed to initialize SettingsService:', err.message)
+  }
+
+  try {
+    sonicFeedbackService = new SonicFeedbackService(() => mainWindow)
+    if (settingsService?.get('sonicFeedback')) {
+      sonicFeedbackService.start()
+    }
+  } catch (err: any) {
+    console.error('[main] Failed to initialize SonicFeedbackService:', err.message)
   }
 
   try {
@@ -586,4 +608,8 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+app.on('before-quit', () => {
+  sonicFeedbackService?.dispose()
 })

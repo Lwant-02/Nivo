@@ -1,6 +1,6 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Settings, Timer, Rewind, Play, Pause, FastForward, Headphones } from 'lucide-react'
+import { Settings, Timer, Rewind, Play, Pause, FastForward, Headphones, Keyboard } from 'lucide-react'
 import MarqueeText from './MarqueeText'
 import { Thumbnail } from './Thumbnail'
 import { MusicVisualizer } from './MusicVisualizer'
@@ -52,18 +52,30 @@ export const ExpandedMediaView: React.FC<ExpandedMediaViewProps> = ({
   return (
     <>
       <div className="flex relative items-center justify-between">
-        <button
-          onClick={onOpenSettings}
-          className="absolute -top-6 left-0 flex items-center justify-center cursor-pointer"
-        >
-          <Settings
-            size={15}
-            className="transition-colors duration-200"
-            style={{
-              color: 'var(--lume-text-dim)'
-            }}
-          />
-        </button>
+        <div className="absolute -top-6 left-0 flex items-center gap-2">
+          <button
+            onClick={onOpenSettings}
+            className="flex items-center justify-center cursor-pointer"
+          >
+            <Settings
+              size={15}
+              className="transition-colors duration-200"
+              style={{
+                color: 'var(--lume-text-dim)'
+              }}
+            />
+          </button>
+          {settings.sonicFeedback && (
+            <Keyboard
+              size={15}
+              aria-label="Sonic Feedback active"
+              className="transition-colors duration-200"
+              style={{
+                color: 'var(--lume-accent)'
+              }}
+            />
+          )}
+        </div>
         <div className="flex items-center gap-4">
           <div className="relative">
             <div className="w-14 h-9 bg-gray rounded-md flex items-center justify-center overflow-hidden shadow-lg border border-white/5 relative">
