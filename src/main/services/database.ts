@@ -47,6 +47,8 @@ export function getDatabase(): Database.Database {
       show_lottie_on_pause INTEGER NOT NULL DEFAULT 0,
       lottie_style INTEGER NOT NULL DEFAULT 0,
       focus_duration INTEGER NOT NULL DEFAULT 25,
+      sonic_feedback INTEGER NOT NULL DEFAULT 0,
+      sonic_sound_pack TEXT NOT NULL DEFAULT 'cherrymx-black-abs',
       has_seen_welcome INTEGER NOT NULL DEFAULT 0
     );
   `)
@@ -85,6 +87,7 @@ export function getDatabase(): Database.Database {
   addColumn('show_weather', 'show_weather INTEGER NOT NULL DEFAULT 1')
   addColumn('show_weather_in_calendar', 'show_weather_in_calendar INTEGER NOT NULL DEFAULT 1')
   addColumn('sonic_feedback', 'sonic_feedback INTEGER NOT NULL DEFAULT 0')
+  addColumn('sonic_sound_pack', "sonic_sound_pack TEXT NOT NULL DEFAULT 'cherrymx-black-abs'")
   addColumn('has_seen_welcome', 'has_seen_welcome INTEGER NOT NULL DEFAULT 0')
 
   dbInstance = db

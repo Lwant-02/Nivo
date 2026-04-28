@@ -1,5 +1,6 @@
 import {
   app,
+// Triggering rebuild for theme expansion
   BrowserWindow,
   screen,
   ipcMain,

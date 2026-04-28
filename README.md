@@ -36,13 +36,14 @@ Premium macOS Dynamic Island utility for the Mac notch. Nivo transforms your Mac
 ### 🔊 Sonic Feedback
 
 - **Acoustic Experience**: High-fidelity mechanical keyboard clicks that provide satisfying auditory confirmation for every keystroke.
+- **Multi-Pack Soundboard**: Choose from 10+ professional mechanical keyboard sound packs, including CherryMX (Black, Blue, Brown, Red), EG Crystal Purple, and Oreo.
 - **System-Wide Integration**: Works across all applications on macOS, transforming any keyboard into a premium mechanical typing experience.
 - **Ultra-Low Latency**: Built with the Web Audio API for near-zero delay, ensuring the sound perfectly syncs with your typing speed.
 - **Personalized Audio**: Seamlessly toggled within the Nivo settings panel for a focused or immersive workspace.
 
 ### 🔋 System Intelligence & Customization
 
-- **Adaptive Themes**: 8+ curated premium themes (Obsidian, Frost, Aurora, Sand, Lavender, Crimson, Emerald, Amber) that unify the entire UI, including Toasts and Welcome screens.
+- **Adaptive Themes**: 16+ curated premium themes (Obsidian, Nebula, Cyber, Prism, and more) for both the Notch Style and App Accents.
 - **Haptic Feedback**: Subtle, tactile taps via Force Touch trackpads for every interaction, from swipes to button clicks.
 - **Fullscreen Stability**: Configurable visibility that allows Nivo to stay active even when you're working in fullscreen apps.
 

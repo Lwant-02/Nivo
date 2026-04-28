@@ -74,8 +74,51 @@ declare global {
     location?: string
   }
 
-  type ThemeId = 'midnight' | 'graphite' | 'ocean' | 'forest' | 'sunset' | 'berry'
-  type NotchThemeId = 'obsidian' | 'frost' | 'aurora' | 'sand' | 'lavender' | 'crimson' | 'emerald' | 'amber'
+  type ThemeId =
+    | 'midnight'
+    | 'graphite'
+    | 'ocean'
+    | 'forest'
+    | 'sunset'
+    | 'berry'
+    | 'indigo'
+    | 'rose'
+    | 'teal'
+    | 'gold'
+    | 'mint'
+    | 'sky'
+    | 'lavender'
+    | 'coral'
+    | 'silver'
+    | 'plum'
+  type NotchThemeId =
+    | 'obsidian'
+    | 'frost'
+    | 'aurora'
+    | 'sand'
+    | 'lavender'
+    | 'crimson'
+    | 'emerald'
+    | 'amber'
+    | 'nebula'
+    | 'midnight'
+    | 'sakura'
+    | 'cyber'
+    | 'solar'
+    | 'oceanic'
+    | 'vulcan'
+    | 'prism'
+  type SonicSoundPackId =
+    | 'cherrymx-black-abs'
+    | 'cherrymx-black-pbt'
+    | 'cherrymx-blue-abs'
+    | 'cherrymx-blue-pbt'
+    | 'cherrymx-brown-abs'
+    | 'cherrymx-brown-pbt'
+    | 'cherrymx-red-abs'
+    | 'cherrymx-red-pbt'
+    | 'eg-crystal-purple'
+    | 'eg-oreo'
   type BatteryThreshold = 10 | 20
 
   interface LicenseState {
@@ -107,6 +150,7 @@ declare global {
     focusDuration: number
     showWeather: boolean
     sonicFeedback: boolean
+    sonicSoundPack: SonicSoundPackId
     hasSeenWelcome: boolean
   }
 }

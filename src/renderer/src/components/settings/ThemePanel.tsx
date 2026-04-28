@@ -48,6 +48,66 @@ const THEME_OPTIONS = [
     label: 'Berry',
     gradient: 'linear-gradient(135deg, #bf5af2 0%, #6f2cc9 100%)',
     ring: '#bf5af2'
+  },
+  {
+    id: 'indigo' as const,
+    label: 'Indigo',
+    gradient: 'linear-gradient(135deg, #5e5ce6 0%, #3634a3 100%)',
+    ring: '#5e5ce6'
+  },
+  {
+    id: 'rose' as const,
+    label: 'Rose',
+    gradient: 'linear-gradient(135deg, #ff375f 0%, #a30021 100%)',
+    ring: '#ff375f'
+  },
+  {
+    id: 'teal' as const,
+    label: 'Teal',
+    gradient: 'linear-gradient(135deg, #64d2ff 0%, #007aff 100%)',
+    ring: '#64d2ff'
+  },
+  {
+    id: 'gold' as const,
+    label: 'Gold',
+    gradient: 'linear-gradient(135deg, #ffd60a 0%, #b38b00 100%)',
+    ring: '#ffd60a'
+  },
+  {
+    id: 'mint' as const,
+    label: 'Mint',
+    gradient: 'linear-gradient(135deg, #00fa9a 0%, #008b5e 100%)',
+    ring: '#00fa9a'
+  },
+  {
+    id: 'sky' as const,
+    label: 'Sky',
+    gradient: 'linear-gradient(135deg, #87ceeb 0%, #4682b4 100%)',
+    ring: '#87ceeb'
+  },
+  {
+    id: 'lavender' as const,
+    label: 'Lavender',
+    gradient: 'linear-gradient(135deg, #e6e6fa 0%, #9370db 100%)',
+    ring: '#e6e6fa'
+  },
+  {
+    id: 'coral' as const,
+    label: 'Coral',
+    gradient: 'linear-gradient(135deg, #ff7f50 0%, #cd5b45 100%)',
+    ring: '#ff7f50'
+  },
+  {
+    id: 'silver' as const,
+    label: 'Silver',
+    gradient: 'linear-gradient(135deg, #c0c0c0 0%, #708090 100%)',
+    ring: '#c0c0c0'
+  },
+  {
+    id: 'plum' as const,
+    label: 'Plum',
+    gradient: 'linear-gradient(135deg, #dda0dd 0%, #8b4513 100%)',
+    ring: '#dda0dd'
   }
 ]
 
@@ -99,6 +159,7 @@ export function ThemePanel(): JSX.Element {
             value={settings.theme}
             onChange={(id) => update('theme', id)}
             options={THEME_OPTIONS}
+            columns={4}
           />
         </div>
       </SettingCard>

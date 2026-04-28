@@ -8,7 +8,7 @@ import {
   Info,
   Palette,
   Timer,
-  Volume2,
+  Keyboard,
   Sparkles
 } from 'lucide-react'
 import { SidebarItem } from './settings/SidebarItem'
@@ -17,7 +17,7 @@ import { AboutPanel } from './settings/AboutPanel'
 import { NowPlayingPanel } from './settings/NowPlayingPanel'
 import { CalendarPanel } from './settings/CalendarPanel'
 import { GeneralPanel } from './settings/GeneralPanel'
-import { FeedbackPanel } from './settings/FeedbackPanel'
+import { SonicPanel } from './settings/SonicPanel'
 import { PlaceholderPanel } from './settings/PlaceholderPanel'
 import { VisualizerPanel } from './settings/VisualizerPanel'
 import { ThemePanel } from './settings/ThemePanel'
@@ -32,8 +32,8 @@ const NAV_GROUPS = [
     ]
   },
   {
-    label: 'Feedback',
-    items: [{ id: 'feedback', icon: Volume2, label: 'Feedback', color: '#A855F7' }]
+    label: 'Sonic Feedback',
+    items: [{ id: 'sonic', icon: Keyboard, label: 'Sonic Feedback', color: '#A855F7' }]
   },
   {
     label: 'Live Activities',
@@ -180,7 +180,7 @@ export default function SettingsUI() {
             >
               {active === 'general' && <GeneralPanel />}
               {active === 'themes' && <ThemePanel />}
-              {active === 'feedback' && <FeedbackPanel />}
+              {active === 'sonic' && <SonicPanel />}
               {active === 'nowplaying' && <NowPlayingPanel />}
               {active === 'calendar' && <CalendarPanel />}
               {active === 'visualizer' && <VisualizerPanel />}
@@ -190,7 +190,7 @@ export default function SettingsUI() {
               {![
                 'general',
                 'themes',
-                'feedback',
+                'sonic',
                 'nowplaying',
                 'calendar',
                 'license',

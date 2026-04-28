@@ -1,84 +1,83 @@
 import { useEffect, useRef } from 'react'
-import sonicSoundUrl from '../assets/sounds/sound.ogg'
-import sonicConfig from '../assets/sounds/config.json'
 
-// Each keycode maps to a [startMs, durationMs] sprite slice inside sound.ogg.
-const SPRITE_MAP = sonicConfig.defines as unknown as Record<string, [number, number]>
+// Vite glob imports for all sound pack configurations and audio files.
+const CONFIGS = import.meta.glob('../assets/sonic-sounds/*/config.json', {
+  eager: true,
+  import: 'default'
+})
+const SOUNDS = import.meta.glob('../assets/sonic-sounds/*/*.ogg', {
+  eager: true,
+  import: 'default'
+})
 
 let sharedContext: AudioContext | null = null
-let sharedBuffer: AudioBuffer | null = null
-let bufferLoadPromise: Promise<AudioBuffer> | null = null
+let currentBuffer: AudioBuffer | null = null
+let currentSpriteMap: Record<string, [number, number]> | null = null
+let currentLoadPromise: Promise<void> | null = null
 
 function getAudioContext(): AudioContext {
   if (sharedContext) return sharedContext
-  // `interactive` asks the platform for the smallest viable buffer size.
-  // Combined with Chromium's CoreAudio backend on macOS this lands ~5–10ms
-  // total output latency on Apple Silicon.
   sharedContext = new AudioContext({ latencyHint: 'interactive' })
   return sharedContext
 }
 
-function loadSpriteBuffer(ctx: AudioContext): Promise<AudioBuffer> {
-  if (sharedBuffer) return Promise.resolve(sharedBuffer)
-  if (bufferLoadPromise) return bufferLoadPromise
+async function loadSoundPack(packId: string): Promise<void> {
+  const ctx = getAudioContext()
 
-  bufferLoadPromise = fetch(sonicSoundUrl)
-    .then((r) => r.arrayBuffer())
-    .then((bytes) => ctx.decodeAudioData(bytes))
-    .then((buffer) => {
-      sharedBuffer = buffer
-      return buffer
-    })
-    .catch((err) => {
-      bufferLoadPromise = null
-      throw err
-    })
+  // Find the config for this pack
+  const configPath = `../assets/sonic-sounds/${packId}/config.json`
+  const config = CONFIGS[configPath] as any
+  if (!config) throw new Error(`Sonic sound pack config not found: ${packId}`)
 
-  return bufferLoadPromise
+  // Find the sound file for this pack
+  const soundFileName = config.sound
+  const soundPath = `../assets/sonic-sounds/${packId}/${soundFileName}`
+  const soundUrl = SOUNDS[soundPath] as string
+  if (!soundUrl) throw new Error(`Sonic sound file not found: ${soundPath}`)
+
+  const response = await fetch(soundUrl)
+  const arrayBuffer = await response.arrayBuffer()
+  const audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+
+  currentBuffer = audioBuffer
+  currentSpriteMap = config.defines
 }
 
-export function useSonicFeedback(enabled: boolean): void {
-  // Avoid stale-closure on rapid toggle: keep the live flag in a ref so the
-  // single attached IPC listener can short-circuit without rewiring.
+export function useSonicFeedback(enabled: boolean, soundPackId: SonicSoundPackId): void {
   const enabledRef = useRef(enabled)
   enabledRef.current = enabled
 
   useEffect(() => {
     if (!enabled) return
 
-    const ctx = getAudioContext()
-
-    loadSpriteBuffer(ctx).catch((err) => {
-      console.error('[SonicFeedback] failed to decode sprite:', err)
+    currentLoadPromise = loadSoundPack(soundPackId).catch((err) => {
+      console.error('[SonicFeedback] failed to load sound pack:', soundPackId, err)
     })
 
     const off = window.api.onSonicKey((keycode) => {
       if (!enabledRef.current) return
-      const buffer = sharedBuffer
-      if (!buffer) return
+      const ctx = getAudioContext()
+      const buffer = currentBuffer
+      const spriteMap = currentSpriteMap
 
-      const sprite = SPRITE_MAP[String(keycode)]
+      if (!buffer || !spriteMap) return
+
+      const sprite = spriteMap[String(keycode)]
       if (!sprite) return
 
-      // The notch window never receives a user gesture (it's non-focusable),
-      // so the context can sit in 'suspended' until we kick it. The
-      // autoplay-policy switch in main allows resume() without a gesture.
       if (ctx.state === 'suspended') {
-        ctx.resume().catch(() => {
-          /* swallow — next keypress will retry */
-        })
+        ctx.resume().catch(() => {})
       }
 
       const [startMs, durationMs] = sprite
       const source = ctx.createBufferSource()
       source.buffer = buffer
       source.connect(ctx.destination)
-      // Schedule slightly ahead of the audio clock for jitter-free start.
       source.start(0, startMs / 1000, durationMs / 1000)
     })
 
     return () => {
       off()
     }
-  }, [enabled])
+  }, [enabled, soundPackId])
 }
