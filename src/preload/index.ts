@@ -56,6 +56,13 @@ const api = {
   // Haptic
   triggerHaptic: () => ipcRenderer.invoke('trigger-haptic'),
 
+  // Sonic Feedback — global keydown stream from libuiohook
+  onSonicKey: (callback: (keycode: number) => void) => {
+    const wrapper = (_: unknown, keycode: number) => callback(keycode)
+    ipcRenderer.on('sonic-key', wrapper)
+    return () => ipcRenderer.removeListener('sonic-key', wrapper)
+  },
+
   // Weather
   getWeather: () => ipcRenderer.invoke('get-weather'),
 

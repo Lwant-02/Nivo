@@ -33,22 +33,18 @@ Premium macOS Dynamic Island utility for the Mac notch. Nivo transforms your Mac
 - **Tactile Feedback**: Every session completion is reinforced with high-quality haptic feedback and custom system notifications.
 - **Session Tracking**: Customizable durations to fit your deep-work workflow.
 
+### 🔊 Sonic Feedback
+
+- **Acoustic Experience**: High-fidelity mechanical keyboard clicks that provide satisfying auditory confirmation for every keystroke.
+- **System-Wide Integration**: Works across all applications on macOS, transforming any keyboard into a premium mechanical typing experience.
+- **Ultra-Low Latency**: Built with the Web Audio API for near-zero delay, ensuring the sound perfectly syncs with your typing speed.
+- **Personalized Audio**: Seamlessly toggled within the Nivo settings panel for a focused or immersive workspace.
+
 ### 🔋 System Intelligence & Customization
 
 - **Adaptive Themes**: 8+ curated premium themes (Obsidian, Frost, Aurora, Sand, Lavender, Crimson, Emerald, Amber) that unify the entire UI, including Toasts and Welcome screens.
 - **Haptic Feedback**: Subtle, tactile taps via Force Touch trackpads for every interaction, from swipes to button clicks.
 - **Fullscreen Stability**: Configurable visibility that allows Nivo to stay active even when you're working in fullscreen apps.
-
-## ✨ Upcoming Roadmap
-
-### 📥 Intelligence Shelf (Utility)
-
-- **Contextual Drop Zone**: Drag files or text to the Notch to "pin" them temporarily.
-- **Seamless Transfer**: Easily drag pinned items out into other apps or fullscreen windows.
-
-### 🎨 Companion Companion
-
-- **Reactive Lottie**: Your Notch companion reacts to your focus state (meditating while working, celebrating on break).
 
 ## 🛠️ Tech Stack
 

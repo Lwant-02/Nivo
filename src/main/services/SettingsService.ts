@@ -25,6 +25,7 @@ export interface Settings {
   lottieStyle: number
   focusDuration: number
   showWeather: boolean
+  sonicFeedback: boolean
   hasSeenWelcome: boolean
 }
 
@@ -46,6 +47,7 @@ export const DEFAULT_SETTINGS: Settings = {
   lottieStyle: 0,
   focusDuration: 25,
   showWeather: true,
+  sonicFeedback: false,
   hasSeenWelcome: false
 }
 
@@ -87,6 +89,7 @@ type Column =
   | 'lottie_style'
   | 'focus_duration'
   | 'show_weather'
+  | 'sonic_feedback'
   | 'has_seen_welcome'
 
 type Kind = 'bool' | 'int' | 'theme' | 'notchTheme'
@@ -114,6 +117,7 @@ const FIELDS: { [K in keyof Settings]: FieldSpec } = {
   lottieStyle: { column: 'lottie_style', kind: 'int' },
   focusDuration: { column: 'focus_duration', kind: 'int' },
   showWeather: { column: 'show_weather', kind: 'bool' },
+  sonicFeedback: { column: 'sonic_feedback', kind: 'bool' },
   hasSeenWelcome: { column: 'has_seen_welcome', kind: 'bool' }
 }
 
