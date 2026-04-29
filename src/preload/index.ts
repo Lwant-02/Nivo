@@ -23,6 +23,7 @@ const api = {
   // Events & Windows
   openSettings: () => ipcRenderer.invoke('open-settings'),
   getAppVersion: () => ipcRenderer.invoke('get-version'),
+  quitApp: () => ipcRenderer.send('quit-app'),
 
   // License activation
   activateLicense: (key: string) => ipcRenderer.invoke('activate-license', key),
