@@ -9,7 +9,8 @@ import {
   Palette,
   Timer,
   Keyboard,
-  Sparkles
+  Sparkles,
+  Power
 } from 'lucide-react'
 import { SidebarItem } from './settings/SidebarItem'
 import { LicensePanel } from './settings/LicensePanel'
@@ -48,7 +49,8 @@ const NAV_GROUPS = [
     label: 'About',
     items: [
       { id: 'license', icon: ShieldCheck, label: 'License', color: '#32D74B' },
-      { id: 'about', icon: Info, label: 'About', color: '#636366' }
+      { id: 'about', icon: Info, label: 'About', color: '#636366' },
+      { id: 'quit', icon: Power, label: 'Quit App', color: '#FF3B30' }
     ]
   }
 ]
@@ -118,7 +120,14 @@ export default function SettingsUI() {
                   color={item.color}
                   active={active === item.id}
                   soon={'soon' in item ? (item.soon as boolean) : false}
-                  onClick={() => setActive(item.id)}
+                  onClick={() => {
+                    if (item.id === 'quit') {
+                      // @ts-ignore
+                      window.api.quitApp()
+                    } else {
+                      setActive(item.id)
+                    }
+                  }}
                 />
               ))}
             </div>

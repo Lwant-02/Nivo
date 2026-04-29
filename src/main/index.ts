@@ -606,6 +606,10 @@ ipcMain.handle('trigger-haptic', () => {
   })
 })
 
+ipcMain.on('quit-app', () => {
+  app.quit()
+})
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
