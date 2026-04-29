@@ -1,6 +1,6 @@
 import {
   app,
-// Triggering rebuild for theme expansion
+  // Triggering rebuild for theme expansion
   BrowserWindow,
   screen,
   ipcMain,
@@ -106,23 +106,26 @@ function createMainWindow(): void {
     // Detect if we are over the notch.
     // The notch is centered in the 800px window.
     // We use a slightly larger area than the actual UI for better UX.
-    const pw = hoverActive ? 651 : 380 // Increased collapsed detection width
-    const ph = hoverActive ? 270 : 40  // Increased collapsed detection height
+    const pw = hoverActive ? 651 : 300 // Reduced collapsed detection width
+    const ph = hoverActive ? 270 : 35 // Reduced collapsed detection height
     const px = wx + Math.floor((ww - pw) / 2)
 
     const over =
-      cursor.x >= px - 10 && cursor.x <= px + pw + 10 && cursor.y >= wy && cursor.y <= wy + ph + 10
+      cursor.x >= px - 5 && cursor.x <= px + pw + 5 && cursor.y >= wy && cursor.y <= wy + ph + 3
 
-    if (over && !hoverActive) {
-      hoverActive = true
-      mainWindow.setIgnoreMouseEvents(false)
-      mainWindow.setAlwaysOnTop(true, 'screen-saver', 1)
-      mainWindow.setOpacity(1)
-    } else if (!over && hoverActive) {
+    if (over) {
+      if (!hoverActive) {
+        hoverActive = true
+        mainWindow.setAlwaysOnTop(true, 'screen-saver', 1)
+        mainWindow.setIgnoreMouseEvents(false)
+        mainWindow.setOpacity(1)
+      }
+    } else {
       hoverActive = false
       if (isNotchActive) {
         mainWindow.setIgnoreMouseEvents(false)
         mainWindow.setOpacity(1)
+        mainWindow.setAlwaysOnTop(true, 'screen-saver', 1)
       } else {
         mainWindow.setIgnoreMouseEvents(true, { forward: true })
         const s = settingsService?.getAll()
@@ -133,10 +136,6 @@ function createMainWindow(): void {
         mainWindow.setAlwaysOnTop(true, level, 1)
         mainWindow.setOpacity(hidePaused ? 0 : 1)
       }
-    } else if (isNotchActive && !hoverActive) {
-      // Force visibility if active but not hovered
-      mainWindow.setIgnoreMouseEvents(false)
-      mainWindow.setOpacity(1)
     }
   }, 16)
 
@@ -169,7 +168,9 @@ function applyWindowSettings(win: BrowserWindow, settings: Settings | null | und
   const hidePaused = !!s?.hideWhenPaused && !mediaService?.isMediaPlaying() && !isNotchActive
 
   // Maintain screen-saver level unless hideInFullscreen is enabled.
-  const level: 'screen-saver' | 'floating' = hideFS ? 'floating' : 'screen-saver'
+  // If the notch is active (expanded due to event), always use screen-saver level
+  // so it's visible over fullscreen apps.
+  const level: 'screen-saver' | 'floating' = hideFS && !isNotchActive ? 'floating' : 'screen-saver'
   win.setAlwaysOnTop(true, level, 1)
 
   win.setOpacity(hidePaused ? 0 : 1)
