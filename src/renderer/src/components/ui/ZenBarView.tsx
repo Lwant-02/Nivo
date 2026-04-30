@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import {
   IconPlayerPlayFilled,
   IconPlayerPauseFilled,
@@ -6,15 +6,51 @@ import {
   IconHourglass,
   IconRotate
 } from '@tabler/icons-react'
+import { COUNTDOWN_PRESETS_SEC, STOPWATCH_PRESETS_SEC, ZenTimerApi } from '../../hooks/useZenTimer'
+
+function pad(n: number, width = 2): string {
+  return String(n).padStart(width, '0')
+}
+
+function formatCountdown(ms: number, presetSec: number): string {
+  const total = Math.ceil(ms / 1000)
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = total % 60
+  if (presetSec >= 3600) return `${pad(h)}:${pad(m)}:${pad(s)}`
+  return `${pad(m)}:${pad(s)}`
+}
+
+function formatStopwatch(ms: number): string {
+  const totalCs = Math.floor(ms / 10)
+  const cs = totalCs % 100
+  const totalSec = Math.floor(totalCs / 100)
+  const s = totalSec % 60
+  const totalMin = Math.floor(totalSec / 60)
+  const m = totalMin % 60
+  const h = Math.floor(totalMin / 60)
+  if (h > 0) return `${pad(h)}:${pad(m)}:${pad(s)}`
+  return `${pad(m)}:${pad(s)}.${pad(cs)}`
+}
+
+function formatPresetLabel(sec: number): string {
+  if (sec >= 3600) {
+    const h = Math.floor(sec / 3600)
+    const m = Math.floor((sec % 3600) / 60)
+    const s = sec % 60
+    return `${pad(h)}:${pad(m)}:${pad(s)}`
+  }
+  return `${pad(Math.floor(sec / 60))}:${pad(sec % 60)}`
+}
 
 interface PresetCardProps {
-  time: string
+  label: string
   onClick?: () => void
   accentColor: string
   isSelected?: boolean
 }
 
-const PresetCard: React.FC<PresetCardProps> = ({ time, onClick, accentColor, isSelected }) => (
+const PresetCard: React.FC<PresetCardProps> = ({ label, onClick, accentColor, isSelected }) => (
   <div
     onClick={onClick}
     style={{
@@ -32,23 +68,27 @@ const PresetCard: React.FC<PresetCardProps> = ({ time, onClick, accentColor, isS
     <div
       style={{
         color: isSelected ? accentColor : '#fff',
-        fontSize: '20px',
-        fontWeight: '800'
+        fontSize: '16px',
+        fontWeight: '700'
       }}
     >
-      {time}
+      {label}
     </div>
   </div>
 )
 
 interface ZenBarViewProps {
   accentColor: string
+  zen: ZenTimerApi
 }
 
-export const ZenBarView: React.FC<ZenBarViewProps> = ({ accentColor }) => {
-  const [mode, setMode] = useState<'countdown' | 'stopwatch'>('countdown')
-  const [isActive, setIsActive] = useState(false)
-  const [displayTime, setDisplayTime] = useState('10:00')
+export const ZenBarView: React.FC<ZenBarViewProps> = ({ accentColor, zen }) => {
+  const presets = zen.mode === 'countdown' ? COUNTDOWN_PRESETS_SEC : STOPWATCH_PRESETS_SEC
+
+  const displayTime =
+    zen.mode === 'countdown'
+      ? formatCountdown(zen.countdownMs, zen.presetSec)
+      : formatStopwatch(zen.stopwatchMs)
 
   return (
     <div
@@ -66,7 +106,7 @@ export const ZenBarView: React.FC<ZenBarViewProps> = ({ accentColor }) => {
         style={{
           flex: 1,
           background: 'rgba(255,255,255,0.04)',
-          borderRadius: '30px',
+          borderRadius: '20px',
           display: 'flex',
           flexDirection: 'column',
           padding: '10px',
@@ -78,11 +118,12 @@ export const ZenBarView: React.FC<ZenBarViewProps> = ({ accentColor }) => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
           <div
             style={{
-              fontSize: mode === 'countdown' ? '56px' : '52px',
+              fontSize: '56px',
               fontWeight: '900',
               color: '#fff',
               letterSpacing: '-0.04em',
-              fontFamily: 'system-ui'
+              fontFamily: 'system-ui',
+              fontVariantNumeric: 'tabular-nums'
             }}
           >
             {displayTime}
@@ -90,10 +131,10 @@ export const ZenBarView: React.FC<ZenBarViewProps> = ({ accentColor }) => {
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           <div
-            onClick={() => setIsActive(!isActive)}
+            onClick={zen.toggle}
             style={{
               flex: 1,
-              background: isActive ? `${accentColor}30` : `${accentColor}20`,
+              background: zen.isActive ? `${accentColor}30` : `${accentColor}20`,
               height: '38px',
               borderRadius: '30px',
               display: 'flex',
@@ -102,10 +143,10 @@ export const ZenBarView: React.FC<ZenBarViewProps> = ({ accentColor }) => {
               gap: '6px',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
-              border: isActive ? `1px solid ${accentColor}60` : `1px solid ${accentColor}40`
+              border: zen.isActive ? `1px solid ${accentColor}60` : `1px solid ${accentColor}40`
             }}
           >
-            {isActive ? (
+            {zen.isActive ? (
               <>
                 <IconPlayerPauseFilled size={16} style={{ color: accentColor }} />
                 <span style={{ fontSize: '12px', fontWeight: '800', color: accentColor }}>
@@ -122,10 +163,7 @@ export const ZenBarView: React.FC<ZenBarViewProps> = ({ accentColor }) => {
             )}
           </div>
           <div
-            onClick={() => {
-              setIsActive(false)
-              // Here you might reset the actual timer logic later
-            }}
+            onClick={zen.restart}
             style={{
               flex: 1,
               background: 'rgba(255,255,255,0.06)',
@@ -159,63 +197,49 @@ export const ZenBarView: React.FC<ZenBarViewProps> = ({ accentColor }) => {
           }}
         >
           <div
-            onClick={() => {
-              setMode('countdown')
-              setDisplayTime('10:00')
-              setIsActive(false)
-            }}
+            onClick={() => zen.setMode('countdown')}
             style={{
               flex: 1,
-              background:
-                mode === 'countdown'
-                  ? 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 100%)'
-                  : 'transparent',
+              background: zen.mode === 'countdown' ? `${accentColor}15` : 'transparent',
               border:
-                mode === 'countdown' ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent',
+                zen.mode === 'countdown' ? `1px solid ${accentColor}30` : '1px solid transparent',
               borderRadius: '100px',
               height: '30px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              color: mode === 'countdown' ? '#fff' : 'rgba(255,255,255,0.4)',
+              color: zen.mode === 'countdown' ? accentColor : 'rgba(255,255,255,0.4)',
               fontSize: '11px',
               fontWeight: '700',
               cursor: 'pointer',
               transition: 'all 0.2s ease'
             }}
           >
-            <IconHourglass size={14} stroke={2} />
+            <IconHourglass size={14} stroke={zen.mode === 'countdown' ? 2.5 : 2} />
             Countdown
           </div>
           <div
-            onClick={() => {
-              setMode('stopwatch')
-              setDisplayTime('00:00.00')
-              setIsActive(false)
-            }}
+            onClick={() => zen.setMode('stopwatch')}
             style={{
               flex: 1,
-              background:
-                mode === 'stopwatch'
-                  ? 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 100%)'
-                  : 'transparent',
+              background: zen.mode === 'stopwatch' ? `${accentColor}15` : 'transparent',
               border:
-                mode === 'stopwatch' ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent',
+                zen.mode === 'stopwatch' ? `1px solid ${accentColor}30` : '1px solid transparent',
               borderRadius: '100px',
               height: '30px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              color: mode === 'stopwatch' ? '#fff' : 'rgba(255,255,255,0.4)',
+              color: zen.mode === 'stopwatch' ? accentColor : 'rgba(255,255,255,0.4)',
               fontSize: '11px',
               fontWeight: '700',
               cursor: 'pointer',
               transition: 'all 0.2s ease'
             }}
           >
-            <IconClock size={14} stroke={2} />
+            <IconClock size={14} stroke={zen.mode === 'stopwatch' ? 2.5 : 2} />
             Stopwatch
           </div>
         </div>
@@ -230,19 +254,13 @@ export const ZenBarView: React.FC<ZenBarViewProps> = ({ accentColor }) => {
             gap: '6px'
           }}
         >
-          {(mode === 'countdown'
-            ? ['02:00', '10:00', '15:00', '30:00', '01:00:00', '02:00:00']
-            : ['02:00', '05:00', '10:00', '15:00', '30:00', '01:00:00']
-          ).map((time) => (
+          {presets.map((sec) => (
             <PresetCard
-              key={time}
-              time={time}
+              key={sec}
+              label={formatPresetLabel(sec)}
               accentColor={accentColor}
-              isSelected={displayTime === time}
-              onClick={() => {
-                setDisplayTime(time)
-                setIsActive(false)
-              }}
+              isSelected={zen.mode === 'countdown' && zen.presetSec === sec}
+              onClick={() => zen.selectPreset(sec)}
             />
           ))}
         </div>

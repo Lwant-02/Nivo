@@ -16,9 +16,8 @@ const api = {
     return () => ipcRenderer.removeListener('lume-toast', wrapper)
   },
 
-  // Volume
-  setVolume: (level: number) => ipcRenderer.invoke('set-system-volume', level),
   setNotchActive: (active: boolean) => ipcRenderer.send('set-notch-active', active),
+  setNotchEditing: (editing: boolean) => ipcRenderer.send('set-notch-editing', editing),
 
   // Events & Windows
   openSettings: () => ipcRenderer.invoke('open-settings'),
@@ -76,6 +75,16 @@ const api = {
     ipcRenderer.on('settings-update', wrapper)
     return () => ipcRenderer.removeListener('settings-update', wrapper)
   },
+
+  // Notes
+  getNotes: () => ipcRenderer.invoke('notes:list'),
+  createNote: (patch?: { title?: string; content?: string; icon?: string }) =>
+    ipcRenderer.invoke('notes:create', patch),
+  updateNote: (
+    id: string,
+    patch: { title?: string; content?: string; icon?: string }
+  ) => ipcRenderer.invoke('notes:update', id, patch),
+  deleteNote: (id: string) => ipcRenderer.invoke('notes:delete', id),
 
 
   // Navigation

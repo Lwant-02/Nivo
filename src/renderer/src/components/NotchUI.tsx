@@ -29,6 +29,7 @@ import { useWeather } from '../hooks/useWeather'
 import { NoteView } from './ui/NoteView'
 import { ZenBarView } from './ui/ZenBarView'
 import { SonicView } from './ui/SonicView'
+import { useZenTimer } from '../hooks/useZenTimer'
 
 const bounceTransition: Transition = {
   type: 'spring',
@@ -64,6 +65,14 @@ export default function NotchUI() {
         'Nivo | Focus Complete',
         mins === 1 ? 'Test session done' : `${mins} min session done`
       )
+      if (settings.hapticFeedback) window.api.triggerHaptic()
+      playNotification()
+    }
+  })
+
+  const zenTimer = useZenTimer({
+    onComplete: () => {
+      window.api.showLumeToast('Nivo | ZenBar', 'Countdown complete')
       if (settings.hapticFeedback) window.api.triggerHaptic()
       playNotification()
     }
@@ -139,9 +148,9 @@ export default function NotchUI() {
   // Inform main process when notch should be visible/active (e.g. welcome, focus, or toast)
   useEffect(() => {
     // Only set active if expanded or hovering (or focus/welcoming)
-    const active = isExpanded || isWelcoming || focusTimer.isActive
+    const active = isExpanded || isWelcoming || focusTimer.isActive || zenTimer.isActive
     window.api.setNotchActive(active)
-  }, [isExpanded, isWelcoming, focusTimer.isActive])
+  }, [isExpanded, isWelcoming, focusTimer.isActive, zenTimer.isActive])
 
   useEffect(() => {
     if (!settingsReady || settings.hasSeenWelcome) return
@@ -523,7 +532,9 @@ export default function NotchUI() {
                 ) : (
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {activeTab === 'note' && <NoteView />}
-                    {activeTab === 'zenbar' && <ZenBarView accentColor={appAccent} />}
+                    {activeTab === 'zenbar' && (
+                      <ZenBarView accentColor={appAccent} zen={zenTimer} />
+                    )}
                     {activeTab === 'sonic' && <SonicView accentColor={appAccent} />}
                   </div>
                 )}

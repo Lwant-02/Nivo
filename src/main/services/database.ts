@@ -51,6 +51,17 @@ export function getDatabase(): Database.Database {
       sonic_sound_pack TEXT NOT NULL DEFAULT 'cherrymx-black-abs',
       has_seen_welcome INTEGER NOT NULL DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS notes (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL DEFAULT '',
+      content TEXT NOT NULL DEFAULT '',
+      icon TEXT NOT NULL DEFAULT 'clipboard-text',
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS notes_updated_at_idx ON notes(updated_at DESC);
   `)
 
   // Forward-migrate older `auth` schemas.

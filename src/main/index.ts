@@ -22,6 +22,7 @@ import { fetchMacEvents } from './services/calendarService'
 import { LicenseService } from './services/LicenseService'
 import { WeatherService } from './services/WeatherService'
 import { SonicFeedbackService } from './services/SonicFeedbackService'
+import { NotesService, NoteUpdate } from './services/NotesService'
 
 // Keep the renderer running full-speed even though the notch window is
 // non-focusable + always-on-top. Without these, Chromium throttles rAF and
@@ -47,6 +48,7 @@ let licenseService: LicenseService | null = null
 let settingsService: SettingsService | null = null
 let weatherService: WeatherService | null = null
 let sonicFeedbackService: SonicFeedbackService | null = null
+let notesService: NotesService | null = null
 
 let mainWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
@@ -95,6 +97,14 @@ function createMainWindow(): void {
   ipcMain.on('set-notch-active', (_event, active: boolean) => {
     isNotchActive = active
     if (mainWindow) applyWindowSettings(mainWindow, settingsService?.getAll())
+  })
+
+  ipcMain.on('set-notch-editing', (_event, editing: boolean) => {
+    if (!mainWindow || mainWindow.isDestroyed()) return
+    // The notch is normally non-focusable so it doesn't steal focus from
+    // the user's app. Inputs need keyboard focus, so flip it while editing.
+    mainWindow.setFocusable(editing)
+    if (editing) mainWindow.focus()
   })
 
   const pollInterval = setInterval(() => {
@@ -373,6 +383,12 @@ app.whenReady().then(() => {
     console.error('[main] Failed to initialize WeatherService:', err.message)
   }
 
+  try {
+    notesService = new NotesService()
+  } catch (err: any) {
+    console.error('[main] Failed to initialize NotesService:', err.message)
+  }
+
   if (app.dock) {
     app.dock.hide()
   }
@@ -513,7 +529,6 @@ ipcMain.handle('media-control', (_event, command: MediaCommand) => {
   }
 })
 
-ipcMain.handle('set-system-volume', (_event, level: number) => mediaService?.setVolume(level))
 
 ipcMain.handle('get-settings', () => {
   return settingsService?.getAll() ?? null
@@ -608,6 +623,20 @@ ipcMain.handle('trigger-haptic', () => {
 
 ipcMain.on('quit-app', () => {
   app.quit()
+})
+
+ipcMain.handle('notes:list', () => notesService?.list() ?? [])
+
+ipcMain.handle('notes:create', (_event, patch?: NoteUpdate) => {
+  return notesService?.create(patch ?? {}) ?? null
+})
+
+ipcMain.handle('notes:update', (_event, id: string, patch: NoteUpdate) => {
+  return notesService?.update(id, patch) ?? null
+})
+
+ipcMain.handle('notes:delete', (_event, id: string) => {
+  return notesService?.delete(id) ?? false
 })
 
 app.on('window-all-closed', () => {
