@@ -14,6 +14,7 @@ interface CollapsedNotchViewProps {
   title: string
   isPlaying: boolean
   showLottie: boolean
+  accentColor: string
 }
 
 export const CollapsedNotchView: React.FC<CollapsedNotchViewProps> = ({
@@ -22,7 +23,8 @@ export const CollapsedNotchView: React.FC<CollapsedNotchViewProps> = ({
   displayArt,
   title,
   isPlaying,
-  showLottie
+  showLottie,
+  accentColor
 }) => {
   return (
     <div className="relative flex items-center px-6 h-full justify-between w-full">
@@ -79,6 +81,7 @@ export const CollapsedNotchView: React.FC<CollapsedNotchViewProps> = ({
               alt={title}
               size="pill"
               isPlaying={isPlaying}
+              accentColor={accentColor}
             />
             <MusicVisualizer isPlaying={isPlaying} isStatic={!settings.showVisualizer} />
           </div>

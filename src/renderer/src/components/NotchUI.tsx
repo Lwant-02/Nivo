@@ -1,14 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence, Transition } from 'framer-motion'
 import {
-  motion,
-  AnimatePresence,
-  Transition,
-  useMotionValue,
-  useTransform,
-  useMotionValueEvent,
-  PanInfo
-} from 'framer-motion'
-import { ChevronsLeft, ChevronsRight } from 'lucide-react'
+  IconHome,
+  IconClipboardText,
+  IconClock,
+  IconKeyboard,
+  IconSettings
+} from '@tabler/icons-react'
 import cn from 'clsx'
 
 import { useMedia } from '../hooks/useMedia'
@@ -16,39 +14,35 @@ import { useSound } from '../hooks/useSound'
 import { useSettings } from '../hooks/useSettings'
 import { useSonicFeedback } from '../hooks/useSonicFeedback'
 import { getNotchTheme } from '@renderer/util/notchThemes'
-import { VolumeSwitcher } from './ui/VolumeSwitcher'
 import { CalendarPane } from './ui/CalendarPane'
+import { WeatherPane } from './ui/WeatherPane'
+import { THEME_ACCENTS } from '../hooks/useAppliedTheme'
 import { LottieVisualizer } from './ui/LottieVisualizer'
 import { IdleView } from './ui/IdleView'
 import { WelcomeView } from './ui/WelcomeView'
 import { FocusView } from './ui/FocusView'
 import { useFocusTimer } from '../hooks/useFocusTimer'
 import { ExpandedMediaView } from './ui/ExpandedMediaView'
-import { NotchToast } from './ui/NotchToast'
 import { CollapsedNotchView } from './ui/CollapsedNotchView'
 import { AtmosphericAura } from './ui/AtmosphericAura'
 import { useWeather } from '../hooks/useWeather'
+import { NoteView } from './ui/NoteView'
+import { ZenBarView } from './ui/ZenBarView'
+import { SonicView } from './ui/SonicView'
 
-const bounceTransition: Transition = { type: 'spring', stiffness: 400, damping: 28, mass: 0.8 }
-
-const SWIPE_THRESHOLD = 100
-const SWIPE_COOLDOWN_MS = 600
-const TRANSITION_HOLD_MS = 1200
-
-const BRAND_COLORS: Record<string, string> = {
-  spotify: '#1DB954',
-  music: '#FA243C',
-  youtube: '#FF0033',
-  chrome: '#4285F4',
-  brave: '#FB542B',
-  safari: '#1B72E8',
-  system: '#FFFFFF'
+const bounceTransition: Transition = {
+  type: 'spring',
+  stiffness: 260,
+  damping: 32,
+  mass: 1
 }
 
-type SidePanel = 'volume' | 'device' | null
-
-const MEDIA_PANE_WIDTH = 350
-const CALENDAR_PANE_WIDTH = 300
+const MEDIA_PANE_WIDTH = 260
+const WEATHER_PANE_WIDTH = 260
+const CALENDAR_PANE_WIDTH = 260
+const COLUMN_GAP = 6
+const TOTAL_EXPANDED_WIDTH =
+  MEDIA_PANE_WIDTH + WEATHER_PANE_WIDTH + CALENDAR_PANE_WIDTH + COLUMN_GAP * 2 + 24 // tighter padding
 
 export default function NotchUI() {
   const { settings, ready: settingsReady, update: updateSetting } = useSettings()
@@ -58,9 +52,8 @@ export default function NotchUI() {
   const toastTimeout = useRef<NodeJS.Timeout | null>(null)
   const [isAutoExpanded, setIsAutoExpanded] = useState(false)
   const [isWelcoming, setIsWelcoming] = useState(false)
+  const [activeTab, setActiveTab] = useState<'home' | 'note' | 'zenbar' | 'sonic'>('home')
   const welcomeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [sidePanel, setSidePanel] = useState<SidePanel>(null)
-  const [volumeLevel, setVolumeLevel] = useState(50)
   const { playExpand, playNotification } = useSound()
 
   const focusTimer = useFocusTimer({
@@ -77,10 +70,8 @@ export default function NotchUI() {
   })
 
   const collapsedWidth = focusTimer.isActive ? 360 : 280
-  const showVolume = sidePanel === 'volume'
 
   const isExpanded = isHovering || isAutoExpanded || isWelcoming
-  const showSidePane = isExpanded && settings.enableCalendar
 
   const isHoveringRef = useRef(false)
   const autoCollapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -91,10 +82,9 @@ export default function NotchUI() {
     title,
     artist,
     isPlaying,
-    playbackRate,
-    volume,
-    albumArt,
     duration,
+    playbackRate,
+    albumArt,
     position: initialPosition,
     source
   } = useMedia()
@@ -102,27 +92,18 @@ export default function NotchUI() {
   const [position, setPosition] = useState(initialPosition)
   const [displayArt, setDisplayArt] = useState<string | null>(null)
 
-  // Sync position and volume when media updates
-  const hasSyncedInitial = useRef(false)
   useEffect(() => {
     const valid = duration > 0
     const pos = valid ? Math.min(initialPosition, duration) : initialPosition
 
-    // Force snap on first load or song change
-    if (!hasSyncedInitial.current || title !== prevTitleRef.current) {
+    if (!prevTitleRef.current || title !== prevTitleRef.current) {
       setPosition(pos)
-      if (title) hasSyncedInitial.current = true
+      if (title) prevTitleRef.current = title
     } else {
-      // Regular periodic sync from backend
       setPosition(pos)
     }
   }, [initialPosition, duration, title])
 
-  useEffect(() => {
-    setVolumeLevel(volume)
-  }, [volume])
-
-  // Auto-expand announcement on song change
   useEffect(() => {
     const isValidTitle = title && title !== 'Not Playing' && title !== ''
 
@@ -143,7 +124,7 @@ export default function NotchUI() {
         } else {
           setIsAutoExpanded(false)
         }
-      }, 3000)
+      }, 4000)
     } else if (!isValidTitle) {
       prevTitleRef.current = ''
       setIsAutoExpanded(false)
@@ -157,9 +138,10 @@ export default function NotchUI() {
 
   // Inform main process when notch should be visible/active (e.g. welcome, focus, or toast)
   useEffect(() => {
-    const active = isAutoExpanded || isWelcoming || focusTimer.isActive
+    // Only set active if expanded or hovering (or focus/welcoming)
+    const active = isExpanded || isWelcoming || focusTimer.isActive
     window.api.setNotchActive(active)
-  }, [isAutoExpanded, isWelcoming, focusTimer.isActive])
+  }, [isExpanded, isWelcoming, focusTimer.isActive])
 
   useEffect(() => {
     if (!settingsReady || settings.hasSeenWelcome) return
@@ -194,14 +176,12 @@ export default function NotchUI() {
     return unsub
   }, [])
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (autoCollapseTimerRef.current) clearTimeout(autoCollapseTimerRef.current)
     }
   }, [])
 
-  // Optimization: Keep previous artwork if incoming is null (delta update)
   useEffect(() => {
     if (albumArt) {
       setDisplayArt(albumArt)
@@ -213,7 +193,6 @@ export default function NotchUI() {
   const playbackRateRef = useRef(playbackRate)
   playbackRateRef.current = playbackRate
 
-  // Smooth position increment between backend ticks
   const durationRef = useRef(duration)
   useEffect(() => {
     durationRef.current = duration
@@ -238,84 +217,12 @@ export default function NotchUI() {
   }, [])
 
   const handlePlayPause = () => window.api.playPause()
-
   const handleNext = () => window.api.mediaNext()
   const handlePrev = () => window.api.mediaPrevious()
 
-  // Swipe gesture: x → rotate/scale + reveal background icons
-  const x = useMotionValue(0)
-  const rotate = useTransform(x, [-150, 0, 150], [-5, 0, 5])
-  const scale = useTransform(x, [-150, 0, 150], [0.98, 1, 0.98])
-  const nextIconOpacity = useTransform(x, [0, 60, SWIPE_THRESHOLD], [0, 0.35, 1])
-  const prevIconOpacity = useTransform(x, [-SWIPE_THRESHOLD, -60, 0], [1, 0.35, 0])
-
-  const [thresholdCrossed, setThresholdCrossed] = useState<'next' | 'prev' | null>(null)
-  useMotionValueEvent(x, 'change', (latest) => {
-    if (latest > SWIPE_THRESHOLD) setThresholdCrossed((c) => (c === 'next' ? c : 'next'))
-    else if (latest < -SWIPE_THRESHOLD) setThresholdCrossed((c) => (c === 'prev' ? c : 'prev'))
-    else if (Math.abs(latest) < SWIPE_THRESHOLD - 5)
-      setThresholdCrossed((c) => (c === null ? c : null))
-  })
-
-  const lastSwipeAtRef = useRef(0)
-  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [isTransitioning, setIsTransitioning] = useState(false)
-
-  useEffect(() => {
-    return () => {
-      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current)
-    }
-  }, [])
-
-  // Cancel optimistic state once new track metadata actually arrives
-  useEffect(() => {
-    if (!isTransitioning) return
-    if (transitionTimerRef.current) {
-      clearTimeout(transitionTimerRef.current)
-      transitionTimerRef.current = null
-    }
-    setIsTransitioning(false)
-  }, [title, artist])
-
-  const triggerSwipe = (direction: 'next' | 'prev') => {
-    const now = Date.now()
-    if (now - lastSwipeAtRef.current < SWIPE_COOLDOWN_MS) return
-    lastSwipeAtRef.current = now
-
-    setIsTransitioning(true)
-    if (direction === 'next') window.api.mediaNext()
-    else window.api.mediaPrevious()
-
-    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current)
-    transitionTimerRef.current = setTimeout(() => {
-      setIsTransitioning(false)
-      transitionTimerRef.current = null
-    }, TRANSITION_HOLD_MS)
-  }
-
-  const handleDragEnd = (_e: PointerEvent, info: PanInfo) => {
-    if (info.offset.x > SWIPE_THRESHOLD) triggerSwipe('next')
-    else if (info.offset.x < -SWIPE_THRESHOLD) triggerSwipe('prev')
-  }
-
-  const brandColor = BRAND_COLORS[source] || BRAND_COLORS.system
-  const nextActive = thresholdCrossed === 'next'
-  const prevActive = thresholdCrossed === 'prev'
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const level = Number(e.target.value)
-    setVolumeLevel(level)
-    window.api.setVolume(level)
-  }
-
-  const handleShowVolume = (): void => setSidePanel((p) => (p === 'volume' ? null : 'volume'))
-
-  const progressPct = duration > 0 ? (position / duration) * 100 : 0
-
-  const mediaPaneWidth = isExpanded ? MEDIA_PANE_WIDTH : collapsedWidth
-  const sidePaneExtra = showSidePane ? CALENDAR_PANE_WIDTH + 1 : 0
-  const totalWidth = mediaPaneWidth + sidePaneExtra
-  const expandedHeight = showVolume ? 270 : showSidePane ? 240 : 180
+  const totalWidth = isExpanded ? TOTAL_EXPANDED_WIDTH : collapsedWidth
+  const expandedHeight = 250
+  const appAccent = THEME_ACCENTS[settings.theme]?.accent || '#fff'
 
   const isIdle = !title || title === 'Not Playing'
   const showLottie = !isPlaying && !isExpanded && settings.showLottieOnPause && !focusTimer.isActive
@@ -324,7 +231,9 @@ export default function NotchUI() {
   const showFocusView = isExpanded && focusTimer.isActive
 
   const notchTheme = getNotchTheme(settings.notchTheme)
-  const { weatherState } = useWeather()
+  const { weather, weatherState } = useWeather()
+
+  const progressPct = duration > 0 ? (position / duration) * 100 : 0
 
   return (
     <motion.div
@@ -334,39 +243,46 @@ export default function NotchUI() {
         isHoveringRef.current = true
       }}
       onMouseLeave={() => {
-        setIsHovering(false)
         isHoveringRef.current = false
-        if (pendingCollapseRef.current) {
-          pendingCollapseRef.current = false
-          setIsAutoExpanded(false)
-        }
-        setSidePanel(null)
+        setTimeout(() => {
+          if (!isHoveringRef.current) {
+            setIsHovering(false)
+            if (pendingCollapseRef.current) {
+              pendingCollapseRef.current = false
+              setIsAutoExpanded(false)
+            }
+          }
+        }, 100)
       }}
       initial={false}
       animate={{
         width: totalWidth,
-        height: isExpanded ? expandedHeight : 33.8
+        height: isExpanded ? expandedHeight : 33.8,
+        borderBottomLeftRadius: isExpanded ? 30 : 17,
+        borderBottomRightRadius: isExpanded ? 30 : 17,
+        background: isExpanded ? notchTheme.outerBg : 'transparent',
+        borderColor: isExpanded ? notchTheme.outerBorder : 'rgba(255,255,255,0)'
       }}
       transition={bounceTransition}
       className={cn(
         'relative overflow-hidden origin-top transition-shadow duration-500 z-1000',
-        isExpanded ? 'backdrop-blur-3xl' : ''
+        isExpanded ? 'backdrop-blur-[60px] saturate-180' : ''
       )}
       style={{
+        backdropFilter: isExpanded ? 'blur(60px) saturate(180%)' : 'none',
+        WebkitBackdropFilter: isExpanded ? 'blur(60px) saturate(180%)' : 'none',
         borderTopLeftRadius: 0,
         borderTopRightRadius: 0,
-        borderBottomLeftRadius: isExpanded ? 40 : 17,
-        borderBottomRightRadius: isExpanded ? 40 : 17,
         borderTop: 'none',
         marginTop: '-1px',
-        background: isExpanded ? notchTheme.outerBg : 'transparent',
-        border: isExpanded ? `1px solid ${notchTheme.outerBorder}` : 'none',
+        borderStyle: 'solid',
+        borderWidth: isExpanded ? '1px' : '0px',
         borderTopWidth: 0,
         boxShadow: 'none'
       }}
     >
       <div
-        className="relative flex h-full backdrop-blur-3xl shadow-inner"
+        className="relative flex h-full shadow-inner"
         style={{ background: isExpanded ? notchTheme.innerBg : notchTheme.collapsedBg }}
       >
         {isExpanded && notchTheme.innerOverlay && (
@@ -380,138 +296,241 @@ export default function NotchUI() {
           <AtmosphericAura weatherState={weatherState} variant="background" />
         )}
         {showLottie && <LottieVisualizer width={isExpanded ? totalWidth : collapsedWidth} />}
-        <div
-          className="relative shrink-0 h-full"
-          style={{
-            width: mediaPaneWidth,
-            padding: isExpanded ? '20px' : '10px'
-          }}
-        >
-          {isExpanded && (
-            <>
-              <motion.div
-                aria-hidden
+        <AnimatePresence mode="wait">
+          {toast ? null : !isExpanded ? (
+            <motion.div
+              key="collapsed"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0 24px',
+                height: '100%',
+                justifyContent: 'space-between',
+                width: '100%'
+              }}
+            >
+              <CollapsedNotchView
+                focusTimer={focusTimer}
+                settings={settings}
+                displayArt={displayArt}
+                title={title}
+                isPlaying={isPlaying}
+                showLottie={showLottie}
+                accentColor={appAccent}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="expanded"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                width: '100%',
+                padding: '12px',
+                boxSizing: 'border-box'
+              }}
+            >
+              <div
                 style={{
-                  opacity: nextIconOpacity,
-                  color: nextActive ? brandColor : 'rgba(255,255,255,0.55)',
-                  filter: nextActive ? `drop-shadow(0 0 10px ${brandColor})` : 'none'
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '8px',
+                  width: '100%'
                 }}
-                className="absolute left-3 top-1/2 -translate-y-1/2 z-0 pointer-events-none transition-[color,filter] duration-150"
               >
-                <ChevronsRight size={28} strokeWidth={2.5} />
-              </motion.div>
-              <motion.div
-                aria-hidden
-                style={{
-                  opacity: prevIconOpacity,
-                  color: prevActive ? brandColor : 'rgba(255,255,255,0.55)',
-                  filter: prevActive ? `drop-shadow(0 0 10px ${brandColor})` : 'none'
-                }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 z-0 pointer-events-none transition-[color,filter] duration-150"
-              >
-                <ChevronsLeft size={28} strokeWidth={2.5} />
-              </motion.div>
-            </>
-          )}
-
-          <AnimatePresence>
-            <NotchToast toast={toast} />
-          </AnimatePresence>
-
-          <AnimatePresence mode="wait">
-            {toast ? null : !isExpanded ? (
-              <motion.div
-                key="collapsed"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className={cn('flex items-center px-6 h-full justify-between')}
-              >
-                <CollapsedNotchView
-                  focusTimer={focusTimer}
-                  settings={settings}
-                  displayArt={displayArt}
-                  title={title}
-                  isPlaying={isPlaying}
-                  showLottie={showLottie}
-                />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="expanded"
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.7}
-                dragMomentum={false}
-                dragTransition={{ bounceStiffness: 400, bounceDamping: 30 }}
-                onDragEnd={handleDragEnd}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                style={{
-                  x,
-                  rotate,
-                  scale,
-                  paddingTop: '12px',
-                  cursor: 'grab',
-                  touchAction: 'pan-y'
-                }}
-                whileDrag={{ cursor: 'grabbing' }}
-                className="flex flex-col h-full p-[22px] justify-between relative z-10"
-              >
-                {showWelcome ? (
-                  <WelcomeView notchTheme={notchTheme} />
-                ) : showFocusView ? (
-                  <FocusView
-                    {...focusTimer}
-                    onPause={focusTimer.pause}
-                    onResume={focusTimer.resume}
-                    onStop={focusTimer.stop}
-                  />
-                ) : showIdleView ? (
-                  <IdleView
-                    onStartFocus={() => focusTimer.start()}
-                    focusMinutes={settings.focusDuration ?? 25}
-                  />
-                ) : (
-                  <>
-                    <ExpandedMediaView
-                      title={title}
-                      artist={artist}
-                      isPlaying={isPlaying}
-                      duration={duration}
-                      position={position}
-                      source={source}
-                      displayArt={displayArt}
-                      settings={settings}
-                      isTransitioning={isTransitioning}
-                      onPlayPause={handlePlayPause}
-                      onNext={handleNext}
-                      onPrev={handlePrev}
-                      onShowVolume={handleShowVolume}
-                      onOpenSettings={() => window.api.openSettings()}
-                      onStartFocus={() => focusTimer.start()}
-                      showVolume={showVolume}
-                      progressPct={progressPct}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div
+                    onClick={() => setActiveTab('home')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: activeTab === 'home' ? `${appAccent}15` : 'transparent',
+                      padding: activeTab === 'home' ? '4px 12px' : '6px',
+                      borderRadius: '9px',
+                      border:
+                        activeTab === 'home' ? `1px solid ${appAccent}30` : '1px solid transparent',
+                      color: activeTab === 'home' ? appAccent : 'rgba(255,255,255,0.6)',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}
+                  >
+                    <IconHome size={16} stroke={activeTab === 'home' ? 2.5 : 2} />
+                    {activeTab === 'home' && 'Home'}
+                  </div>
+                  <div
+                    onClick={() => setActiveTab('note')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: activeTab === 'note' ? `${appAccent}15` : 'transparent',
+                      padding: activeTab === 'note' ? '4px 12px' : '6px',
+                      borderRadius: '9px',
+                      border:
+                        activeTab === 'note' ? `1px solid ${appAccent}30` : '1px solid transparent',
+                      color: activeTab === 'note' ? appAccent : 'rgba(255,255,255,0.6)',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}
+                  >
+                    <IconClipboardText
+                      size={activeTab === 'note' ? 16 : 18}
+                      stroke={activeTab === 'note' ? 2.5 : 2}
                     />
+                    {activeTab === 'note' && 'Note'}
+                  </div>
+                  <div
+                    onClick={() => setActiveTab('zenbar')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: activeTab === 'zenbar' ? `${appAccent}15` : 'transparent',
+                      padding: activeTab === 'zenbar' ? '4px 12px' : '6px',
+                      borderRadius: '9px',
+                      border:
+                        activeTab === 'zenbar'
+                          ? `1px solid ${appAccent}30`
+                          : '1px solid transparent',
+                      color: activeTab === 'zenbar' ? appAccent : 'rgba(255,255,255,0.6)',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}
+                  >
+                    <IconClock
+                      size={activeTab === 'zenbar' ? 16 : 18}
+                      stroke={activeTab === 'zenbar' ? 2.5 : 2}
+                    />
+                    {activeTab === 'zenbar' && 'ZenBar'}
+                  </div>
+                  <div
+                    onClick={() => setActiveTab('sonic')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: activeTab === 'sonic' ? `${appAccent}15` : 'transparent',
+                      padding: activeTab === 'sonic' ? '4px 12px' : '6px',
+                      borderRadius: '9px',
+                      border:
+                        activeTab === 'sonic'
+                          ? `1px solid ${appAccent}30`
+                          : '1px solid transparent',
+                      color: activeTab === 'sonic' ? appAccent : 'rgba(255,255,255,0.6)',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}
+                  >
+                    <IconKeyboard
+                      size={activeTab === 'sonic' ? 16 : 18}
+                      stroke={activeTab === 'sonic' ? 2.5 : 2}
+                    />
+                    {activeTab === 'sonic' && 'Sonic'}
+                  </div>
+                </div>
 
-                    <AnimatePresence mode="wait" initial={false}>
-                      {showVolume && (
-                        <VolumeSwitcher
-                          showVolume={showVolume}
-                          volumeLevel={volumeLevel}
-                          handleVolumeChange={handleVolumeChange}
+                <div style={{ flex: 1 }} />
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div
+                    onClick={() => window.api.openSettings()}
+                    style={{
+                      padding: '6px',
+                      borderRadius: '10px',
+                      background: 'rgba(255,255,255,0.05)',
+                      color: 'rgba(255,255,255,0.6)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <IconSettings size={18} stroke={2} />
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  gap: `${COLUMN_GAP}px`,
+                  flex: 1,
+                  minHeight: 0
+                }}
+              >
+                {activeTab === 'home' ? (
+                  <>
+                    <div
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        display: 'flex',
+                        flexDirection: 'column'
+                      }}
+                    >
+                      {showWelcome ? (
+                        <WelcomeView notchTheme={notchTheme} />
+                      ) : showFocusView ? (
+                        <FocusView
+                          {...focusTimer}
+                          onPause={focusTimer.pause}
+                          onResume={focusTimer.resume}
+                          onStop={focusTimer.stop}
+                        />
+                      ) : showIdleView ? (
+                        <IdleView />
+                      ) : (
+                        <ExpandedMediaView
+                          title={title}
+                          artist={artist}
+                          isPlaying={isPlaying}
+                          duration={duration}
+                          position={position}
+                          source={source}
+                          displayArt={displayArt}
+                          settings={settings}
+                          onPlayPause={handlePlayPause}
+                          onNext={handleNext}
+                          onPrev={handlePrev}
+                          progressPct={progressPct}
+                          accentColor={appAccent}
                         />
                       )}
-                    </AnimatePresence>
-                  </>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                    </div>
 
-        {showSidePane && <CalendarPane />}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <WeatherPane weather={weather} weatherState={weatherState} />
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <CalendarPane accentColor={appAccent} />
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {activeTab === 'note' && <NoteView />}
+                    {activeTab === 'zenbar' && <ZenBarView accentColor={appAccent} />}
+                    {activeTab === 'sonic' && <SonicView accentColor={appAccent} />}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   )

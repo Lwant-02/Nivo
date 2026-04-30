@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-const THEME_ACCENTS: Record<ThemeId, { accent: string; glow: string }> = {
+export const THEME_ACCENTS: Record<string, { accent: string; glow: string }> = {
   midnight: { accent: '#6e7a99', glow: 'rgba(110, 122, 153, 0.15)' },
   graphite: { accent: '#98989d', glow: 'rgba(152, 152, 157, 0.12)' },
   ocean: { accent: '#0a84ff', glow: 'rgba(10, 132, 255, 0.18)' },

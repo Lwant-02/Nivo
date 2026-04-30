@@ -10,6 +10,7 @@ interface ThumbnailProps {
   size?: 'pill' | 'expanded'
   className?: string
   isPlaying?: boolean
+  accentColor?: string
 }
 
 export function Thumbnail({
@@ -17,7 +18,8 @@ export function Thumbnail({
   alt = '',
   size = 'expanded',
   className = '',
-  isPlaying = false
+  isPlaying = false,
+  accentColor
 }: ThumbnailProps) {
   const [errored, setErrored] = useState(false)
 
@@ -31,19 +33,22 @@ export function Thumbnail({
   if (!usable) {
     return (
       <div
-        className={cn(
-          'flex items-center justify-center',
-          isPill ? '' : 'size-full bg-purple/20',
-          className
-        )}
+        className={cn('flex flex-col overflow-hidden', isPill ? '' : 'size-full', className)}
+        style={
+          !isPill
+            ? { background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.08)' }
+            : {}
+        }
       >
-        <Disc3
-          className={cn(
-            'text-purple',
-            isPill ? 'size-5' : 'size-8',
-            isPlaying ? 'animate-spin [animation-duration:2s]' : ''
-          )}
-        />
+        <div className="flex-1 flex items-center justify-center p-2">
+          <Disc3
+            className={cn(
+              isPill ? 'size-5' : 'size-10',
+              isPlaying ? 'animate-spin [animation-duration:3s]' : ''
+            )}
+            style={{ color: accentColor || '#fff' }}
+          />
+        </div>
       </div>
     )
   }

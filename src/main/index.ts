@@ -63,9 +63,9 @@ function createMainWindow(): void {
   const { width: screenWidth } = screen.getPrimaryDisplay().bounds
 
   mainWindow = new BrowserWindow({
-    width: 800,
+    width: 900,
     height: 400,
-    x: Math.floor(screenWidth / 2 - 400),
+    x: Math.floor(screenWidth / 2 - 450),
     y: 0,
     frame: false,
     transparent: true,
@@ -106,8 +106,8 @@ function createMainWindow(): void {
     // Detect if we are over the notch.
     // The notch is centered in the 800px window.
     // We use a slightly larger area than the actual UI for better UX.
-    const pw = hoverActive ? 651 : 300 // Reduced collapsed detection width
-    const ph = hoverActive ? 270 : 35 // Reduced collapsed detection height
+    const pw = hoverActive ? 850 : 300 // Tightened for 816px UI
+    const ph = hoverActive ? 260 : 35 // Maintains 230px UI height safety
     const px = wx + Math.floor((ww - pw) / 2)
 
     const over =
