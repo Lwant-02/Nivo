@@ -14,7 +14,6 @@ export interface MediaState {
   isPlaying: boolean
   playbackRate: number
   progress: number
-  volume: number
   albumArt: string | null
   duration: number
   position: number
@@ -27,7 +26,6 @@ const EMPTY_STATE: MediaState = {
   isPlaying: false,
   playbackRate: 0,
   progress: 0,
-  volume: 0,
   albumArt: null,
   duration: 0,
   position: 0,
@@ -384,7 +382,7 @@ export class MediaService {
 
           finalState = fallback
         } else {
-          finalState = { ...EMPTY_STATE, volume: await this.getVolume() }
+          finalState = { ...EMPTY_STATE }
         }
       } else {
         const artistName = artist
@@ -435,15 +433,12 @@ export class MediaService {
           }
         }
 
-        const volume = await this.getVolume()
-
         finalState = {
           title,
           artist,
           isPlaying,
           playbackRate,
           progress: Math.min(progress, 100),
-          volume,
           albumArt,
           duration,
           position: Math.min(elapsed, duration),
@@ -466,7 +461,7 @@ export class MediaService {
 
       return { payload: finalState, snapshot }
     } catch (err: any) {
-      const fallback = { ...EMPTY_STATE, volume: await this.getVolume() }
+      const fallback = { ...EMPTY_STATE }
       return { payload: fallback, snapshot: fallback }
     }
   }
@@ -611,7 +606,6 @@ return "none"`
       const position = parseFloat(pos) || 0
       const duration = parseFloat(dur) || 0
       const progress = duration > 0 ? (position / duration) * 100 : 0
-      const volume = await this.getVolume()
 
       let albumArt: string | null = null
       if (source === 'music') albumArt = await this.getMusicAlbumArt(`${title}-${artist}`)
@@ -627,7 +621,6 @@ return "none"`
         isPlaying,
         playbackRate: isPlaying ? 1 : 0,
         progress: Math.min(progress, 100),
-        volume,
         albumArt,
         duration,
         position,
@@ -650,27 +643,6 @@ return "none"`
     return null
   }
 
-  private async getVolume(): Promise<number> {
-    try {
-      const { stdout } = await execAsync('osascript -e "output volume of (get volume settings)"')
-      return parseInt(stdout.trim()) || 0
-    } catch {
-      return 0
-    }
-  }
-
-  public async setVolume(level: number) {
-    try {
-      this.setInteraction()
-      await execAsync(`osascript -e "set volume output volume ${Math.round(level)}"`)
-      if (this.lastState && this.mainWindow) {
-        this.lastState.volume = level
-        this.mainWindow.webContents.send('media-update', this.lastState)
-      }
-    } catch (err: any) {
-      console.error('[MediaService] Volume set failed:', err.message)
-    }
-  }
 
   public async playPause() {
     try {

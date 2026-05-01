@@ -17,11 +17,11 @@ export const NOTCH_THEMES: Record<NotchThemeId, NotchThemeStyle> = {
     label: 'Obsidian',
     collapsedBg: '#000',
     outerBg:
-      'linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(8,8,14,0.94) 100%)',
+      'linear-gradient(180deg, rgba(0,0,0,0.98) 0%, rgba(8,8,14,0.97) 100%)',
     outerBorder: 'rgba(255,255,255,0.12)',
     outerShadow: '0 18px 48px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.08)',
     innerBg:
-      'linear-gradient(180deg, rgba(0,0,0,0.98) 0%, rgba(15,15,22,0.97) 100%)',
+      'linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(15,15,22,0.99) 100%)',
     preview: {
       gradient: 'linear-gradient(135deg, #1a1d29 0%, #050509 100%)',
       ring: '#6e7a99'
@@ -31,12 +31,12 @@ export const NOTCH_THEMES: Record<NotchThemeId, NotchThemeStyle> = {
     label: 'Frost',
     collapsedBg: '#000',
     outerBg:
-      'linear-gradient(180deg, rgba(220,235,255,0.35) 0%, rgba(150,190,240,0.25) 100%)',
+      'linear-gradient(180deg, rgba(220,235,255,0.55) 0%, rgba(150,190,240,0.45) 100%)',
     outerBorder: 'rgba(190,225,255,0.45)',
     outerShadow:
       '0 18px 48px rgba(80,150,255,0.32), inset 0 1px 0 rgba(255,255,255,0.30)',
     innerBg:
-      'linear-gradient(180deg, rgba(18,28,48,0.96) 0%, rgba(22,42,72,0.94) 100%)',
+      'linear-gradient(180deg, rgba(18,28,48,0.99) 0%, rgba(22,42,72,0.98) 100%)',
     innerOverlay:
       'radial-gradient(120% 80% at 0% 0%, rgba(180,220,255,0.18) 0%, transparent 60%)',
     preview: {
@@ -48,12 +48,12 @@ export const NOTCH_THEMES: Record<NotchThemeId, NotchThemeStyle> = {
     label: 'Aurora',
     collapsedBg: '#000',
     outerBg:
-      'linear-gradient(135deg, rgba(180,80,255,0.42) 0%, rgba(255,80,180,0.36) 50%, rgba(80,200,255,0.40) 100%)',
+      'linear-gradient(135deg, rgba(180,80,255,0.55) 0%, rgba(255,80,180,0.45) 50%, rgba(80,200,255,0.52) 100%)',
     outerBorder: 'rgba(220,180,255,0.45)',
     outerShadow:
       '0 18px 48px rgba(180,80,255,0.42), inset 0 1px 0 rgba(255,255,255,0.20)',
     innerBg:
-      'linear-gradient(135deg, rgba(28,12,42,0.97) 0%, rgba(38,16,48,0.96) 50%, rgba(16,28,52,0.97) 100%)',
+      'linear-gradient(135deg, rgba(28,12,42,0.99) 0%, rgba(38,16,48,0.98) 50%, rgba(16,28,52,0.99) 100%)',
     innerOverlay:
       'radial-gradient(140% 90% at 100% 0%, rgba(255,120,200,0.18) 0%, transparent 55%), radial-gradient(120% 80% at 0% 100%, rgba(80,200,255,0.18) 0%, transparent 55%)',
     preview: {
@@ -162,10 +162,10 @@ export const NOTCH_THEMES: Record<NotchThemeId, NotchThemeStyle> = {
   midnight: {
     label: 'Midnight',
     collapsedBg: '#000',
-    outerBg: 'linear-gradient(180deg, rgba(20,25,45,0.35) 0%, rgba(10,12,25,0.25) 100%)',
+    outerBg: 'linear-gradient(180deg, rgba(20,25,45,0.55) 0%, rgba(10,12,25,0.45) 100%)',
     outerBorder: 'rgba(60,80,150,0.42)',
     outerShadow: '0 18px 48px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08)',
-    innerBg: 'linear-gradient(180deg, rgba(8,10,20,0.98) 0%, rgba(4,5,10,0.97) 100%)',
+    innerBg: 'linear-gradient(180deg, rgba(8,10,20,0.99) 0%, rgba(4,5,10,0.98) 100%)',
     innerOverlay: 'radial-gradient(120% 80% at 50% 0%, rgba(60,80,150,0.15) 0%, transparent 60%)',
     preview: {
       gradient: 'linear-gradient(135deg, #14192d 0%, #080a14 100%)',

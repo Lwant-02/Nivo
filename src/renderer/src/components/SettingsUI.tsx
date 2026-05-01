@@ -7,7 +7,6 @@ import {
   ShieldCheck,
   Info,
   Palette,
-  Timer,
   Keyboard,
   Sparkles,
   Power
@@ -22,7 +21,6 @@ import { SonicPanel } from './settings/SonicPanel'
 import { PlaceholderPanel } from './settings/PlaceholderPanel'
 import { VisualizerPanel } from './settings/VisualizerPanel'
 import { ThemePanel } from './settings/ThemePanel'
-import { ZenPanel } from './settings/ZenPanel'
 
 const NAV_GROUPS = [
   {
@@ -41,8 +39,7 @@ const NAV_GROUPS = [
     items: [
       { id: 'nowplaying', icon: Play, label: 'Now Playing', color: '#FF3B30' },
       { id: 'calendar', icon: Calendar, label: 'Calendar', color: '#FF3B30' },
-      { id: 'visualizer', icon: Sparkles, label: 'Visualizer', color: 'var(--lume-accent)' },
-      { id: 'zen', icon: Timer, label: 'Zen Bar', color: '#A855F7' }
+      { id: 'visualizer', icon: Sparkles, label: 'Visualizer', color: 'var(--lume-accent)' }
     ]
   },
   {
@@ -193,7 +190,6 @@ export default function SettingsUI() {
               {active === 'nowplaying' && <NowPlayingPanel />}
               {active === 'calendar' && <CalendarPanel />}
               {active === 'visualizer' && <VisualizerPanel />}
-              {active === 'zen' && <ZenPanel />}
               {active === 'license' && <LicensePanel />}
               {active === 'about' && <AboutPanel />}
               {![
@@ -204,8 +200,7 @@ export default function SettingsUI() {
                 'calendar',
                 'license',
                 'about',
-                'visualizer',
-                'zen'
+                'visualizer'
               ].includes(active) && <PlaceholderPanel id={active} />}
             </motion.div>
           </AnimatePresence>

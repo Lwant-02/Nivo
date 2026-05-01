@@ -6,7 +6,6 @@ export interface MediaUpdate {
   isPlaying: boolean
   playbackRate: number
   progress: number
-  volume: number
   albumArt: string | null
   duration: number
   position: number
@@ -19,7 +18,6 @@ const DEFAULT_STATE: MediaUpdate = {
   isPlaying: false,
   playbackRate: 0,
   progress: 0,
-  volume: 0,
   albumArt: null,
   duration: 0,
   position: 0,

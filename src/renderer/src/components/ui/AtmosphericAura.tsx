@@ -1,9 +1,14 @@
 import React, { useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { Sun, Moon, CloudRain, CloudSnow } from 'lucide-react'
 import cn from 'clsx'
 
-export type WeatherState = 'SUNNY' | 'RAIN' | 'NIGHT' | 'GOLDEN_HOUR' | 'SNOW'
+import rainIcon from '../../assets/weather/rain.png'
+import nightIcon from '../../assets/weather/night.png'
+import goldenHourIcon from '../../assets/weather/golden_hour.png'
+import snowIcon from '../../assets/weather/snow.png'
+import sunnyIcon from '../../assets/weather/sunny.png'
+import cloudyIcon from '../../assets/weather/cloudy.png'
+
+export type WeatherState = 'SUNNY' | 'RAIN' | 'NIGHT' | 'GOLDEN_HOUR' | 'SNOW' | 'CLOUDY'
 
 interface Props {
   weatherState: WeatherState
@@ -44,6 +49,12 @@ const PALETTES: Record<
     tint: 'rgba(200,220,240,0.06)',
     ring: 'rgba(220,235,255,0.55)',
     iconColor: '#E8F1FF'
+  },
+  CLOUDY: {
+    glow: 'radial-gradient(120% 80% at 50% -10%, rgba(255,255,255,0.15) 0%, rgba(200,200,200,0.05) 40%, transparent 75%)',
+    tint: 'rgba(255,255,255,0.04)',
+    ring: 'rgba(255,255,255,0.4)',
+    iconColor: '#fff'
   }
 }
 
@@ -51,6 +62,15 @@ const HARDWARE_ACCEL: React.CSSProperties = {
   willChange: 'transform, opacity',
   transform: 'translate3d(0,0,0)',
   backfaceVisibility: 'hidden'
+}
+
+const WEATHER_3D_ICONS: Record<WeatherState, string> = {
+  SUNNY: sunnyIcon,
+  CLOUDY: cloudyIcon,
+  RAIN: rainIcon,
+  NIGHT: nightIcon,
+  GOLDEN_HOUR: goldenHourIcon,
+  SNOW: snowIcon
 }
 
 // Deterministic pseudo-random so drops stay put across renders.
@@ -88,7 +108,8 @@ const RainDrops: React.FC = () => {
             width: 2,
             height: d.height,
             borderRadius: 999,
-            background: 'linear-gradient(180deg, rgba(190,215,255,0) 0%, rgba(190,215,255,0.95) 100%)',
+            background:
+              'linear-gradient(180deg, rgba(190,215,255,0) 0%, rgba(190,215,255,0.95) 100%)',
             opacity: d.opacity,
             animation: `aura-rain-drop ${d.duration}s linear ${d.delay}s infinite`,
             ...HARDWARE_ACCEL
@@ -362,41 +383,27 @@ const AuraBackground: React.FC<{ state: WeatherState; className?: string }> = ({
   </div>
 )
 
-const NotchIconFor = (state: WeatherState) => {
-  if (state === 'RAIN') return CloudRain
-  if (state === 'SNOW') return CloudSnow
-  if (state === 'NIGHT') return Moon
-  return Sun
-}
-
 const AuraNotchIcon: React.FC<{ state: WeatherState; className?: string }> = ({
   state,
   className
 }) => {
-  const { iconColor, ring } = PALETTES[state]
-  const Icon = NotchIconFor(state)
-  const animSpeed = state === 'RAIN' ? 1.4 : state === 'SNOW' ? 2.0 : 2.4
-
   return (
-    <motion.div
-      className={cn('relative inline-flex items-center justify-center rounded-full', className)}
+    <div
+      className={cn('relative inline-flex items-center justify-center', className)}
       style={{
-        width: 18,
-        height: 18,
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))',
-        boxShadow: `inset 0 0 0 1px ${ring}, 0 0 10px ${ring}`,
         ...HARDWARE_ACCEL
       }}
-      animate={{ scale: [1, 1.06, 1], opacity: [0.85, 1, 0.85] }}
-      transition={{ duration: animSpeed, repeat: Infinity, ease: 'easeInOut' }}
     >
-      <Icon
-        size={11}
-        strokeWidth={2.4}
-        color={iconColor}
-        style={{ filter: `drop-shadow(0 0 4px ${iconColor})` }}
+      <img
+        src={WEATHER_3D_ICONS[state]}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover'
+        }}
+        alt=""
       />
-    </motion.div>
+    </div>
   )
 }
 
@@ -422,8 +429,7 @@ const MiniRain: React.FC = () => {
             width: 1.5,
             height: 4,
             borderRadius: 999,
-            background:
-              'linear-gradient(180deg, rgba(190,215,255,0) 0%, rgba(210,225,255,1) 100%)',
+            background: 'linear-gradient(180deg, rgba(190,215,255,0) 0%, rgba(210,225,255,1) 100%)',
             animation: `aura-mini-rain ${d.duration}s linear ${d.delay}s infinite`,
             ...HARDWARE_ACCEL
           }}
@@ -630,7 +636,6 @@ const MiniParticles: React.FC<{ state: WeatherState }> = ({ state }) => {
 
 const AuraMini: React.FC<{ state: WeatherState; className?: string }> = ({ state, className }) => {
   const { iconColor, ring, tint } = PALETTES[state]
-  const Icon = NotchIconFor(state)
 
   return (
     <div
@@ -656,11 +661,15 @@ const AuraMini: React.FC<{ state: WeatherState; className?: string }> = ({ state
         className="relative inline-flex items-center justify-center"
         style={{ width: 22, height: 22, marginLeft: 0 }}
       >
-        <Icon
-          size={11}
-          strokeWidth={2.4}
-          color={iconColor}
-          style={{ filter: `drop-shadow(0 0 4px ${iconColor})` }}
+        <img
+          src={WEATHER_3D_ICONS[state]}
+          style={{
+            width: 14,
+            height: 14,
+            objectFit: 'contain',
+            filter: `drop-shadow(0 0 4px ${iconColor})`
+          }}
+          alt=""
         />
       </span>
     </div>

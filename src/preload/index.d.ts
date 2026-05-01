@@ -11,8 +11,8 @@ declare global {
       showNotification: (title: string, body: string) => void
       showLumeToast: (title: string, body: string) => void
       onLumeToast: (callback: (data: { title: string; body: string }) => void) => () => void
-      setVolume: (level: number) => Promise<void>
       setNotchActive: (active: boolean) => void
+      setNotchEditing: (editing: boolean) => void
       openSettings: () => Promise<void>
       getAppVersion: () => Promise<string>
       activateLicense: (key: string) => Promise<{ ok: boolean; error?: string }>
@@ -31,7 +31,6 @@ declare global {
           isPlaying: boolean
           playbackRate: number
           progress: number
-          volume: number
           albumArt: string | null
           duration: number
           position: number
@@ -51,6 +50,8 @@ declare global {
           endMs: number
           url: string
           description: string
+          isAllDay: boolean
+          calendarName: string
         }>
       >
       triggerHaptic: () => Promise<void>
@@ -62,8 +63,41 @@ declare global {
         value: AppSettings[K]
       ) => Promise<AppSettings | null>
       onSettingsUpdate: (callback: (settings: AppSettings) => void) => () => void
+      getNotes: () => Promise<Note[]>
+      createNote: (patch?: NoteInput) => Promise<Note | null>
+      updateNote: (id: string, patch: NoteInput) => Promise<Note | null>
+      deleteNote: (id: string) => Promise<boolean>
       openExternal: (url: string) => Promise<void>
     }
+  }
+
+  type NoteIconId =
+    | 'clipboard-text'
+    | 'home'
+    | 'book'
+    | 'bell'
+    | 'soup'
+    | 'target'
+    | 'note'
+    | 'bulb'
+    | 'heart'
+    | 'star'
+    | 'briefcase'
+    | 'flag'
+
+  interface Note {
+    id: string
+    title: string
+    content: string
+    icon: NoteIconId
+    createdAt: number
+    updatedAt: number
+  }
+
+  interface NoteInput {
+    title?: string
+    content?: string
+    icon?: NoteIconId
   }
 
   type WeatherCondition = 'sunny' | 'rainy' | 'cloudy' | 'snowy'
@@ -147,7 +181,6 @@ declare global {
     calendarReminderMin: number
     showLottieOnPause: boolean
     lottieStyle: number
-    focusDuration: number
     showWeather: boolean
     sonicFeedback: boolean
     sonicSoundPack: SonicSoundPackId

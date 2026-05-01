@@ -13,7 +13,6 @@ const SOUNDS = import.meta.glob('../assets/sonic-sounds/*/*.ogg', {
 let sharedContext: AudioContext | null = null
 let currentBuffer: AudioBuffer | null = null
 let currentSpriteMap: Record<string, [number, number]> | null = null
-let currentLoadPromise: Promise<void> | null = null
 
 function getAudioContext(): AudioContext {
   if (sharedContext) return sharedContext
@@ -50,7 +49,7 @@ export function useSonicFeedback(enabled: boolean, soundPackId: SonicSoundPackId
   useEffect(() => {
     if (!enabled) return
 
-    currentLoadPromise = loadSoundPack(soundPackId).catch((err) => {
+    loadSoundPack(soundPackId).catch((err) => {
       console.error('[SonicFeedback] failed to load sound pack:', soundPackId, err)
     })
 
