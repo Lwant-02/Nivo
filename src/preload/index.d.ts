@@ -50,6 +50,8 @@ declare global {
           endMs: number
           url: string
           description: string
+          isAllDay: boolean
+          calendarName: string
         }>
       >
       triggerHaptic: () => Promise<void>
@@ -179,7 +181,6 @@ declare global {
     calendarReminderMin: number
     showLottieOnPause: boolean
     lottieStyle: number
-    focusDuration: number
     showWeather: boolean
     sonicFeedback: boolean
     sonicSoundPack: SonicSoundPackId

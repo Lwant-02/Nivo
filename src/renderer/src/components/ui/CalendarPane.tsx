@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Video } from 'lucide-react'
+import { IconCalendarEvent } from '@tabler/icons-react'
 import { BentoEmptyState } from './BentoEmptyState'
+import { useSettings } from '@renderer/hooks/useSettings'
 
 interface CalendarEvent {
   title: string
@@ -10,6 +12,8 @@ interface CalendarEvent {
   endMs: number
   url: string
   description: string
+  isAllDay: boolean
+  calendarName: string
 }
 
 const REFRESH_MS = 300_000 // 5 minutes
@@ -20,6 +24,7 @@ interface CalendarPaneProps {
 
 export const CalendarPane = ({ accentColor }: CalendarPaneProps) => {
   const [events, setEvents] = useState<CalendarEvent[] | null>(null)
+  const { settings } = useSettings()
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
@@ -45,7 +50,7 @@ export const CalendarPane = ({ accentColor }: CalendarPaneProps) => {
     return () => clearInterval(id)
   }, [])
 
-  if (events === null) {
+  if (events === null || !settings.enableCalendar) {
     return (
       <BentoEmptyState
         title="Calendar Unavailable"
@@ -130,7 +135,7 @@ export const CalendarPane = ({ accentColor }: CalendarPaneProps) => {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0px' }}>
           <span
             style={{
-              fontSize: '11px',
+              fontSize: '14px',
               fontWeight: '800',
               color: '#fff',
               letterSpacing: '-0.1px'
@@ -152,7 +157,7 @@ export const CalendarPane = ({ accentColor }: CalendarPaneProps) => {
 
         {/* Clock */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', paddingBottom: '15px' }}>
-          <span style={{ fontSize: '16px', fontWeight: '700', color: '#fff' }}>
+          <span style={{ fontSize: '14px', fontWeight: '700', color: '#fff' }}>
             {
               now
                 .toLocaleTimeString([], {
@@ -186,6 +191,65 @@ export const CalendarPane = ({ accentColor }: CalendarPaneProps) => {
         {events && events.length > 0 ? (
           events.map((event, i) => {
             const isDone = event.endMs < now.getTime()
+            const isHoliday =
+              event.calendarName.toLowerCase().includes('holiday') ||
+              event.calendarName.toLowerCase().includes('วันหยุด') || // Thai for holiday
+              event.isAllDay
+
+            if (isHoliday) {
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '6px 12px',
+                    background: 'rgba(139, 92, 246, 0.2)', // Purple/Violet pill
+                    borderRadius: '20px',
+                    border: '1px solid rgba(139, 92, 246, 0.2)',
+                    opacity: isDone ? 0.4 : 1,
+                    marginBottom: '4px'
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      background: 'rgba(139, 92, 246, 0.5)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      style={{ color: '#C084FC' }}
+                    >
+                      <path d="M12 1.7L15 8.3L22.3 9.4L17 14.5L18.3 21.7L12 18.3L5.7 21.7L7 14.5L1.7 9.4L9 8.3L12 1.7Z" />
+                    </svg>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: '#C084FC',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}
+                  >
+                    {event.title}
+                  </span>
+                </div>
+              )
+            }
+
             return (
               <div
                 key={i}
@@ -268,11 +332,9 @@ export const CalendarPane = ({ accentColor }: CalendarPaneProps) => {
             )
           })
         ) : (
-          <div style={{ flex: 1, display: 'flex' }}>
-            <BentoEmptyState
-              title="No Upcoming Events"
-              description="Your schedule is clear for the day."
-            />
+          <div className="flex justify-center items-center text-text h-full gap-1">
+            <IconCalendarEvent size={20} />
+            <p className="text-xs">No Upcoming Events</p>
           </div>
         )}
       </div>

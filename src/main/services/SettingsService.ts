@@ -66,7 +66,6 @@ export interface Settings {
   calendarReminderMin: number
   showLottieOnPause: boolean
   lottieStyle: number
-  focusDuration: number
   showWeather: boolean
   sonicFeedback: boolean
   sonicSoundPack: SonicSoundPackId
@@ -83,13 +82,12 @@ export const DEFAULT_SETTINGS: Settings = {
   hideWhenPaused: true,
   showAlbumArt: true,
   showVisualizer: true,
-  enableCalendar: false,
+  enableCalendar: true,
   calendarNextEventOnly: true,
   calendarClickToJoin: true,
   calendarReminderMin: 5,
   showLottieOnPause: false,
   lottieStyle: 0,
-  focusDuration: 25,
   showWeather: true,
   sonicFeedback: false,
   sonicSoundPack: 'cherrymx-black-abs',
@@ -163,7 +161,6 @@ type Column =
   | 'calendar_reminder_min'
   | 'show_lottie_on_pause'
   | 'lottie_style'
-  | 'focus_duration'
   | 'show_weather'
   | 'sonic_feedback'
   | 'sonic_sound_pack'
@@ -192,7 +189,6 @@ const FIELDS: { [K in keyof Settings]: FieldSpec } = {
   calendarReminderMin: { column: 'calendar_reminder_min', kind: 'int' },
   showLottieOnPause: { column: 'show_lottie_on_pause', kind: 'bool' },
   lottieStyle: { column: 'lottie_style', kind: 'int' },
-  focusDuration: { column: 'focus_duration', kind: 'int' },
   showWeather: { column: 'show_weather', kind: 'bool' },
   sonicFeedback: { column: 'sonic_feedback', kind: 'bool' },
   sonicSoundPack: { column: 'sonic_sound_pack', kind: 'sonicSoundPack' },

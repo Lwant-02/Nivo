@@ -20,8 +20,6 @@ import { THEME_ACCENTS } from '../hooks/useAppliedTheme'
 import { LottieVisualizer } from './ui/LottieVisualizer'
 import { IdleView } from './ui/IdleView'
 import { WelcomeView } from './ui/WelcomeView'
-import { FocusView } from './ui/FocusView'
-import { useFocusTimer } from '../hooks/useFocusTimer'
 import { ExpandedMediaView } from './ui/ExpandedMediaView'
 import { CollapsedNotchView } from './ui/CollapsedNotchView'
 import { AtmosphericAura } from './ui/AtmosphericAura'
@@ -30,6 +28,7 @@ import { NoteView } from './ui/NoteView'
 import { ZenBarView } from './ui/ZenBarView'
 import { SonicView } from './ui/SonicView'
 import { useZenTimer } from '../hooks/useZenTimer'
+import { NotchToast } from './ui/NotchToast'
 
 const bounceTransition: Transition = {
   type: 'spring',
@@ -57,28 +56,16 @@ export default function NotchUI() {
   const welcomeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { playExpand, playNotification } = useSound()
 
-  const focusTimer = useFocusTimer({
-    defaultMinutes: settings.focusDuration ?? 25,
-    onComplete: () => {
-      const mins = settings.focusDuration ?? 25
-      window.api.showLumeToast(
-        'Nivo | Focus Complete',
-        mins === 1 ? 'Test session done' : `${mins} min session done`
-      )
-      if (settings.hapticFeedback) window.api.triggerHaptic()
-      playNotification()
-    }
-  })
-
   const zenTimer = useZenTimer({
-    onComplete: () => {
-      window.api.showLumeToast('Nivo | ZenBar', 'Countdown complete')
+    onComplete: (reason) => {
+      const body = reason === 'target' ? 'Stopwatch hit target' : 'Countdown complete'
+      window.api.showLumeToast('Nivo | ZenBar', body)
       if (settings.hapticFeedback) window.api.triggerHaptic()
       playNotification()
     }
   })
 
-  const collapsedWidth = focusTimer.isActive ? 360 : 280
+  const collapsedWidth = 280
 
   const isExpanded = isHovering || isAutoExpanded || isWelcoming
 
@@ -148,9 +135,9 @@ export default function NotchUI() {
   // Inform main process when notch should be visible/active (e.g. welcome, focus, or toast)
   useEffect(() => {
     // Only set active if expanded or hovering (or focus/welcoming)
-    const active = isExpanded || isWelcoming || focusTimer.isActive || zenTimer.isActive
+    const active = isExpanded || isWelcoming || zenTimer.isActive
     window.api.setNotchActive(active)
-  }, [isExpanded, isWelcoming, focusTimer.isActive, zenTimer.isActive])
+  }, [isExpanded, isWelcoming, zenTimer.isActive])
 
   useEffect(() => {
     if (!settingsReady || settings.hasSeenWelcome) return
@@ -234,10 +221,9 @@ export default function NotchUI() {
   const appAccent = THEME_ACCENTS[settings.theme]?.accent || '#fff'
 
   const isIdle = !title || title === 'Not Playing'
-  const showLottie = !isPlaying && !isExpanded && settings.showLottieOnPause && !focusTimer.isActive
+  const showLottie = !isPlaying && !isExpanded && settings.showLottieOnPause
   const showWelcome = isExpanded && !settings.hasSeenWelcome
-  const showIdleView = isExpanded && isIdle && settings.hasSeenWelcome && !focusTimer.isActive
-  const showFocusView = isExpanded && focusTimer.isActive
+  const showIdleView = isExpanded && isIdle && settings.hasSeenWelcome
 
   const notchTheme = getNotchTheme(settings.notchTheme)
   const { weather, weatherState } = useWeather()
@@ -306,7 +292,7 @@ export default function NotchUI() {
         )}
         {showLottie && <LottieVisualizer width={isExpanded ? totalWidth : collapsedWidth} />}
         <AnimatePresence mode="wait">
-          {toast ? null : !isExpanded ? (
+          {!isExpanded ? (
             <motion.div
               key="collapsed"
               initial={{ opacity: 0 }}
@@ -322,7 +308,6 @@ export default function NotchUI() {
               }}
             >
               <CollapsedNotchView
-                focusTimer={focusTimer}
                 settings={settings}
                 displayArt={displayArt}
                 title={title}
@@ -491,15 +476,10 @@ export default function NotchUI() {
                         flexDirection: 'column'
                       }}
                     >
-                      {showWelcome ? (
+                      {toast ? (
+                        <NotchToast toast={toast} accentColor={appAccent} />
+                      ) : showWelcome ? (
                         <WelcomeView notchTheme={notchTheme} />
-                      ) : showFocusView ? (
-                        <FocusView
-                          {...focusTimer}
-                          onPause={focusTimer.pause}
-                          onResume={focusTimer.resume}
-                          onStop={focusTimer.stop}
-                        />
                       ) : showIdleView ? (
                         <IdleView />
                       ) : (

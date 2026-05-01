@@ -46,7 +46,6 @@ export function getDatabase(): Database.Database {
       hide_when_paused INTEGER NOT NULL DEFAULT 1,
       show_lottie_on_pause INTEGER NOT NULL DEFAULT 0,
       lottie_style INTEGER NOT NULL DEFAULT 0,
-      focus_duration INTEGER NOT NULL DEFAULT 25,
       sonic_feedback INTEGER NOT NULL DEFAULT 0,
       sonic_sound_pack TEXT NOT NULL DEFAULT 'cherrymx-black-abs',
       has_seen_welcome INTEGER NOT NULL DEFAULT 0
@@ -88,13 +87,12 @@ export function getDatabase(): Database.Database {
   addColumn('hide_when_paused', 'hide_when_paused INTEGER NOT NULL DEFAULT 1')
   addColumn('show_album_art', 'show_album_art INTEGER NOT NULL DEFAULT 1')
   addColumn('show_visualizer', 'show_visualizer INTEGER NOT NULL DEFAULT 1')
-  addColumn('enable_calendar', 'enable_calendar INTEGER NOT NULL DEFAULT 0')
+  addColumn('enable_calendar', 'enable_calendar INTEGER NOT NULL DEFAULT 1')
   addColumn('calendar_next_event_only', 'calendar_next_event_only INTEGER NOT NULL DEFAULT 1')
   addColumn('calendar_click_to_join', 'calendar_click_to_join INTEGER NOT NULL DEFAULT 1')
   addColumn('calendar_reminder_min', 'calendar_reminder_min INTEGER NOT NULL DEFAULT 5')
   addColumn('show_lottie_on_pause', 'show_lottie_on_pause INTEGER NOT NULL DEFAULT 0')
   addColumn('lottie_style', 'lottie_style INTEGER NOT NULL DEFAULT 0')
-  addColumn('focus_duration', 'focus_duration INTEGER NOT NULL DEFAULT 25')
   addColumn('show_weather', 'show_weather INTEGER NOT NULL DEFAULT 1')
   addColumn('show_weather_in_calendar', 'show_weather_in_calendar INTEGER NOT NULL DEFAULT 1')
   addColumn('sonic_feedback', 'sonic_feedback INTEGER NOT NULL DEFAULT 0')

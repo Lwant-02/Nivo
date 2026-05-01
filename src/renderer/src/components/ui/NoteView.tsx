@@ -19,7 +19,7 @@ import {
 import { useNotes } from '../../hooks/useNotes'
 import { NoteCard } from './NoteCard'
 import { NoteEditor } from './NoteEditor'
-import { NoteSearchBar } from './NoteSearchbar'
+import { NoteSearchBar } from './NoteSearchBar'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
 
 export const ICONS: Record<NoteIconId, React.ElementType> = {

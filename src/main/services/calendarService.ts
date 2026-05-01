@@ -14,11 +14,15 @@ export interface CalendarEvent {
   endMs: number
   url: string
   description: string
+  isAllDay: boolean
+  calendarName: string
 }
 
 // Clean single-path scanner. Avoids: (1) single-letter vars (`c`, `s`, `h`, `m`)
 // that collide with AppleScript's class-abbreviation parsing → -2741; (2)
-// `title of calendar` (property is `name`); (3) `as integer` precedence bugs.
+// `title of calendar` (property is `name`); (3) `as integer` precedence bugs;
+// (4) `all day event` — Calendar's property is `allday event` (one word); the
+// spaced form makes the parser read `day` as a date property → -2741.
 const CALENDAR_SCRIPT = `
 set todayStart to (current date) - (time of (current date))
 set todayEnd to todayStart + (1 * days)
@@ -39,7 +43,7 @@ tell application "Calendar"
         repeat with aCal in calList
             try
                 set calName to name of aCal
-                if calName is not "Birthdays" and calName is not "Siri-found events" and calName is not "Holidays" then
+                if calName is not "Siri-found events" then
                     set matchEvents to (every event of aCal whose start date < todayEnd and end date > todayStart)
                     repeat with anEvent in matchEvents
                         set summStr to summary of anEvent
@@ -47,9 +51,12 @@ tell application "Calendar"
                         if dStr is missing value then set dStr to ""
                         set uStr to url of anEvent
                         if uStr is missing value then set uStr to ""
+                        set adVal to allday event of anEvent
+                        set adStr to "0"
+                        if adVal is true then set adStr to "1"
                         set sStr to my formatDate(start date of anEvent)
                         set eStr to my formatDate(end date of anEvent)
-                        set output to output & summStr & "|||" & sStr & "|||" & eStr & "|||" & dStr & "|||" & uStr & linefeed
+                        set output to output & summStr & "|||" & sStr & "|||" & eStr & "|||" & dStr & "|||" & uStr & "|||" & adStr & "|||" & calName & linefeed
                     end repeat
                 end if
             end try
@@ -199,40 +206,35 @@ async function doFetch(): Promise<CalendarEvent[]> {
     for (const line of rawLines) {
       const parts = line.split('|||')
       if (parts.length < 3) continue
-      const [rawTitle, startStr, endStr] = parts
+      const [rawTitle, startStr, endStr, description, url, isAllDayStr, calendarName] = parts
 
       const key = `${rawTitle}-${startStr}-${endStr}`
       if (seen.has(key)) continue
       seen.add(key)
 
-      // The AppleScript returns y-m-d h:m:s which Date() parses well
-      const start = new Date(startStr.replace(/-/g, '/')) // '/' is more stable in many environments
+      const start = new Date(startStr.replace(/-/g, '/'))
       const end = new Date(endStr.replace(/-/g, '/'))
+      const isAllDay = isAllDayStr === '1'
+
+      const processEvent = (s: Date, e: Date) => ({
+        title: rawTitle.trim() || 'Untitled',
+        time: formatTimeRange(s, e),
+        progress: computeProgress(s, e, now),
+        startMs: s.getTime(),
+        endMs: e.getTime(),
+        description: description || '',
+        url: url || '',
+        isAllDay,
+        calendarName: calendarName || ''
+      })
 
       if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-        // Try without replacement
         const s2 = new Date(startStr)
         const e2 = new Date(endStr)
         if (isNaN(s2.getTime()) || isNaN(e2.getTime())) continue
-        events.push({
-          title: rawTitle.trim() || 'Untitled',
-          time: formatTimeRange(s2, e2),
-          progress: computeProgress(s2, e2, now),
-          startMs: s2.getTime(),
-          endMs: e2.getTime(),
-          description: parts[3] || '',
-          url: parts[4] || ''
-        })
+        events.push(processEvent(s2, e2))
       } else {
-        events.push({
-          title: rawTitle.trim() || 'Untitled',
-          time: formatTimeRange(start, end),
-          progress: computeProgress(start, end, now),
-          startMs: start.getTime(),
-          endMs: end.getTime(),
-          description: parts[3] || '',
-          url: parts[4] || ''
-        })
+        events.push(processEvent(start, end))
       }
     }
 
