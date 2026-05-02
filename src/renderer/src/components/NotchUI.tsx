@@ -41,38 +41,36 @@ const WEATHER_PANE_WIDTH = 260
 const CALENDAR_PANE_WIDTH = 260
 const COLUMN_GAP = 6
 const TOTAL_EXPANDED_WIDTH =
-  MEDIA_PANE_WIDTH + WEATHER_PANE_WIDTH + CALENDAR_PANE_WIDTH + COLUMN_GAP * 2 + 64 // Added buffer for ears
+  MEDIA_PANE_WIDTH + WEATHER_PANE_WIDTH + CALENDAR_PANE_WIDTH + COLUMN_GAP * 2 + 64
 
+const createNotchPath = (w: number, h: number) => {
+  const r = 22
+  const b = 32
+
+  return `
+    M 0,0
+    A ${r} ${r} 0 0 1 ${r} ${r}
+    V ${h - b}
+    A ${b} ${b} 0 0 0 ${r + b} ${h}
+    H ${w - r - b}
+    A ${b} ${b} 0 0 0 ${w - r} ${h - b}
+    V ${r}
+    A ${r} ${r} 0 0 1 ${w - 0.5} 0
+    Z
+  `
+}
 function NotchPerimeter({
   width,
   height,
   isExpanded,
-  isObsidian,
   notchTheme
 }: {
   width: number
   height: number
   isExpanded: boolean
-  isObsidian: boolean
   notchTheme: any
 }) {
-  const rt = 22 // Top ear radius (inverted)
-  const rb = 32 // Bottom radius
-
-  // Path logic:
-  // Start at top-left ear, curve into vertical side, down to bottom, curve bottom-left,
-  // horizontal to bottom-right, curve bottom-right, up to top-right ear, curve out to bezel.
-  const path = `
-    M 0,0
-    A ${rt} ${rt} 0 0 1 ${rt} ${rt}
-    V ${height - rb}
-    A ${rb} ${rb} 0 0 0 ${rt + rb} ${height}
-    H ${width - rt - rb}
-    A ${rb} ${rb} 0 0 0 ${width - rt} ${height - rb}
-    V ${rt}
-    A ${rt} ${rt} 0 0 1 ${width} 0
-    Z
-  `
+  const path = createNotchPath(width, height)
 
   return (
     <svg
@@ -82,16 +80,10 @@ function NotchPerimeter({
       className="absolute top-0 left-0 pointer-events-none"
       style={{ overflow: 'visible' }}
     >
-      <defs>
-        <linearGradient id="notchBg" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="rgba(0,0,0,1)" />
-          <stop offset="100%" stopColor="rgba(15,15,22,1)" />
-        </linearGradient>
-      </defs>
       <path
         d={path}
-        fill={isExpanded ? (isObsidian ? 'url(#notchBg)' : notchTheme.outerBg) : '#000'}
-        stroke="rgba(255, 255, 255, 0.15)"
+        fill="transparent"
+        stroke={isExpanded ? notchTheme.outerBorder : 'transparent'}
         strokeWidth="1.2"
         vectorEffect="non-scaling-stroke"
       />
@@ -120,7 +112,7 @@ export default function NotchUI() {
     }
   })
 
-  const collapsedWidth = 320 // slightly wider for ears
+  const collapsedWidth = 320
 
   const isExpanded = isHovering || isAutoExpanded || isWelcoming
 
@@ -281,22 +273,9 @@ export default function NotchUI() {
   const showIdleView = isExpanded && isIdle && settings.hasSeenWelcome
 
   const notchTheme = getNotchTheme(settings.notchTheme)
-  const isObsidian = settings.notchTheme === 'obsidian' || !settings.notchTheme
   const { weather, weatherState } = useWeather()
 
-  const getPath = (w: number, h: number) => {
-    const r = 22 // ear radius (matching summary)
-    const b = 32 // bottom corner radius
-    return `M 0,0 
-            A ${r} ${r} 0 0 1 ${r} ${r} 
-            V ${h - b} 
-            A ${b} ${b} 0 0 0 ${r + b} ${h} 
-            H ${w - r - b} 
-            A ${b} ${b} 0 0 0 ${w - r} ${h - b} 
-            V ${r} 
-            A ${r} ${r} 0 0 0 ${w} 0 
-            Z`
-  }
+  const getPath = (w: number, h: number) => createNotchPath(w, h)
 
   const currentHeight = isExpanded ? expandedHeight : 33.8
   const d = getPath(totalWidth, currentHeight)
@@ -339,25 +318,53 @@ export default function NotchUI() {
         transition={bounceTransition}
         className="relative origin-top z-1000"
         style={{
-          backdropFilter: isExpanded ? 'blur(60px) saturate(180%)' : 'none',
-          WebkitBackdropFilter: isExpanded ? 'blur(60px) saturate(180%)' : 'none',
-          marginTop: '-1px'
+          backdropFilter: isExpanded ? 'blur(20px) saturate(180%)' : 'none',
+          WebkitBackdropFilter: isExpanded ? 'blur(20px) saturate(180%)' : 'none',
+          marginTop: '-1px',
+          background: isExpanded ? notchTheme.innerBg : 'transparent',
+          clipPath: 'url(#notch-clip)',
+          WebkitClipPath: 'url(#notch-clip)',
+          filter: isExpanded
+            ? notchTheme.outerShadow
+                .split(/,(?![^(]*\))/)
+                .filter((s: string) => !s.includes('inset'))
+                .map((s: string) => `drop-shadow(${s})`)
+                .join(' ')
+            : 'none'
         }}
       >
         <NotchPerimeter
           width={totalWidth}
           height={currentHeight}
           isExpanded={isExpanded}
-          isObsidian={isObsidian}
           notchTheme={notchTheme}
         />
 
         <div
           className="relative flex h-full overflow-hidden"
           style={{
-            padding: '0 22px' // Match ear width
+            padding: '0 22px', // Match ear width
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            clipPath: 'url(#notch-clip)',
+            WebkitClipPath: 'url(#notch-clip)'
           }}
         >
+          {/* Inset shadows overlay */}
+          <div
+            aria-hidden
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              boxShadow: isExpanded
+                ? notchTheme.outerShadow
+                    .split(/,(?![^(]*\))/)
+                    .filter((s: string) => s.includes('inset'))
+                    .join(', ')
+                : 'none',
+              clipPath: 'url(#notch-clip)',
+              WebkitClipPath: 'url(#notch-clip)'
+            }}
+          />
           {isExpanded && notchTheme.innerOverlay && (
             <div
               aria-hidden
