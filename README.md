@@ -35,6 +35,20 @@ Premium macOS Dynamic Island utility for the Mac notch. Nivo transforms your Mac
 - **Icon Customization**: Personalize your notes with a curated library of premium icons for quick visual identification.
 - **Persistent Storage**: All notes are stored securely and locally using SQLite, ensuring your data is always available offline.
 
+### 📋 Clipboard History
+
+- **Passive Capture**: Automatically tracks your clipboard history (text and links) in the background so you never lose a copy.
+- **Smart Pinning**: Pin frequently used items to keep them at the top of your list and protect them from automatic cleanup.
+- **Instant Search**: High-performance search interface to find specific copies from hours or days ago in seconds.
+- **Quick Re-copy**: Click any history card to instantly re-copy it to your system clipboard for immediate use.
+
+### 🚀 Beam (Quick Launcher)
+
+- **One-Click Launch**: A high-speed dashboard for your most important Applications, URLs, and Files.
+- **Canonical Design**: Uses a unified, premium glyph system (Monitor, Link, and File) for a clean and reliable interface.
+- **Flexible Management**: Add custom apps directly from your macOS Applications folder or link specific files and folders for instant access.
+- **Zero-Friction switching**: Jump between your workspace tools without ever touching the Dock or using Spotlight.
+
 ### 🧘‍♂️ Zen Bar (Productivity)
 
 - **Focus Timer**: Integrated Pomodoro & Focus Timer with a subtle glowing progress bar at the base of the Notch.
