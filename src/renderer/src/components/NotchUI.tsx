@@ -43,9 +43,24 @@ const COLUMN_GAP = 6
 const TOTAL_EXPANDED_WIDTH =
   MEDIA_PANE_WIDTH + WEATHER_PANE_WIDTH + CALENDAR_PANE_WIDTH + COLUMN_GAP * 2 + 64
 
-const createNotchPath = (w: number, h: number) => {
-  const r = 22
-  const b = 32
+const createNotchPath = (w: number, h: number, isExpanded: boolean) => {
+  if (!isExpanded) {
+    const r = 22
+    return `
+      M 0,0
+      A 0 0 0 0 1 0 0
+      V ${h - r}
+      A ${r} ${r} 0 0 0 ${r} ${h}
+      H ${w - r}
+      A ${r} ${r} 0 0 0 ${w} ${h - r}
+      V 0
+      A 0 0 0 0 1 ${w} 0
+      Z
+    `.replace(/\s+/g, ' ')
+  }
+
+  const r = 22 // Top ear radius
+  const b = 32 // Bottom curve radius
 
   return `
     M 0,0
@@ -55,10 +70,11 @@ const createNotchPath = (w: number, h: number) => {
     H ${w - r - b}
     A ${b} ${b} 0 0 0 ${w - r} ${h - b}
     V ${r}
-    A ${r} ${r} 0 0 1 ${w - 0.5} 0
+    A ${r} ${r} 0 0 1 ${w} 0
     Z
-  `
+  `.replace(/\s+/g, ' ')
 }
+
 function NotchPerimeter({
   width,
   height,
@@ -70,7 +86,7 @@ function NotchPerimeter({
   isExpanded: boolean
   notchTheme: any
 }) {
-  const path = createNotchPath(width, height)
+  const path = createNotchPath(width, height, isExpanded)
 
   return (
     <svg
@@ -275,10 +291,10 @@ export default function NotchUI() {
   const notchTheme = getNotchTheme(settings.notchTheme)
   const { weather, weatherState } = useWeather()
 
-  const getPath = (w: number, h: number) => createNotchPath(w, h)
+  const getPath = (w: number, h: number, isExpanded: boolean) => createNotchPath(w, h, isExpanded)
 
   const currentHeight = isExpanded ? expandedHeight : 33.8
-  const d = getPath(totalWidth, currentHeight)
+  const d = getPath(totalWidth, currentHeight, isExpanded)
   const progressPct = duration > 0 ? (position / duration) * 100 : 0
 
   return (
