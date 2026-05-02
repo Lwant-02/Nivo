@@ -106,7 +106,7 @@ export const SonicView: React.FC<SonicViewProps> = ({ accentColor }) => {
                 flexDirection: 'column',
                 alignItems: 'flex-start',
                 padding: '10px 14px',
-                borderRadius: '12px',
+                borderRadius: '20px',
                 border: '1px solid',
                 transition: 'all 200ms',
                 cursor: 'pointer',

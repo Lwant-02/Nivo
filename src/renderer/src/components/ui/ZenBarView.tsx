@@ -429,7 +429,7 @@ export const ZenBarView: React.FC<ZenBarViewProps> = ({ accentColor, zen }) => {
             style={{
               flex: 1,
               background: zen.isActive ? `${accentColor}30` : `${accentColor}20`,
-              height: '38px',
+              height: '45px',
               borderRadius: '30px',
               display: 'flex',
               alignItems: 'center',
@@ -461,7 +461,7 @@ export const ZenBarView: React.FC<ZenBarViewProps> = ({ accentColor, zen }) => {
             style={{
               flex: 1,
               background: 'rgba(255,255,255,0.06)',
-              height: '38px',
+              height: '45px',
               borderRadius: '30px',
               display: 'flex',
               alignItems: 'center',

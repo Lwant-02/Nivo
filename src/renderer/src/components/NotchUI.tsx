@@ -225,11 +225,16 @@ export default function NotchUI() {
     const unsub = window.api.onLumeToast((data) => {
       if (toastTimeout.current) clearTimeout(toastTimeout.current)
       setToast(data)
+      pendingCollapseRef.current = false
       setIsAutoExpanded(true)
       playExpand()
       toastTimeout.current = setTimeout(() => {
         setToast(null)
-        if (!isHoveringRef.current) setIsAutoExpanded(false)
+        if (!isHoveringRef.current) {
+          setIsAutoExpanded(false)
+        } else {
+          pendingCollapseRef.current = true
+        }
       }, 5000)
     })
     return unsub
