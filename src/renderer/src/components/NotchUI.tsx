@@ -5,7 +5,9 @@ import {
   IconClipboardText,
   IconClock,
   IconKeyboard,
-  IconSettings
+  IconSettings,
+  IconCopy,
+  IconBolt
 } from '@tabler/icons-react'
 
 import { useMedia } from '../hooks/useMedia'
@@ -24,6 +26,8 @@ import { CollapsedNotchView } from './ui/CollapsedNotchView'
 import { AtmosphericAura } from './ui/AtmosphericAura'
 import { useWeather } from '../hooks/useWeather'
 import { NoteView } from './ui/NoteView'
+import { ClipboardView } from './ui/ClipboardView'
+import { BeamView } from './ui/BeamView'
 import { ZenBarView } from './ui/ZenBarView'
 import { SonicView } from './ui/SonicView'
 import { useZenTimer } from '../hooks/useZenTimer'
@@ -115,7 +119,18 @@ export default function NotchUI() {
   const toastTimeout = useRef<NodeJS.Timeout | null>(null)
   const [isAutoExpanded, setIsAutoExpanded] = useState(false)
   const [isWelcoming, setIsWelcoming] = useState(false)
-  const [activeTab, setActiveTab] = useState<'home' | 'note' | 'zenbar' | 'sonic'>('home')
+  const [activeTab, setActiveTab] = useState<
+    'home' | 'note' | 'clipboard' | 'beam' | 'zenbar' | 'sonic'
+  >('home')
+
+  useEffect(() => {
+    if (activeTab === 'clipboard' && !settings.enableClipboardHistory) {
+      setActiveTab('home')
+    }
+    if (activeTab === 'beam' && !settings.enableBeam) {
+      setActiveTab('home')
+    }
+  }, [activeTab, settings.enableClipboardHistory, settings.enableBeam])
   const welcomeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { playExpand, playNotification } = useSound()
 
@@ -446,7 +461,7 @@ export default function NotchUI() {
                     width: '100%'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <div
                       onClick={() => setActiveTab('home')}
                       style={{
@@ -496,6 +511,62 @@ export default function NotchUI() {
                       />
                       {activeTab === 'note' && 'Note'}
                     </div>
+                    {settings.enableClipboardHistory && (
+                      <div
+                        onClick={() => setActiveTab('clipboard')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: activeTab === 'clipboard' ? `${appAccent}15` : 'transparent',
+                          padding: activeTab === 'clipboard' ? '4px 12px' : '6px',
+                          borderRadius: '9px',
+                          border:
+                            activeTab === 'clipboard'
+                              ? `1px solid ${appAccent}30`
+                              : '1px solid transparent',
+                          color: activeTab === 'clipboard' ? appAccent : 'rgba(255,255,255,0.6)',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                        }}
+                      >
+                        <IconCopy
+                          size={activeTab === 'clipboard' ? 16 : 18}
+                          stroke={activeTab === 'clipboard' ? 2.5 : 2}
+                        />
+                        {activeTab === 'clipboard' && 'Clipboard'}
+                      </div>
+                    )}
+                    {settings.enableBeam && (
+                      <div
+                        onClick={() => setActiveTab('beam')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: activeTab === 'beam' ? `${appAccent}15` : 'transparent',
+                          padding: activeTab === 'beam' ? '4px 12px' : '6px',
+                          borderRadius: '9px',
+                          border:
+                            activeTab === 'beam'
+                              ? `1px solid ${appAccent}30`
+                              : '1px solid transparent',
+                          color: activeTab === 'beam' ? appAccent : 'rgba(255,255,255,0.6)',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                        }}
+                      >
+                        <IconBolt
+                          size={activeTab === 'beam' ? 16 : 18}
+                          stroke={activeTab === 'beam' ? 2.5 : 2}
+                        />
+                        {activeTab === 'beam' && 'Beam'}
+                      </div>
+                    )}
                     <div
                       onClick={() => setActiveTab('zenbar')}
                       style={{
@@ -622,6 +693,8 @@ export default function NotchUI() {
                   ) : (
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {activeTab === 'note' && <NoteView />}
+                      {activeTab === 'clipboard' && <ClipboardView />}
+                      {activeTab === 'beam' && <BeamView />}
                       {activeTab === 'zenbar' && (
                         <ZenBarView accentColor={appAccent} zen={zenTimer} />
                       )}

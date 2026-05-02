@@ -1,5 +1,5 @@
 import type { JSX } from 'react'
-import { Maximize2, ShieldOff, Vibrate, LogIn, CloudSun } from 'lucide-react'
+import { Maximize2, ShieldOff, Vibrate, LogIn, CloudSun, ClipboardList, Zap } from 'lucide-react'
 import { SettingCard } from './SettingCard'
 import { SectionLabel } from './SectionLabel'
 import { SettingRow } from './SettingRow'
@@ -74,6 +74,20 @@ export function GeneralPanel(): JSX.Element {
           enabled={settings.hapticFeedback}
           onToggle={() => update('hapticFeedback', !settings.hapticFeedback)}
           isFirst
+        />
+        <SettingRow
+          icon={<ClipboardList {...ICON_STYLE} />}
+          label="Clipboard history"
+          description="Keep a searchable history of recent text you copy. Stored locally."
+          enabled={settings.enableClipboardHistory}
+          onToggle={() => update('enableClipboardHistory', !settings.enableClipboardHistory)}
+        />
+        <SettingRow
+          icon={<Zap {...ICON_STYLE} />}
+          label="Beam"
+          description="Pin apps, URLs, and files for one-tap launch from the notch."
+          enabled={settings.enableBeam}
+          onToggle={() => update('enableBeam', !settings.enableBeam)}
         />
       </SettingCard>
 

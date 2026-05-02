@@ -61,6 +61,28 @@ export function getDatabase(): Database.Database {
     );
 
     CREATE INDEX IF NOT EXISTS notes_updated_at_idx ON notes(updated_at DESC);
+
+    CREATE TABLE IF NOT EXISTS clipboard_items (
+      id TEXT PRIMARY KEY,
+      content TEXT NOT NULL,
+      pinned INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS clipboard_pinned_created_idx
+      ON clipboard_items(pinned DESC, created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS beam_tiles (
+      id TEXT PRIMARY KEY,
+      kind TEXT NOT NULL,
+      label TEXT NOT NULL,
+      target TEXT NOT NULL,
+      icon TEXT,
+      position INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS beam_tiles_position_idx ON beam_tiles(position ASC);
   `)
 
   // Forward-migrate older `auth` schemas.
@@ -98,6 +120,8 @@ export function getDatabase(): Database.Database {
   addColumn('sonic_feedback', 'sonic_feedback INTEGER NOT NULL DEFAULT 0')
   addColumn('sonic_sound_pack', "sonic_sound_pack TEXT NOT NULL DEFAULT 'cherrymx-black-abs'")
   addColumn('has_seen_welcome', 'has_seen_welcome INTEGER NOT NULL DEFAULT 0')
+  addColumn('enable_clipboard_history', 'enable_clipboard_history INTEGER NOT NULL DEFAULT 1')
+  addColumn('enable_beam', 'enable_beam INTEGER NOT NULL DEFAULT 1')
 
   dbInstance = db
   return db

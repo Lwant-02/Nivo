@@ -148,7 +148,7 @@ export const NoteView: React.FC = () => {
           style={{
             flex: 1,
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateColumns: 'repeat(2, 1fr)',
             gridAutoRows: 'max-content',
             gap: '6px',
             overflowY: 'auto'

@@ -67,8 +67,58 @@ declare global {
       createNote: (patch?: NoteInput) => Promise<Note | null>
       updateNote: (id: string, patch: NoteInput) => Promise<Note | null>
       deleteNote: (id: string) => Promise<boolean>
+      getClipboard: () => Promise<ClipboardItem[]>
+      copyClipboardItem: (id: string) => Promise<ClipboardItem | null>
+      toggleClipboardPin: (id: string) => Promise<ClipboardItem | null>
+      deleteClipboardItem: (id: string) => Promise<boolean>
+      clearClipboard: () => Promise<boolean>
+      onClipboardUpdate: (callback: (items: ClipboardItem[]) => void) => () => void
+      getBeamTiles: () => Promise<BeamTile[]>
+      createBeamTile: (input: BeamTileInput) => Promise<BeamTile | null>
+      updateBeamTile: (
+        id: string,
+        patch: { label?: string; target?: string; icon?: string | null }
+      ) => Promise<BeamTile | null>
+      deleteBeamTile: (id: string) => Promise<boolean>
+      reorderBeamTiles: (ids: string[]) => Promise<BeamTile[]>
+      launchBeamTile: (id: string) => Promise<boolean>
+      listInstalledApps: () => Promise<InstalledApp[]>
+      pickBeamFile: () => Promise<{ path: string; label: string; icon: string | null } | null>
+      getFileIcon: (path: string) => Promise<string | null>
       openExternal: (url: string) => Promise<void>
     }
+  }
+
+  type BeamKind = 'app' | 'url' | 'file'
+
+  interface BeamTile {
+    id: string
+    kind: BeamKind
+    label: string
+    target: string
+    icon: string | null
+    position: number
+    createdAt: number
+  }
+
+  interface BeamTileInput {
+    kind: BeamKind
+    label: string
+    target: string
+    icon?: string | null
+  }
+
+  interface InstalledApp {
+    name: string
+    path: string
+    icon: string | null
+  }
+
+  interface ClipboardItem {
+    id: string
+    content: string
+    pinned: boolean
+    createdAt: number
   }
 
   type NoteIconId =
@@ -185,6 +235,8 @@ declare global {
     sonicFeedback: boolean
     sonicSoundPack: SonicSoundPackId
     hasSeenWelcome: boolean
+    enableClipboardHistory: boolean
+    enableBeam: boolean
   }
 }
 

@@ -19,7 +19,9 @@ const DEFAULTS: AppSettings = {
   showWeather: true,
   sonicFeedback: false,
   sonicSoundPack: 'cherrymx-black-abs',
-  hasSeenWelcome: false
+  hasSeenWelcome: false,
+  enableClipboardHistory: true,
+  enableBeam: true
 }
 
 export function useSettings(): {
