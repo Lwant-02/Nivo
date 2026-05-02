@@ -27,11 +27,19 @@ Premium macOS Dynamic Island utility for the Mac notch. Nivo transforms your Mac
 - **Click-to-Join**: Detects Zoom, Google Meet, and Microsoft Teams links for one-click joining directly from the Notch.
 - **Smart Reminders**: Auto-expands the Notch before a meeting starts with a gentle "Nivo Toast" notification.
 
+### 📝 Quick Notes
+
+- **Instant Capture**: Capture thoughts, to-dos, and ideas instantly without leaving your current app.
+- **Rich Editor**: A focused writing environment with support for quick formatting and clipboard integration.
+- **Smart Search & Sort**: Find any note in seconds with a high-performance search bar and flexible sorting (Recent or A-Z).
+- **Icon Customization**: Personalize your notes with a curated library of premium icons for quick visual identification.
+- **Persistent Storage**: All notes are stored securely and locally using SQLite, ensuring your data is always available offline.
+
 ### 🧘‍♂️ Zen Bar (Productivity)
 
 - **Focus Timer**: Integrated Pomodoro & Focus Timer with a subtle glowing progress bar at the base of the Notch.
 - **Tactile Feedback**: Every session completion is reinforced with high-quality haptic feedback and custom system notifications.
-- **Session Tracking**: Customizable durations to fit your deep-work workflow.
+- **Session Tracking**: Record "laps" or milestones during your stopwatch sessions to track your deep-work progress.
 
 ### 🔊 Sonic Feedback
 
