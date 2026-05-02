@@ -1,19 +1,20 @@
-import { IconClipboardText, IconSearch, IconX } from '@tabler/icons-react'
+import { IconCopy, IconPinFilled, IconSearch, IconX } from '@tabler/icons-react'
 import { useEffect, useMemo, useState } from 'react'
-import { ICONS } from './NoteView'
 
-interface NoteSearchBarProps {
-  notes: Note[]
+interface ClipboardSearchBarProps {
+  items: ClipboardItem[]
   onPick: (id: string) => void
   onClose: () => void
 }
 
-export const NoteSearchBar: React.FC<NoteSearchBarProps> = ({ notes, onPick, onClose }) => {
+export const ClipboardSearchBar: React.FC<ClipboardSearchBarProps> = ({
+  items,
+  onPick,
+  onClose
+}) => {
   const [query, setQuery] = useState('')
   const [highlight, setHighlight] = useState(0)
 
-  // Notch is non-focusable by default; flip while the search bar is mounted
-  // so the input receives keystrokes.
   useEffect(() => {
     window.api.setNotchEditing(true)
     return () => {
@@ -23,11 +24,9 @@ export const NoteSearchBar: React.FC<NoteSearchBarProps> = ({ notes, onPick, onC
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return notes.slice(0, 8)
-    return notes
-      .filter((n) => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q))
-      .slice(0, 8)
-  }, [notes, query])
+    if (!q) return items.slice(0, 8)
+    return items.filter((item) => item.content.toLowerCase().includes(q)).slice(0, 8)
+  }, [items, query])
 
   useEffect(() => {
     setHighlight(0)
@@ -100,7 +99,7 @@ export const NoteSearchBar: React.FC<NoteSearchBarProps> = ({ notes, onPick, onC
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Search notes…"
+            placeholder="Search clipboard…"
             style={{
               flex: 1,
               background: 'transparent',
@@ -126,23 +125,15 @@ export const NoteSearchBar: React.FC<NoteSearchBarProps> = ({ notes, onPick, onC
         </div>
 
         {results.length > 0 && (
-          <div
-            style={{
-              maxHeight: '140px',
-              overflowY: 'auto',
-              padding: '4px'
-            }}
-          >
-            {results.map((note, idx) => {
-              const Icon = ICONS[note.icon] ?? IconClipboardText
+          <div style={{ maxHeight: '140px', overflowY: 'auto', padding: '4px' }}>
+            {results.map((item, idx) => {
               const selected = idx === highlight
-              const title = note.title.trim() || 'Untitled'
-              const snippet = note.content.trim().slice(0, 60)
+              const snippet = item.content.trim().replace(/\s+/g, ' ').slice(0, 80)
               return (
                 <div
-                  key={note.id}
+                  key={item.id}
                   onMouseEnter={() => setHighlight(idx)}
-                  onClick={() => onPick(note.id)}
+                  onClick={() => onPick(item.id)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -165,7 +156,15 @@ export const NoteSearchBar: React.FC<NoteSearchBarProps> = ({ notes, onPick, onC
                       justifyContent: 'center'
                     }}
                   >
-                    <Icon size={12} stroke={2} style={{ color: 'rgba(255,255,255,0.85)' }} />
+                    {item.pinned ? (
+                      <IconPinFilled
+                        size={12}
+                        stroke={2}
+                        style={{ color: 'rgba(255,255,255,0.85)' }}
+                      />
+                    ) : (
+                      <IconCopy size={12} stroke={2} style={{ color: 'rgba(255,255,255,0.85)' }} />
+                    )}
                   </div>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <div
@@ -178,21 +177,8 @@ export const NoteSearchBar: React.FC<NoteSearchBarProps> = ({ notes, onPick, onC
                         textOverflow: 'ellipsis'
                       }}
                     >
-                      {title}
+                      {snippet || 'Empty clipboard entry'}
                     </div>
-                    {snippet && (
-                      <div
-                        style={{
-                          color: 'rgba(255,255,255,0.4)',
-                          fontSize: '10px',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis'
-                        }}
-                      >
-                        {snippet}
-                      </div>
-                    )}
                   </div>
                 </div>
               )

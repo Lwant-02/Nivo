@@ -86,6 +86,37 @@ const api = {
   ) => ipcRenderer.invoke('notes:update', id, patch),
   deleteNote: (id: string) => ipcRenderer.invoke('notes:delete', id),
 
+  // Clipboard history
+  getClipboard: () => ipcRenderer.invoke('clipboard:list'),
+  copyClipboardItem: (id: string) => ipcRenderer.invoke('clipboard:copy', id),
+  toggleClipboardPin: (id: string) => ipcRenderer.invoke('clipboard:toggle-pin', id),
+  deleteClipboardItem: (id: string) => ipcRenderer.invoke('clipboard:delete', id),
+  clearClipboard: () => ipcRenderer.invoke('clipboard:clear'),
+  onClipboardUpdate: (callback: (items: unknown[]) => void) => {
+    const wrapper = (_: unknown, items: unknown[]): void => callback(items)
+    ipcRenderer.on('clipboard:update', wrapper)
+    return () => ipcRenderer.removeListener('clipboard:update', wrapper)
+  },
+
+  // Beam (quick launcher)
+  getBeamTiles: () => ipcRenderer.invoke('beam:list'),
+  createBeamTile: (input: {
+    kind: 'app' | 'url' | 'file'
+    label: string
+    target: string
+    icon?: string | null
+  }) => ipcRenderer.invoke('beam:create', input),
+  updateBeamTile: (
+    id: string,
+    patch: { label?: string; target?: string; icon?: string | null }
+  ) => ipcRenderer.invoke('beam:update', id, patch),
+  deleteBeamTile: (id: string) => ipcRenderer.invoke('beam:delete', id),
+  reorderBeamTiles: (ids: string[]) => ipcRenderer.invoke('beam:reorder', ids),
+  launchBeamTile: (id: string) => ipcRenderer.invoke('beam:launch', id),
+  listInstalledApps: () => ipcRenderer.invoke('beam:list-apps'),
+  pickBeamFile: () => ipcRenderer.invoke('beam:pick-file'),
+  getFileIcon: (path: string) => ipcRenderer.invoke('beam:get-file-icon', path),
+
 
   // Navigation
   openExternal: (url: string) => shell.openExternal(url)

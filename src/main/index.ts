@@ -23,6 +23,8 @@ import { LicenseService } from './services/LicenseService'
 import { WeatherService } from './services/WeatherService'
 import { SonicFeedbackService } from './services/SonicFeedbackService'
 import { NotesService, NoteUpdate } from './services/NotesService'
+import { ClipboardService } from './services/ClipboardService'
+import { BeamService, BeamTileInput } from './services/BeamService'
 
 // Keep the renderer running full-speed even though the notch window is
 // non-focusable + always-on-top. Without these, Chromium throttles rAF and
@@ -49,6 +51,8 @@ let settingsService: SettingsService | null = null
 let weatherService: WeatherService | null = null
 let sonicFeedbackService: SonicFeedbackService | null = null
 let notesService: NotesService | null = null
+let clipboardService: ClipboardService | null = null
+let beamService: BeamService | null = null
 
 let mainWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
@@ -196,6 +200,12 @@ function applySonicFeedback(enabled: boolean): void {
   if (!sonicFeedbackService) return
   if (enabled) sonicFeedbackService.start()
   else sonicFeedbackService.stop()
+}
+
+function applyClipboardHistory(enabled: boolean): void {
+  if (!clipboardService) return
+  if (enabled) clipboardService.start()
+  else clipboardService.stop()
 }
 
 function applyLaunchAtLogin(enabled: boolean): void {
@@ -350,6 +360,7 @@ app.whenReady().then(() => {
       applyLaunchAtLogin(next.launchAtLogin)
       if (mainWindow) applyWindowSettings(mainWindow, next)
       applySonicFeedback(next.sonicFeedback)
+      applyClipboardHistory(next.enableClipboardHistory)
       broadcastSettings(next)
     })
   } catch (err: any) {
@@ -387,6 +398,21 @@ app.whenReady().then(() => {
     notesService = new NotesService()
   } catch (err: any) {
     console.error('[main] Failed to initialize NotesService:', err.message)
+  }
+
+  try {
+    clipboardService = new ClipboardService()
+    if (settingsService?.get('enableClipboardHistory') ?? true) {
+      clipboardService.start()
+    }
+  } catch (err: any) {
+    console.error('[main] Failed to initialize ClipboardService:', err.message)
+  }
+
+  try {
+    beamService = new BeamService()
+  } catch (err: any) {
+    console.error('[main] Failed to initialize BeamService:', err.message)
   }
 
   if (app.dock) {
@@ -639,6 +665,59 @@ ipcMain.handle('notes:delete', (_event, id: string) => {
   return notesService?.delete(id) ?? false
 })
 
+ipcMain.handle('clipboard:list', () => clipboardService?.list() ?? [])
+
+ipcMain.handle('clipboard:copy', (_event, id: string) => {
+  return clipboardService?.copy(id) ?? null
+})
+
+ipcMain.handle('clipboard:toggle-pin', (_event, id: string) => {
+  return clipboardService?.togglePin(id) ?? null
+})
+
+ipcMain.handle('clipboard:delete', (_event, id: string) => {
+  return clipboardService?.delete(id) ?? false
+})
+
+ipcMain.handle('clipboard:clear', () => {
+  clipboardService?.clear()
+  return true
+})
+
+ipcMain.handle('beam:list', () => beamService?.list() ?? [])
+
+ipcMain.handle('beam:create', (_event, input: BeamTileInput) => {
+  return beamService?.create(input) ?? null
+})
+
+ipcMain.handle('beam:update', (_event, id: string, patch: Partial<BeamTileInput>) => {
+  return beamService?.update(id, patch) ?? null
+})
+
+ipcMain.handle('beam:delete', (_event, id: string) => {
+  return beamService?.delete(id) ?? false
+})
+
+ipcMain.handle('beam:reorder', (_event, ids: string[]) => {
+  return beamService?.reorder(ids) ?? []
+})
+
+ipcMain.handle('beam:launch', (_event, id: string) => {
+  return beamService?.launch(id) ?? false
+})
+
+ipcMain.handle('beam:list-apps', async () => {
+  return (await beamService?.listInstalledApps()) ?? []
+})
+
+ipcMain.handle('beam:pick-file', async () => {
+  return (await beamService?.pickFile()) ?? null
+})
+
+ipcMain.handle('beam:get-file-icon', async (_event, path: string) => {
+  return (await beamService?.getFileIcon(path)) ?? null
+})
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
@@ -647,4 +726,5 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   sonicFeedbackService?.dispose()
+  clipboardService?.dispose()
 })

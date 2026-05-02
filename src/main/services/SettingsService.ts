@@ -70,6 +70,8 @@ export interface Settings {
   sonicFeedback: boolean
   sonicSoundPack: SonicSoundPackId
   hasSeenWelcome: boolean
+  enableClipboardHistory: boolean
+  enableBeam: boolean
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -91,7 +93,9 @@ export const DEFAULT_SETTINGS: Settings = {
   showWeather: true,
   sonicFeedback: false,
   sonicSoundPack: 'cherrymx-black-abs',
-  hasSeenWelcome: false
+  hasSeenWelcome: false,
+  enableClipboardHistory: true,
+  enableBeam: true
 }
 
 const VALID_THEMES: ReadonlySet<ThemeId> = new Set([
@@ -165,6 +169,8 @@ type Column =
   | 'sonic_feedback'
   | 'sonic_sound_pack'
   | 'has_seen_welcome'
+  | 'enable_clipboard_history'
+  | 'enable_beam'
 
 type Kind = 'bool' | 'int' | 'theme' | 'notchTheme' | 'sonicSoundPack'
 
@@ -192,7 +198,9 @@ const FIELDS: { [K in keyof Settings]: FieldSpec } = {
   showWeather: { column: 'show_weather', kind: 'bool' },
   sonicFeedback: { column: 'sonic_feedback', kind: 'bool' },
   sonicSoundPack: { column: 'sonic_sound_pack', kind: 'sonicSoundPack' },
-  hasSeenWelcome: { column: 'has_seen_welcome', kind: 'bool' }
+  hasSeenWelcome: { column: 'has_seen_welcome', kind: 'bool' },
+  enableClipboardHistory: { column: 'enable_clipboard_history', kind: 'bool' },
+  enableBeam: { column: 'enable_beam', kind: 'bool' }
 }
 
 const SELECT_ALIASES = (Object.keys(FIELDS) as (keyof Settings)[])
