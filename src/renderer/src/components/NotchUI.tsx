@@ -104,7 +104,7 @@ function NotchPerimeter({
         d={path}
         fill="transparent"
         stroke={isExpanded ? notchTheme.outerBorder : 'transparent'}
-        strokeWidth="1.2"
+        strokeWidth="4"
         vectorEffect="non-scaling-stroke"
       />
     </svg>
