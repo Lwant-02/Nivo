@@ -49,8 +49,8 @@ const TOTAL_EXPANDED_WIDTH =
 
 const createNotchPath = (w: number, h: number, isExpanded: boolean) => {
   if (!isExpanded) {
-    const r = 10
-    const b = 11
+    const r = 12
+    const b = 14
     return `
     M 0,0
     A ${r} ${r} 0 0 1 ${r} ${r}
@@ -357,7 +357,7 @@ export default function NotchUI() {
         style={{
           backdropFilter: isExpanded ? 'blur(20px) saturate(180%)' : 'none',
           WebkitBackdropFilter: isExpanded ? 'blur(20px) saturate(180%)' : 'none',
-          marginTop: '-1.5px',
+          marginTop: '-1.8px',
           background: isExpanded ? notchTheme.innerBg : 'transparent',
           clipPath: 'url(#notch-clip)',
           WebkitClipPath: 'url(#notch-clip)',
