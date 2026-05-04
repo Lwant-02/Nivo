@@ -49,18 +49,19 @@ const TOTAL_EXPANDED_WIDTH =
 
 const createNotchPath = (w: number, h: number, isExpanded: boolean) => {
   if (!isExpanded) {
-    const r = 22
+    const r = 10
+    const b = 11
     return `
-      M 0,0
-      A 0 0 0 0 1 0 0
-      V ${h - r}
-      A ${r} ${r} 0 0 0 ${r} ${h}
-      H ${w - r}
-      A ${r} ${r} 0 0 0 ${w} ${h - r}
-      V 0
-      A 0 0 0 0 1 ${w} 0
-      Z
-    `.replace(/\s+/g, ' ')
+    M 0,0
+    A ${r} ${r} 0 0 1 ${r} ${r}
+    V ${h - b}
+    A ${b} ${b} 0 0 0 ${r + b} ${h}
+    H ${w - r - b}
+    A ${b} ${b} 0 0 0 ${w - r} ${h - b}
+    V ${r}
+    A ${r} ${r} 0 0 1 ${w} 0
+    Z
+  `.replace(/\s+/g, ' ')
   }
 
   const r = 22 // Top ear radius
@@ -356,7 +357,7 @@ export default function NotchUI() {
         style={{
           backdropFilter: isExpanded ? 'blur(20px) saturate(180%)' : 'none',
           WebkitBackdropFilter: isExpanded ? 'blur(20px) saturate(180%)' : 'none',
-          marginTop: '-1px',
+          marginTop: '-1.5px',
           background: isExpanded ? notchTheme.innerBg : 'transparent',
           clipPath: 'url(#notch-clip)',
           WebkitClipPath: 'url(#notch-clip)',
