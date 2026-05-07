@@ -66,7 +66,7 @@ const createNotchPath = (w: number, h: number, isExpanded: boolean) => {
   }
 
   const r = 20 // Top ear radius
-  const b = 30 // Bottom curve radius
+  const b = 23 // Bottom curve radius
 
   return `
     M 0,0
