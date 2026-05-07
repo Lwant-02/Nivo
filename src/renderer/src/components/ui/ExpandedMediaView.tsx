@@ -60,7 +60,7 @@ export const ExpandedMediaView: React.FC<ExpandedMediaViewProps> = ({
         flexDirection: 'column',
         height: '100%',
         background: 'rgba(255,255,255,0.04)',
-        borderRadius: '30px',
+        borderRadius: '20px',
         border: '1px solid rgba(255,255,255,0.25)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
         padding: '16px 18px',

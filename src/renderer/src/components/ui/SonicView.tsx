@@ -125,8 +125,7 @@ export const SonicView: React.FC<SonicViewProps> = ({ accentColor }) => {
               right: '10%',
               bottom: '14%',
               height: '14%',
-              background:
-                'radial-gradient(ellipse at center, rgba(0,0,0,0.6) 0%, transparent 70%)',
+              background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.6) 0%, transparent 70%)',
               filter: 'blur(10px)',
               pointerEvents: 'none'
             }}

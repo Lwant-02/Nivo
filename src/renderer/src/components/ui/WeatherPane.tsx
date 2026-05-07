@@ -39,7 +39,7 @@ export const WeatherPane = ({ weather, weatherState }: WeatherPaneProps) => {
     <div
       className="relative w-full h-full overflow-hidden"
       style={{
-        borderRadius: '30px',
+        borderRadius: '20px',
         border: '1px solid rgba(255,255,255,0.25)',
         background: 'rgba(255,255,255,0.04)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
