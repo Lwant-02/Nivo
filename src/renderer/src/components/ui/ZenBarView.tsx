@@ -73,8 +73,9 @@ const PresetCard: React.FC<PresetCardProps> = ({ label, onClick, accentColor, is
   <div
     onClick={onClick}
     style={{
-      background: isSelected ? `${accentColor}15` : 'rgba(255,255,255,0.03)',
-      border: isSelected ? `1px solid ${accentColor}40` : '1px solid rgba(255,255,255,0.08)',
+      background: isSelected ? `${accentColor}15` : 'rgba(255,255,255,0.04)',
+      border: isSelected ? `1px solid ${accentColor}40` : '1px solid rgba(255,255,255,0.25)',
+      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
       borderRadius: '20px',
       padding: '6px 10px',
       display: 'flex',
@@ -137,12 +138,13 @@ const CustomTile: React.FC<CustomTileProps> = ({
   }
 
   const baseStyle: React.CSSProperties = {
-    background: isSelected ? `${accentColor}15` : 'rgba(255,255,255,0.03)',
+    background: isSelected ? `${accentColor}15` : 'rgba(255,255,255,0.04)',
     border: error
       ? '1px solid rgba(255,80,80,0.5)'
       : isSelected
         ? `1px solid ${accentColor}40`
-        : '1px solid rgba(255,255,255,0.08)',
+        : '1px solid rgba(255,255,255,0.25)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
     borderRadius: '20px',
     padding: '6px 10px',
     display: 'flex',
@@ -262,12 +264,13 @@ const TargetPill: React.FC<TargetPillProps> = ({ accentColor, targetMs, onSet })
   const targetLabel = hasTarget ? formatPresetLabel(Math.floor(targetMs / 1000)) : null
 
   const baseStyle: React.CSSProperties = {
-    background: hasTarget ? `${accentColor}15` : 'rgba(255,255,255,0.03)',
+    background: hasTarget ? `${accentColor}15` : 'rgba(255,255,255,0.04)',
     border: error
       ? '1px solid rgba(255,80,80,0.5)'
       : hasTarget
         ? `1px solid ${accentColor}40`
-        : '1px solid rgba(255,255,255,0.08)',
+        : '1px solid rgba(255,255,255,0.25)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
     borderRadius: '100px',
     height: '30px',
     padding: '0 12px',
@@ -404,7 +407,8 @@ export const ZenBarView: React.FC<ZenBarViewProps> = ({ accentColor, zen }) => {
           display: 'flex',
           flexDirection: 'column',
           padding: '10px',
-          border: '1px solid rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.25)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
           justifyContent: 'space-between',
           overflow: 'hidden'
         }}
@@ -460,7 +464,7 @@ export const ZenBarView: React.FC<ZenBarViewProps> = ({ accentColor, zen }) => {
             onClick={zen.restart}
             style={{
               flex: 1,
-              background: 'rgba(255,255,255,0.06)',
+              background: 'rgba(255,255,255,0.04)',
               height: '45px',
               borderRadius: '30px',
               display: 'flex',
@@ -484,12 +488,13 @@ export const ZenBarView: React.FC<ZenBarViewProps> = ({ accentColor, zen }) => {
         {/* Custom Tabs */}
         <div
           style={{
-            background: 'rgba(255,255,255,0.03)',
+            background: 'rgba(255,255,255,0.04)',
             borderRadius: '100px',
             padding: '3px',
             display: 'flex',
             gap: '2px',
-            border: '1px solid rgba(255,255,255,0.05)'
+            border: '1px solid rgba(255,255,255,0.25)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)'
           }}
         >
           <div
@@ -590,8 +595,9 @@ const StopwatchPanel: React.FC<StopwatchPanelProps> = ({ zen, accentColor }) => 
           onClick={zen.recordLap}
           disabled={lapDisabled}
           style={{
-            background: lapDisabled ? 'rgba(255,255,255,0.03)' : `${accentColor}20`,
-            border: lapDisabled ? '1px solid rgba(255,255,255,0.05)' : `1px solid ${accentColor}40`,
+            background: lapDisabled ? 'rgba(255,255,255,0.04)' : `${accentColor}20`,
+            border: lapDisabled ? '1px solid rgba(255,255,255,0.25)' : `1px solid ${accentColor}40`,
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
             borderRadius: '100px',
             height: '30px',
             padding: '0 12px',
@@ -625,8 +631,9 @@ const StopwatchPanel: React.FC<StopwatchPanelProps> = ({ zen, accentColor }) => 
       <div
         style={{
           flex: 1,
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.05)',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.25)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
           borderRadius: '14px',
           padding: '6px 4px 6px 10px',
           minHeight: 0,

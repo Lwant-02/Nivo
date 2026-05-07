@@ -147,18 +147,18 @@ const BeamCard: React.FC<BeamCardProps> = ({ tile, onLaunch, onDelete }) => {
       onClick={onLaunch}
       style={{
         position: 'relative',
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.25)',
         borderRadius: '16px',
         padding: '12px',
+        minHeight: '80px',
         display: 'flex',
         alignItems: 'center',
         gap: '10px',
         cursor: 'pointer',
-        transition: 'all 0.2s ease'
+        transition: 'all 0.2s ease',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)'
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-      onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
     >
       <div
         style={{

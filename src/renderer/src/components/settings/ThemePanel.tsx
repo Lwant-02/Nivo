@@ -3,15 +3,6 @@ import { SettingCard } from './SettingCard'
 import { SectionLabel } from './SectionLabel'
 import { ThemePicker } from './ThemePicker'
 import { useSettings } from '../../hooks/useSettings'
-import { NOTCH_THEMES } from '../../util/notchThemes'
-
-const NOTCH_THEME_OPTIONS = (Object.keys(NOTCH_THEMES) as NotchThemeId[]).map((id) => ({
-  id,
-  label: NOTCH_THEMES[id].label,
-  gradient: NOTCH_THEMES[id].preview.gradient,
-  ring: NOTCH_THEMES[id].preview.ring
-}))
-
 const THEME_OPTIONS = [
   {
     id: 'midnight' as const,
@@ -136,21 +127,9 @@ export function ThemePanel(): JSX.Element {
             letterSpacing: -0.1
           }}
         >
-          Customize the look and feel of your Notch and Accent colors.
+          Customize the look and feel of your App Accent colors.
         </p>
       </div>
-
-      <SectionLabel text="Notch Style" />
-      <SettingCard>
-        <div style={{ padding: 14 }}>
-          <ThemePicker
-            value={settings.notchTheme}
-            onChange={(id) => update('notchTheme', id)}
-            options={NOTCH_THEME_OPTIONS}
-            columns={4}
-          />
-        </div>
-      </SettingCard>
 
       <SectionLabel text="App Accent" />
       <SettingCard>

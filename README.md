@@ -65,7 +65,8 @@ Premium macOS Dynamic Island utility for the Mac notch. Nivo transforms your Mac
 
 ### 🔋 System Intelligence & Customization
 
-- **Adaptive Themes**: 16+ curated premium themes (Obsidian, Nebula, Cyber, Prism, and more) for both the Notch Style and App Accents.
+- **Liquid Glass Notch**: A refined, translucent glass aesthetic that blends seamlessly with the macOS desktop for a true native feel.
+- **App Accent Themes**: 15+ curated premium accent colors (Midnight, Ocean, Sunset, Berry, Indigo, and more) to personalize the app interface.
 - **Haptic Feedback**: Subtle, tactile taps via Force Touch trackpads for every interaction, from swipes to button clicks.
 - **Fullscreen Stability**: Configurable visibility that allows Nivo to stay active even when you're working in fullscreen apps.
 

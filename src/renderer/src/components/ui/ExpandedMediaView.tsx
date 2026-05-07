@@ -59,9 +59,10 @@ export const ExpandedMediaView: React.FC<ExpandedMediaViewProps> = ({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        background: 'rgba(255,255,255,0.05)',
+        background: 'rgba(255,255,255,0.04)',
         borderRadius: '30px',
-        border: '1px solid rgba(255,255,255,0.08)',
+        border: '1px solid rgba(255,255,255,0.25)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
         padding: '16px 18px',
         boxSizing: 'border-box'
       }}
@@ -99,11 +100,12 @@ export const ExpandedMediaView: React.FC<ExpandedMediaViewProps> = ({
           </div>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', fontWeight: '600' }}>
-            <MarqueeText text={title || 'Not Playing'} />
+          <div style={{ fontSize: '15px', fontWeight: '500', color: 'rgba(255,255,255,0.8)' }}>
+            <MarqueeText text={title || 'Not playing'} />
           </div>
+
           <div style={{ fontSize: '13px', fontWeight: '500', color: 'rgba(255,255,255,0.8)' }}>
-            <MarqueeText text={artist || '—'} />
+            <MarqueeText text={artist || 'Anonymous'} />
           </div>
         </div>
       </div>

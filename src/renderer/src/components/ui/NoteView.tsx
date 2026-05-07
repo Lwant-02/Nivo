@@ -109,8 +109,8 @@ export const NoteView: React.FC = () => {
       }}
     >
       {visibleNotes.length === 0 ? (
-        <div className="h-fit flex justify-center items-center gap-0 flex-col">
-          <div className="relative size-[95px] shrink-0 ">
+        <div className="h-fit flex justify-center items-center gap-0 flex-col" style={{ flex: 1 }}>
+          <div className="relative size-[95px] shrink-0">
             <DotLottieReact
               src="https://lottie.host/35d8a45e-69c7-47f2-b712-34a7d743d088/quPIsQA9QD.lottie"
               loop
@@ -123,23 +123,23 @@ export const NoteView: React.FC = () => {
               style={{
                 color: '#fff',
                 fontSize: '13px',
-                fontWeight: '700',
+                fontWeight: 700,
                 margin: 0,
                 opacity: 0.9
               }}
             >
-              No Notes Found
+              No note found
             </h3>
             <p
               style={{
                 color: 'rgba(255,255,255,0.4)',
                 fontSize: '11px',
-                fontWeight: '600',
+                fontWeight: 600,
                 marginBottom: 13,
-                lineHeight: '1.4'
+                lineHeight: 1.4
               }}
             >
-              Tab the plus button to create your first note.
+              Click the plus button to create your first note.
             </p>
           </div>
         </div>

@@ -32,6 +32,7 @@ import { ZenBarView } from './ui/ZenBarView'
 import { SonicView } from './ui/SonicView'
 import { useZenTimer } from '../hooks/useZenTimer'
 import { NotchToast } from './ui/NotchToast'
+import { GlassTab } from './ui/GlassTab'
 
 const bounceTransition: Transition = {
   type: 'spring',
@@ -49,8 +50,8 @@ const TOTAL_EXPANDED_WIDTH =
 
 const createNotchPath = (w: number, h: number, isExpanded: boolean) => {
   if (!isExpanded) {
-    const r = 12
-    const b = 14
+    const r = 8
+    const b = 11
     return `
     M 0,0
     A ${r} ${r} 0 0 1 ${r} ${r}
@@ -64,8 +65,8 @@ const createNotchPath = (w: number, h: number, isExpanded: boolean) => {
   `.replace(/\s+/g, ' ')
   }
 
-  const r = 22 // Top ear radius
-  const b = 32 // Bottom curve radius
+  const r = 20 // Top ear radius
+  const b = 30 // Bottom curve radius
 
   return `
     M 0,0
@@ -105,7 +106,7 @@ function NotchPerimeter({
         d={path}
         fill="transparent"
         stroke={isExpanded ? notchTheme.outerBorder : 'transparent'}
-        strokeWidth="4"
+        strokeWidth="0.3"
         vectorEffect="non-scaling-stroke"
       />
     </svg>
@@ -305,7 +306,7 @@ export default function NotchUI() {
   const appAccent = THEME_ACCENTS[settings.theme]?.accent || '#fff'
 
   const isIdle = !title || title === 'Not Playing'
-  const showLottie = !isPlaying && !isExpanded && settings.showLottieOnPause
+  const showLottie = !isPlaying && settings.showLottieOnPause
   const showWelcome = isExpanded && !settings.hasSeenWelcome
   const showIdleView = isExpanded && isIdle && settings.hasSeenWelcome
 
@@ -355,10 +356,10 @@ export default function NotchUI() {
         transition={bounceTransition}
         className="relative origin-top z-1000"
         style={{
-          backdropFilter: isExpanded ? 'blur(20px) saturate(180%)' : 'none',
-          WebkitBackdropFilter: isExpanded ? 'blur(20px) saturate(180%)' : 'none',
+          backdropFilter: isExpanded ? 'blur(20px)' : 'none',
+          WebkitBackdropFilter: isExpanded ? 'blur(20px)' : 'none',
           marginTop: '-1.8px',
-          background: isExpanded ? notchTheme.innerBg : 'transparent',
+          background: notchTheme.innerBg,
           clipPath: 'url(#notch-clip)',
           WebkitClipPath: 'url(#notch-clip)',
           filter: isExpanded
@@ -380,11 +381,7 @@ export default function NotchUI() {
         <div
           className="relative flex h-full overflow-hidden"
           style={{
-            padding: '0 22px', // Match ear width
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            clipPath: 'url(#notch-clip)',
-            WebkitClipPath: 'url(#notch-clip)'
+            padding: '0 22px' // Match ear width
           }}
         >
           {/* Inset shadows overlay */}
@@ -412,7 +409,7 @@ export default function NotchUI() {
           {isExpanded && settings.showWeather && weatherState && (
             <AtmosphericAura weatherState={weatherState} variant="background" />
           )}
-          {showLottie && <LottieVisualizer width={isExpanded ? totalWidth : collapsedWidth} />}
+          {showLottie && <LottieVisualizer width={collapsedWidth} visible={!isExpanded} />}
           <AnimatePresence mode="wait">
             {!isExpanded ? (
               <motion.div
@@ -463,163 +460,46 @@ export default function NotchUI() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <div
+                    <GlassTab
+                      icon={IconHome}
+                      label="Home"
+                      isActive={activeTab === 'home'}
                       onClick={() => setActiveTab('home')}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        background: activeTab === 'home' ? `${appAccent}15` : 'transparent',
-                        padding: activeTab === 'home' ? '4px 12px' : '6px',
-                        borderRadius: '9px',
-                        border:
-                          activeTab === 'home'
-                            ? `1px solid ${appAccent}30`
-                            : '1px solid transparent',
-                        color: activeTab === 'home' ? appAccent : 'rgba(255,255,255,0.6)',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                      }}
-                    >
-                      <IconHome size={16} stroke={activeTab === 'home' ? 2.5 : 2} />
-                      {activeTab === 'home' && 'Home'}
-                    </div>
-                    <div
+                    />
+                    <GlassTab
+                      icon={IconClipboardText}
+                      label="Note"
+                      isActive={activeTab === 'note'}
                       onClick={() => setActiveTab('note')}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        background: activeTab === 'note' ? `${appAccent}15` : 'transparent',
-                        padding: activeTab === 'note' ? '4px 12px' : '6px',
-                        borderRadius: '9px',
-                        border:
-                          activeTab === 'note'
-                            ? `1px solid ${appAccent}30`
-                            : '1px solid transparent',
-                        color: activeTab === 'note' ? appAccent : 'rgba(255,255,255,0.6)',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                      }}
-                    >
-                      <IconClipboardText
-                        size={activeTab === 'note' ? 16 : 18}
-                        stroke={activeTab === 'note' ? 2.5 : 2}
-                      />
-                      {activeTab === 'note' && 'Note'}
-                    </div>
+                    />
                     {settings.enableClipboardHistory && (
-                      <div
+                      <GlassTab
+                        icon={IconCopy}
+                        label="Clipboard"
+                        isActive={activeTab === 'clipboard'}
                         onClick={() => setActiveTab('clipboard')}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          background: activeTab === 'clipboard' ? `${appAccent}15` : 'transparent',
-                          padding: activeTab === 'clipboard' ? '4px 12px' : '6px',
-                          borderRadius: '9px',
-                          border:
-                            activeTab === 'clipboard'
-                              ? `1px solid ${appAccent}30`
-                              : '1px solid transparent',
-                          color: activeTab === 'clipboard' ? appAccent : 'rgba(255,255,255,0.6)',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                        }}
-                      >
-                        <IconCopy
-                          size={activeTab === 'clipboard' ? 16 : 18}
-                          stroke={activeTab === 'clipboard' ? 2.5 : 2}
-                        />
-                        {activeTab === 'clipboard' && 'Clipboard'}
-                      </div>
+                      />
                     )}
                     {settings.enableBeam && (
-                      <div
+                      <GlassTab
+                        icon={IconBolt}
+                        label="Beam"
+                        isActive={activeTab === 'beam'}
                         onClick={() => setActiveTab('beam')}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          background: activeTab === 'beam' ? `${appAccent}15` : 'transparent',
-                          padding: activeTab === 'beam' ? '4px 12px' : '6px',
-                          borderRadius: '9px',
-                          border:
-                            activeTab === 'beam'
-                              ? `1px solid ${appAccent}30`
-                              : '1px solid transparent',
-                          color: activeTab === 'beam' ? appAccent : 'rgba(255,255,255,0.6)',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                        }}
-                      >
-                        <IconBolt
-                          size={activeTab === 'beam' ? 16 : 18}
-                          stroke={activeTab === 'beam' ? 2.5 : 2}
-                        />
-                        {activeTab === 'beam' && 'Beam'}
-                      </div>
+                      />
                     )}
-                    <div
+                    <GlassTab
+                      icon={IconClock}
+                      label="ZenBar"
+                      isActive={activeTab === 'zenbar'}
                       onClick={() => setActiveTab('zenbar')}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        background: activeTab === 'zenbar' ? `${appAccent}15` : 'transparent',
-                        padding: activeTab === 'zenbar' ? '4px 12px' : '6px',
-                        borderRadius: '9px',
-                        border:
-                          activeTab === 'zenbar'
-                            ? `1px solid ${appAccent}30`
-                            : '1px solid transparent',
-                        color: activeTab === 'zenbar' ? appAccent : 'rgba(255,255,255,0.6)',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                      }}
-                    >
-                      <IconClock
-                        size={activeTab === 'zenbar' ? 16 : 18}
-                        stroke={activeTab === 'zenbar' ? 2.5 : 2}
-                      />
-                      {activeTab === 'zenbar' && 'ZenBar'}
-                    </div>
-                    <div
+                    />
+                    <GlassTab
+                      icon={IconKeyboard}
+                      label="Sonic"
+                      isActive={activeTab === 'sonic'}
                       onClick={() => setActiveTab('sonic')}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        background: activeTab === 'sonic' ? `${appAccent}15` : 'transparent',
-                        padding: activeTab === 'sonic' ? '4px 12px' : '6px',
-                        borderRadius: '9px',
-                        border:
-                          activeTab === 'sonic'
-                            ? `1px solid ${appAccent}30`
-                            : '1px solid transparent',
-                        color: activeTab === 'sonic' ? appAccent : 'rgba(255,255,255,0.6)',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                      }}
-                    >
-                      <IconKeyboard
-                        size={activeTab === 'sonic' ? 16 : 18}
-                        stroke={activeTab === 'sonic' ? 2.5 : 2}
-                      />
-                      {activeTab === 'sonic' && 'Sonic'}
-                    </div>
+                    />
                   </div>
 
                   <div style={{ flex: 1 }} />
@@ -628,14 +508,20 @@ export default function NotchUI() {
                     <div
                       onClick={() => window.api.openSettings()}
                       style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         padding: '6px',
-                        borderRadius: '10px',
-                        background: 'rgba(255,255,255,0.05)',
-                        color: 'rgba(255,255,255,0.6)',
-                        cursor: 'pointer'
+                        borderRadius: '7px',
+                        background: 'rgba(255,255,255,0.12)',
+                        borderColor: 'rgba(255,255,255,0.25)',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
+                        color: '#fff',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)'
                       }}
                     >
-                      <IconSettings size={18} stroke={2} />
+                      <IconSettings size={16} stroke={2.5} />
                     </div>
                   </div>
                 </div>

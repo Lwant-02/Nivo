@@ -68,8 +68,9 @@ export const CalendarPane = ({ accentColor }: CalendarPaneProps) => {
         flexDirection: 'column',
         gap: '4px',
         borderRadius: '30px',
-        border: '1px solid rgba(255,255,255,0.08)',
-        background: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.25)',
+        background: 'rgba(255,255,255,0.04)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',
         padding: '16px',
         boxSizing: 'border-box'
       }}
@@ -157,7 +158,7 @@ export const CalendarPane = ({ accentColor }: CalendarPaneProps) => {
 
         {/* Clock */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', paddingBottom: '15px' }}>
-          <span style={{ fontSize: '14px', fontWeight: '700', color: '#fff' }}>
+          <span style={{ fontSize: '12px', fontWeight: '700', color: '#fff' }}>
             {
               now
                 .toLocaleTimeString([], {
