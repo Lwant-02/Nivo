@@ -16,7 +16,7 @@ export function WelcomeView({ notchTheme }: WelcomeViewProps) {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: '30px',
+        borderRadius: '20px',
         border: '1px solid rgba(255,255,255,0.25)',
         background: 'rgba(255,255,255,0.04)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',

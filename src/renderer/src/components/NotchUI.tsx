@@ -1,5 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence, Transition } from 'framer-motion'
+import {
+  motion,
+  AnimatePresence,
+  Transition,
+  useMotionValue,
+  useTransform,
+  animate
+} from 'framer-motion'
 import {
   IconHome,
   IconClipboardText,
@@ -50,7 +57,7 @@ const TOTAL_EXPANDED_WIDTH =
 
 const createNotchPath = (w: number, h: number, isExpanded: boolean) => {
   if (!isExpanded) {
-    const r = 8
+    const r = 10
     const b = 11
     return `
     M 0,0
@@ -66,7 +73,7 @@ const createNotchPath = (w: number, h: number, isExpanded: boolean) => {
   }
 
   const r = 20 // Top ear radius
-  const b = 23 // Bottom curve radius
+  const b = 30 // Bottom curve radius
 
   return `
     M 0,0
@@ -106,7 +113,7 @@ function NotchPerimeter({
         d={path}
         fill="transparent"
         stroke={isExpanded ? notchTheme.outerBorder : 'transparent'}
-        strokeWidth="0.3"
+        strokeWidth="0.7"
         vectorEffect="non-scaling-stroke"
       />
     </svg>
@@ -145,7 +152,7 @@ export default function NotchUI() {
     }
   })
 
-  const collapsedWidth = 320
+  const collapsedWidth = 300
 
   const isExpanded = isHovering || isAutoExpanded || isWelcoming
 
@@ -301,8 +308,10 @@ export default function NotchUI() {
   const handleNext = () => window.api.mediaNext()
   const handlePrev = () => window.api.mediaPrevious()
 
-  const totalWidth = isExpanded ? TOTAL_EXPANDED_WIDTH : collapsedWidth
   const expandedHeight = 250
+  const collapsedHeight = 33.8
+  const totalWidth = isExpanded ? TOTAL_EXPANDED_WIDTH : collapsedWidth
+  const currentHeight = isExpanded ? expandedHeight : collapsedHeight
   const appAccent = THEME_ACCENTS[settings.theme]?.accent || '#fff'
 
   const isIdle = !title || title === 'Not Playing'
@@ -313,23 +322,27 @@ export default function NotchUI() {
   const notchTheme = getNotchTheme(settings.notchTheme)
   const { weather, weatherState } = useWeather()
 
-  const getPath = (w: number, h: number, isExpanded: boolean) => createNotchPath(w, h, isExpanded)
+  const widthMV = useMotionValue(totalWidth)
+  const heightMV = useMotionValue(currentHeight)
 
-  const currentHeight = isExpanded ? expandedHeight : 33.8
-  const d = getPath(totalWidth, currentHeight, isExpanded)
+  useEffect(() => {
+    const wControl = animate(widthMV, totalWidth, bounceTransition)
+    const hControl = animate(heightMV, currentHeight, bounceTransition)
+    return () => {
+      wControl.stop()
+      hControl.stop()
+    }
+  }, [totalWidth, currentHeight])
+
+  const clipPathMV = useTransform(
+    [widthMV, heightMV],
+    (latest) => `path('${createNotchPath(latest[0] as number, latest[1] as number, isExpanded)}')`
+  )
+
   const progressPct = duration > 0 ? (position / duration) * 100 : 0
 
   return (
     <>
-      {/* Mask Definition */}
-      <svg width="0" height="0" className="absolute">
-        <defs>
-          <clipPath id="notch-clip" clipPathUnits="userSpaceOnUse">
-            <motion.path animate={{ d }} transition={bounceTransition} />
-          </clipPath>
-        </defs>
-      </svg>
-
       <motion.div
         onMouseEnter={() => {
           if (!isExpanded) playExpand()
@@ -349,19 +362,16 @@ export default function NotchUI() {
           }, 100)
         }}
         initial={false}
-        animate={{
-          width: totalWidth,
-          height: isExpanded ? expandedHeight : 33.8
-        }}
-        transition={bounceTransition}
         className="relative origin-top z-1000"
         style={{
+          width: widthMV,
+          height: heightMV,
           backdropFilter: isExpanded ? 'blur(20px)' : 'none',
           WebkitBackdropFilter: isExpanded ? 'blur(20px)' : 'none',
           marginTop: '-1.8px',
           background: notchTheme.innerBg,
-          clipPath: 'url(#notch-clip)',
-          WebkitClipPath: 'url(#notch-clip)',
+          clipPath: clipPathMV,
+          WebkitClipPath: clipPathMV,
           filter: isExpanded
             ? notchTheme.outerShadow
                 .split(/,(?![^(]*\))/)
@@ -385,7 +395,7 @@ export default function NotchUI() {
           }}
         >
           {/* Inset shadows overlay */}
-          <div
+          <motion.div
             aria-hidden
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -395,8 +405,8 @@ export default function NotchUI() {
                     .filter((s: string) => s.includes('inset'))
                     .join(', ')
                 : 'none',
-              clipPath: 'url(#notch-clip)',
-              WebkitClipPath: 'url(#notch-clip)'
+              clipPath: clipPathMV,
+              WebkitClipPath: clipPathMV
             }}
           />
           {isExpanded && notchTheme.innerOverlay && (
@@ -420,7 +430,7 @@ export default function NotchUI() {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  padding: '0 24px',
+                  padding: '0 4px',
                   height: '100%',
                   justifyContent: 'space-between',
                   width: '100%'

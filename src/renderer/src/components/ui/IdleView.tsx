@@ -13,7 +13,7 @@ export function IdleView() {
         alignItems: 'center',
         justifyContent: 'center',
         gap: '4px',
-        borderRadius: '30px',
+        borderRadius: '20px',
         border: '1px solid rgba(255,255,255,0.25)',
         background: 'rgba(255,255,255,0.04)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)',

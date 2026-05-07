@@ -20,9 +20,9 @@ export const CollapsedNotchView: React.FC<CollapsedNotchViewProps> = ({
   accentColor
 }) => {
   return (
-    <div className="relative flex items-center px-6 h-full justify-between w-full">
+    <div className="relative flex items-center px-2 h-full justify-between w-full">
       {!showLottie && (
-        <div className="relative z-10 flex items-center justify-between w-full">
+        <div className="relative z-10 flex items-center justify-between w-full overflow-hidden">
           <Thumbnail
             src={settings.showAlbumArt ? displayArt : null}
             alt={title}
