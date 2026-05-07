@@ -50,14 +50,34 @@ export const LOTTIE_STYLES: LottieStyle[] = [
 
 interface LottieVisualizerProps {
   width: number
+  visible?: boolean
 }
 
-export function LottieVisualizer({ width }: LottieVisualizerProps) {
+const COLLAPSED_HEIGHT = 33.8
+const COLLAPSED_R = 11
+const COLLAPSED_B = 11
+
+const buildCollapsedClipPath = (w: number, h: number) => {
+  const r = COLLAPSED_R
+  const b = COLLAPSED_B
+  return `path('M 0,0 A ${r} ${r} 0 0 1 ${r} ${r} V ${h - b} A ${b} ${b} 0 0 0 ${r + b} ${h} H ${w - r - b} A ${b} ${b} 0 0 0 ${w - r} ${h - b} V ${r} A ${r} ${r} 0 0 1 ${w} 0 Z')`
+}
+
+export function LottieVisualizer({ width, visible = true }: LottieVisualizerProps) {
   const { settings } = useSettings()
   const style = LOTTIE_STYLES[settings.lottieStyle] || LOTTIE_STYLES[0]
+  const clipPath = buildCollapsedClipPath(width, COLLAPSED_HEIGHT)
 
   return (
-    <div className="absolute top-0 left-0 right-0 h-[33.8px] overflow-hidden pointer-events-none z-0">
+    <div
+      className="absolute top-0 left-0 h-[33.8px] overflow-hidden pointer-events-none z-0"
+      style={{
+        width,
+        visibility: visible ? 'visible' : 'hidden',
+        clipPath,
+        WebkitClipPath: clipPath
+      }}
+    >
       <motion.div
         animate={{ x: [-style.figureSize, width + style.figureSize] }}
         transition={{

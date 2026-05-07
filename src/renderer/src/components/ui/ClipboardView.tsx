@@ -198,20 +198,17 @@ const ClipboardCard: React.FC<ClipboardCardProps> = ({
       onClick={onCopy}
       style={{
         position: 'relative',
-        background: item.pinned
-          ? 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 100%)'
-          : 'rgba(255,255,255,0.03)',
-        border: item.pinned
-          ? '1px solid rgba(255,255,255,0.15)'
-          : '1px solid rgba(255,255,255,0.08)',
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.25)',
         borderRadius: '16px',
         padding: '12px',
+        minHeight: '80px',
         display: 'flex',
         flexDirection: 'column',
         gap: '6px',
         cursor: 'pointer',
         transition: 'all 0.2s ease',
-        boxShadow: item.pinned ? '0 8px 24px rgba(0,0,0,0.2)' : 'none'
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)'
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -225,17 +222,9 @@ const ClipboardCard: React.FC<ClipboardCardProps> = ({
             }}
           >
             {item.pinned ? (
-              <IconPinFilled
-                size={14}
-                stroke={2}
-                style={{ color: '#fff' }}
-              />
+              <IconPinFilled size={14} stroke={2} style={{ color: '#fff' }} />
             ) : (
-              <IconCopy
-                size={14}
-                stroke={2}
-                style={{ color: 'rgba(255,255,255,0.8)' }}
-              />
+              <IconCopy size={14} stroke={2} style={{ color: 'rgba(255,255,255,0.8)' }} />
             )}
           </div>
           <div

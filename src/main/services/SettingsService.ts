@@ -19,23 +19,7 @@ export type ThemeId =
   | 'coral'
   | 'silver'
   | 'plum'
-export type NotchThemeId =
-  | 'obsidian'
-  | 'frost'
-  | 'aurora'
-  | 'sand'
-  | 'lavender'
-  | 'crimson'
-  | 'emerald'
-  | 'amber'
-  | 'nebula'
-  | 'midnight'
-  | 'sakura'
-  | 'cyber'
-  | 'solar'
-  | 'oceanic'
-  | 'vulcan'
-  | 'prism'
+export type NotchThemeId = 'glass'
 export type SonicSoundPackId =
   | 'cherrymx-black-abs'
   | 'cherrymx-black-pbt'
@@ -76,7 +60,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'midnight',
-  notchTheme: 'obsidian',
+  notchTheme: 'glass',
   launchAtLogin: false,
   hideInFullscreen: true,
   hideFromScreenCapture: false,
@@ -117,24 +101,7 @@ const VALID_THEMES: ReadonlySet<ThemeId> = new Set([
   'plum'
 ])
 
-const VALID_NOTCH_THEMES: ReadonlySet<NotchThemeId> = new Set([
-  'obsidian',
-  'frost',
-  'aurora',
-  'sand',
-  'lavender',
-  'crimson',
-  'emerald',
-  'amber',
-  'nebula',
-  'midnight',
-  'sakura',
-  'cyber',
-  'solar',
-  'oceanic',
-  'vulcan',
-  'prism'
-])
+const VALID_NOTCH_THEMES: ReadonlySet<NotchThemeId> = new Set(['glass'])
 
 const VALID_SONIC_SOUND_PACKS: ReadonlySet<SonicSoundPackId> = new Set([
   'cherrymx-black-abs',

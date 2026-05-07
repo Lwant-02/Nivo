@@ -33,18 +33,17 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note, isActive, onOpen, onDe
       onClick={onOpen}
       style={{
         position: 'relative',
-        background: isActive
-          ? 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 100%)'
-          : 'rgba(255,255,255,0.03)',
-        border: isActive ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(255,255,255,0.08)',
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.25)',
         borderRadius: '16px',
         padding: '12px',
+        minHeight: '80px',
         display: 'flex',
         flexDirection: 'column',
         gap: '6px',
         cursor: 'pointer',
         transition: 'all 0.2s ease',
-        boxShadow: isActive ? '0 8px 24px rgba(0,0,0,0.2)' : 'none'
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20)'
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
