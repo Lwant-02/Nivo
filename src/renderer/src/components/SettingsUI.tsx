@@ -4,7 +4,6 @@ import {
   Settings,
   Play,
   Calendar,
-  ShieldCheck,
   Info,
   Palette,
   Keyboard,
@@ -12,7 +11,6 @@ import {
   Power
 } from 'lucide-react'
 import { SidebarItem } from './settings/SidebarItem'
-import { LicensePanel } from './settings/LicensePanel'
 import { AboutPanel } from './settings/AboutPanel'
 import { NowPlayingPanel } from './settings/NowPlayingPanel'
 import { CalendarPanel } from './settings/CalendarPanel'
@@ -45,7 +43,6 @@ const NAV_GROUPS = [
   {
     label: 'About',
     items: [
-      { id: 'license', icon: ShieldCheck, label: 'License', color: '#32D74B' },
       { id: 'about', icon: Info, label: 'About', color: '#636366' },
       { id: 'quit', icon: Power, label: 'Quit App', color: '#FF3B30' }
     ]
@@ -190,7 +187,6 @@ export default function SettingsUI() {
               {active === 'nowplaying' && <NowPlayingPanel />}
               {active === 'calendar' && <CalendarPanel />}
               {active === 'visualizer' && <VisualizerPanel />}
-              {active === 'license' && <LicensePanel />}
               {active === 'about' && <AboutPanel />}
               {![
                 'general',
@@ -198,7 +194,6 @@ export default function SettingsUI() {
                 'sonic',
                 'nowplaying',
                 'calendar',
-                'license',
                 'about',
                 'visualizer'
               ].includes(active) && <PlaceholderPanel id={active} />}

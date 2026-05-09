@@ -15,15 +15,8 @@ declare global {
       setNotchEditing: (editing: boolean) => void
       openSettings: () => Promise<void>
       getAppVersion: () => Promise<string>
-      activateLicense: (key: string) => Promise<{ ok: boolean; error?: string }>
-      startTrial: () => Promise<{
-        ok: boolean
-        error?: string
-        trialStartedAt?: number
-        trialEndsAt?: number
-      }>
-      getLicenseState: () => Promise<LicenseState>
-      onLicenseUpdate: (callback: (state: LicenseState) => void) => () => void
+      quitApp: () => void
+      startWelcome: () => Promise<{ ok: boolean }>
       onMediaUpdate: (
         callback: (data: {
           title: string
@@ -57,6 +50,14 @@ declare global {
       triggerHaptic: () => Promise<void>
       onSonicKey: (callback: (keycode: number) => void) => () => void
       getWeather: () => Promise<Atmosphere | null>
+      setWeatherLocation: (query: string) => Promise<{
+        ok: boolean
+        error?: string
+        location?: string
+        lat?: number
+        lon?: number
+        cleared?: boolean
+      }>
       getSettings: () => Promise<AppSettings | null>
       updateSetting: <K extends keyof AppSettings>(
         key: K,
@@ -189,16 +190,6 @@ declare global {
     | 'eg-oreo'
   type BatteryThreshold = 10 | 20
 
-  interface LicenseState {
-    licenseKey: string | null
-    isActivated: boolean
-    instanceId: string | null
-    trialStartedAt: number | null
-    trialEndsAt: number | null
-    isInTrial: boolean
-    hasAccess: boolean
-  }
-
   interface AppSettings {
     theme: ThemeId
     notchTheme: NotchThemeId
@@ -216,6 +207,9 @@ declare global {
     showLottieOnPause: boolean
     lottieStyle: number
     showWeather: boolean
+    weatherLocation: string
+    weatherLat: number
+    weatherLon: number
     sonicFeedback: boolean
     sonicSoundPack: SonicSoundPackId
     hasSeenWelcome: boolean

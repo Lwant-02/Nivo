@@ -1,5 +1,6 @@
 import React from 'react'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
+import catFeelingLove from '@renderer/assets/lottie/Cat feeling love emotionsexpression. Emojisticker animation.lottie'
 
 interface NotchToastProps {
   toast: {
@@ -37,7 +38,7 @@ export const NotchToast: React.FC<NotchToastProps> = ({ toast, accentColor }) =>
         }}
       >
         <DotLottieReact
-          src="https://lottie.host/35d8a45e-69c7-47f2-b712-34a7d743d088/quPIsQA9QD.lottie"
+          src={catFeelingLove}
           loop
           autoplay
           style={{ width: '100%', height: '100%' }}

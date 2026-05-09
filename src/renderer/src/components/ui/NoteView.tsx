@@ -21,6 +21,7 @@ import { NoteCard } from './NoteCard'
 import { NoteEditor } from './NoteEditor'
 import { NoteSearchBar } from './NoteSearchBar'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
+import catFeelingLove from '@renderer/assets/lottie/Cat feeling love emotionsexpression. Emojisticker animation.lottie'
 
 export const ICONS: Record<NoteIconId, React.ElementType> = {
   'clipboard-text': IconClipboardText,
@@ -112,7 +113,7 @@ export const NoteView: React.FC = () => {
         <div className="h-fit flex justify-center items-center gap-0 flex-col" style={{ flex: 1 }}>
           <div className="relative size-[95px] shrink-0">
             <DotLottieReact
-              src="https://lottie.host/35d8a45e-69c7-47f2-b712-34a7d743d088/quPIsQA9QD.lottie"
+              src={catFeelingLove}
               loop
               autoplay
               style={{ width: '100%', height: '100%' }}

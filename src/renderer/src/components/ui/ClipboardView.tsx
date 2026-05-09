@@ -11,6 +11,7 @@ import {
 import { useClipboard } from '../../hooks/useClipboard'
 import { ClipboardSearchBar } from './ClipboardSearchBar'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
+import catFeelingLove from '@renderer/assets/lottie/Cat feeling love emotionsexpression. Emojisticker animation.lottie'
 
 const MAX_PREVIEW_LINES = 2
 const MAX_PREVIEW_CHARS = 140
@@ -65,7 +66,7 @@ export const ClipboardView: React.FC = () => {
         <div className="h-fit flex justify-center items-center gap-0 flex-col" style={{ flex: 1 }}>
           <div className="relative size-[95px] shrink-0">
             <DotLottieReact
-              src="https://lottie.host/35d8a45e-69c7-47f2-b712-34a7d743d088/quPIsQA9QD.lottie"
+              src={catFeelingLove}
               loop
               autoplay
               style={{ width: '100%', height: '100%' }}

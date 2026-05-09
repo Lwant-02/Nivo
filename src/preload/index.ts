@@ -24,15 +24,8 @@ const api = {
   getAppVersion: () => ipcRenderer.invoke('get-version'),
   quitApp: () => ipcRenderer.send('quit-app'),
 
-  // License activation
-  activateLicense: (key: string) => ipcRenderer.invoke('activate-license', key),
-  startTrial: () => ipcRenderer.invoke('start-trial'),
-  getLicenseState: () => ipcRenderer.invoke('get-license-state'),
-  onLicenseUpdate: (callback: (data: any) => void) => {
-    const wrapper = (_: any, data: any) => callback(data)
-    ipcRenderer.on('license-update', wrapper)
-    return () => ipcRenderer.removeListener('license-update', wrapper)
-  },
+  // Welcome
+  startWelcome: () => ipcRenderer.invoke('welcome:start'),
 
   // Events
   onMediaUpdate: (callback: (data: any) => void) => {
@@ -65,6 +58,7 @@ const api = {
 
   // Weather
   getWeather: () => ipcRenderer.invoke('get-weather'),
+  setWeatherLocation: (query: string) => ipcRenderer.invoke('weather:set-location', query),
 
   // Settings
   getSettings: () => ipcRenderer.invoke('get-settings'),

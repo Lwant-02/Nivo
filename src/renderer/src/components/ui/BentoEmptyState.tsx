@@ -1,5 +1,6 @@
 import React from 'react'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
+import catFeelingLove from '@renderer/assets/lottie/Cat feeling love emotionsexpression. Emojisticker animation.lottie'
 
 interface BentoEmptyStateProps {
   title: string
@@ -10,7 +11,7 @@ interface BentoEmptyStateProps {
 export const BentoEmptyState: React.FC<BentoEmptyStateProps> = ({
   title,
   description,
-  lottieSrc = 'https://lottie.host/35d8a45e-69c7-47f2-b712-34a7d743d088/quPIsQA9QD.lottie'
+  lottieSrc = catFeelingLove
 }) => {
   return (
     <div
