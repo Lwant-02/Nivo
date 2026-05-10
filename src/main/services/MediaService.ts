@@ -688,56 +688,12 @@ return "none"`
   }
 
   private async dispatchControl(action: 'playpause' | 'next' | 'previous') {
-    const source = this.lastState?.source
-
-    // For Spotify/Music, use AppleScript exclusively. Sending both nowplaying-cli
-    // and AppleScript toggles the state twice (pauses, then immediately resumes).
-    if (source === 'spotify' || source === 'music') {
-      const appName = source === 'spotify' ? 'Spotify' : 'Music'
-      const cmd =
-        action === 'playpause' ? 'playpause' : action === 'next' ? 'next track' : 'previous track'
-      await execAsync(`osascript -e 'tell application "${appName}" to ${cmd}'`).catch(() => {})
-      return
-    }
-
-    // 1. Universal Command via nowplaying-cli (Primary) for system/other sources
+    // nowplaying-cli routes through MediaRemoteMini.dylib's
+    // MRMediaRemoteSendCommand, which works for Spotify, Music, and browsers
+    // without needing Automation permission.
     const cliCmd =
       action === 'playpause' ? 'togglePlayPause' : action === 'next' ? 'next' : 'previous'
     await execAsync(`"${this.binaryPath}" ${cliCmd}`).catch(() => {})
-
-    // 3. Browser-specific Fallback via JavaScript Injection
-    const isBrowser = this.BROWSER_SOURCES.includes(source)
-    if (isBrowser) {
-      const appName =
-        source === 'brave' ? 'Brave Browser' : source === 'chrome' ? 'Google Chrome' : 'Safari'
-
-      let jsCode = ''
-      if (action === 'playpause') {
-        jsCode = `(function() {
-          const video = document.querySelector('video');
-          if (video) { if (video.paused) video.play(); else video.pause(); }
-          else { const btn = document.querySelector('.ytp-play-button') || document.querySelector('[data-testid="control-button-playpause"]'); if (btn) btn.click(); }
-        })()`
-      } else if (action === 'next') {
-        jsCode = `(function() {
-          const btn = document.querySelector('.ytp-next-button') || document.querySelector('[data-testid="control-button-skip-forward"]');
-          if (btn) btn.click(); else window.dispatchEvent(new KeyboardEvent('keydown', { keyCode: 39, bubbles: true }));
-        })()`
-      } else {
-        jsCode = `(function() {
-          const btn = document.querySelector('.ytp-prev-button') || document.querySelector('[data-testid="control-button-skip-back"]');
-          if (btn) btn.click(); else window.dispatchEvent(new KeyboardEvent('keydown', { keyCode: 37, bubbles: true }));
-        })()`
-      }
-
-      const script =
-        source === 'safari'
-          ? `tell application "Safari" to do JavaScript "${jsCode}" in current tab of front window`
-          : `tell application "${appName}" to execute active tab of front window javascript "${jsCode.replace(/"/g, '\\"')}"`
-
-      await execAsync(`osascript -e '${script}'`).catch(() => {})
-      return
-    }
   }
 
   private async runAppleScript(script: string): Promise<string> {
