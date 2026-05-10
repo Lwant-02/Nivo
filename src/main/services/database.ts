@@ -38,12 +38,12 @@ export function getDatabase(): Database.Database {
     CREATE TABLE IF NOT EXISTS settings (
       id INTEGER PRIMARY KEY CHECK (id = 1),
       theme TEXT NOT NULL DEFAULT 'midnight',
-      notch_theme TEXT NOT NULL DEFAULT 'obsidian',
+      notch_theme TEXT NOT NULL DEFAULT 'glass',
       launch_at_login INTEGER NOT NULL DEFAULT 0,
-      hide_in_fullscreen INTEGER NOT NULL DEFAULT 1,
+      hide_in_fullscreen INTEGER NOT NULL DEFAULT 0,
       hide_from_screen_capture INTEGER NOT NULL DEFAULT 0,
       haptic_feedback INTEGER NOT NULL DEFAULT 1,
-      hide_when_paused INTEGER NOT NULL DEFAULT 1,
+      hide_when_paused INTEGER NOT NULL DEFAULT 0,
       show_lottie_on_pause INTEGER NOT NULL DEFAULT 0,
       lottie_style INTEGER NOT NULL DEFAULT 0,
       sonic_feedback INTEGER NOT NULL DEFAULT 0,
@@ -101,12 +101,12 @@ export function getDatabase(): Database.Database {
     if (!settingsColNames.has(name)) db.exec(`ALTER TABLE settings ADD COLUMN ${ddl}`)
   }
   addColumn('theme', "theme TEXT NOT NULL DEFAULT 'midnight'")
-  addColumn('notch_theme', "notch_theme TEXT NOT NULL DEFAULT 'obsidian'")
+  addColumn('notch_theme', "notch_theme TEXT NOT NULL DEFAULT 'glass'")
   addColumn('launch_at_login', 'launch_at_login INTEGER NOT NULL DEFAULT 0')
-  addColumn('hide_in_fullscreen', 'hide_in_fullscreen INTEGER NOT NULL DEFAULT 1')
+  addColumn('hide_in_fullscreen', 'hide_in_fullscreen INTEGER NOT NULL DEFAULT 0')
   addColumn('hide_from_screen_capture', 'hide_from_screen_capture INTEGER NOT NULL DEFAULT 0')
   addColumn('haptic_feedback', 'haptic_feedback INTEGER NOT NULL DEFAULT 1')
-  addColumn('hide_when_paused', 'hide_when_paused INTEGER NOT NULL DEFAULT 1')
+  addColumn('hide_when_paused', 'hide_when_paused INTEGER NOT NULL DEFAULT 0')
   addColumn('show_album_art', 'show_album_art INTEGER NOT NULL DEFAULT 1')
   addColumn('show_visualizer', 'show_visualizer INTEGER NOT NULL DEFAULT 1')
   addColumn('enable_calendar', 'enable_calendar INTEGER NOT NULL DEFAULT 1')
@@ -115,8 +115,10 @@ export function getDatabase(): Database.Database {
   addColumn('calendar_reminder_min', 'calendar_reminder_min INTEGER NOT NULL DEFAULT 5')
   addColumn('show_lottie_on_pause', 'show_lottie_on_pause INTEGER NOT NULL DEFAULT 0')
   addColumn('lottie_style', 'lottie_style INTEGER NOT NULL DEFAULT 0')
-  addColumn('show_weather', 'show_weather INTEGER NOT NULL DEFAULT 1')
-  addColumn('show_weather_in_calendar', 'show_weather_in_calendar INTEGER NOT NULL DEFAULT 1')
+  addColumn('show_weather', 'show_weather INTEGER NOT NULL DEFAULT 0')
+  addColumn('weather_location', "weather_location TEXT NOT NULL DEFAULT ''")
+  addColumn('weather_lat', 'weather_lat REAL NOT NULL DEFAULT 0')
+  addColumn('weather_lon', 'weather_lon REAL NOT NULL DEFAULT 0')
   addColumn('sonic_feedback', 'sonic_feedback INTEGER NOT NULL DEFAULT 0')
   addColumn('sonic_sound_pack', "sonic_sound_pack TEXT NOT NULL DEFAULT 'cherrymx-black-abs'")
   addColumn('has_seen_welcome', 'has_seen_welcome INTEGER NOT NULL DEFAULT 0')

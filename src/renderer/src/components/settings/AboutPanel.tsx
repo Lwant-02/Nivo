@@ -1,10 +1,11 @@
-import { ChevronRight, MessageSquare } from 'lucide-react'
+import { Coffee } from 'lucide-react'
 import { SettingCard } from './SettingCard'
 import { SectionLabel } from './SectionLabel'
 import { Pill } from './Pill'
 import iconSrc from '../../../../../resources/icon.png'
+import bmcQrSrc from '../../../../../resources/bmc_qr.png'
 
-const FEEDBACK = 'https://nivo.nawmain.dev/faqs'
+const BMC_URL = 'https://buymeacoffee.com/sainawmain'
 
 export function AboutPanel() {
   const year = new Date().getFullYear()
@@ -74,25 +75,102 @@ export function AboutPanel() {
               lineHeight: 1.45
             }}
           >
-            A premium Dynamic Island for your Mac. Notifications, media, and live activities — right
+            A free Dynamic Island for your Mac. Notifications, media, and live activities — right
             where the notch lives.
           </p>
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
             <Pill variant="soft">macOS · Apple Silicon</Pill>
+            <Pill variant="accent">Free</Pill>
           </div>
         </div>
       </SettingCard>
 
-      {/* Links */}
-      <SectionLabel text="Resources" />
-      <SettingCard>
-        <LinkRow
-          icon={<MessageSquare size={15} strokeWidth={2} />}
-          label="Send feedback"
-          description="If you encounter issues or have ideas, feel free to share."
-          onClick={() => window.api.openExternal(FEEDBACK)}
-          isFirst
-        />
+      {/* Support */}
+      <SectionLabel text="Support" />
+      <SettingCard
+        style={{
+          background:
+            'linear-gradient(135deg, rgba(253,224,71,0.12) 0%, rgba(253,224,71,0.03) 60%, rgba(255,255,255,0.02) 100%)',
+          border: '1px solid rgba(253,224,71,0.22)'
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16,
+            paddingLeft: 18,
+            paddingRight: 18,
+            paddingTop: 16,
+            paddingBottom: 16
+          }}
+        >
+          <div
+            style={{
+              width: 78,
+              height: 78,
+              borderRadius: 12,
+              background: 'rgba(255,255,255,0.95)',
+              padding: 6,
+              flexShrink: 0,
+              boxShadow: '0 4px 14px rgba(0,0,0,0.18)'
+            }}
+          >
+            <img
+              src={bmcQrSrc}
+              alt="Buy Me a Coffee QR"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: '#fff',
+                letterSpacing: -0.2,
+                marginBottom: 4,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <Coffee size={14} color="#fde047" />
+              Buy me a coffee
+            </div>
+            <p
+              style={{
+                fontSize: 11.5,
+                color: 'rgba(255,255,255,0.55)',
+                lineHeight: 1.4,
+                marginBottom: 8
+              }}
+            >
+              Nivo is free. If it earns a place on your Mac, a small tip helps keep it growing.
+            </p>
+            <button
+              onClick={() => window.api.openExternal(BMC_URL)}
+              className="cursor-pointer"
+              style={{
+                height: 30,
+                paddingLeft: 12,
+                paddingRight: 12,
+                borderRadius: 8,
+                border: '1px solid rgba(253,224,71,0.4)',
+                background: 'rgba(253,224,71,0.15)',
+                color: '#fde047',
+                fontSize: 12,
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <Coffee size={12} />
+              buymeacoffee.com/sainawmain
+            </button>
+          </div>
+        </div>
       </SettingCard>
 
       {/* Footer */}
@@ -105,90 +183,8 @@ export function AboutPanel() {
           letterSpacing: 0.2
         }}
       >
-        © {year} Nivo · All rights reserved.
+        © {year} Nivo · Made with care.
       </p>
     </>
-  )
-}
-
-function LinkRow({
-  icon,
-  label,
-  description,
-  onClick,
-  isFirst
-}: {
-  icon: React.ReactNode
-  label: string
-  description?: string
-  onClick: () => void
-  isFirst?: boolean
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="cursor-pointer transition-colors hover:bg-white/[0.035]"
-      style={{
-        position: 'relative',
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingLeft: 18,
-        paddingRight: 18,
-        paddingTop: 14,
-        paddingBottom: 14,
-        minHeight: 52,
-        background: 'transparent',
-        border: 'none',
-        textAlign: 'left'
-      }}
-    >
-      {!isFirst && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 18,
-            right: 0,
-            height: 1,
-            background: 'rgba(255,255,255,0.06)'
-          }}
-        />
-      )}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 8,
-            background: 'rgba(255,255,255,0.055)',
-            color: 'rgba(255,255,255,0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
-          }}
-        >
-          {icon}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-          <span
-            style={{
-              fontSize: 13.5,
-              fontWeight: 500,
-              color: 'rgba(255,255,255,0.95)',
-              letterSpacing: -0.1
-            }}
-          >
-            {label}
-          </span>
-          {description && (
-            <span style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.42)' }}>{description}</span>
-          )}
-        </div>
-      </div>
-      <ChevronRight size={15} color="rgba(255,255,255,0.35)" />
-    </button>
   )
 }

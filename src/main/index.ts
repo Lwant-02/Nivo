@@ -19,7 +19,6 @@ import { MediaService } from './services/MediaService'
 import { AudioService } from './services/AudioService'
 import { SettingsService, Settings } from './services/SettingsService'
 import { fetchMacEvents } from './services/calendarService'
-import { LicenseService } from './services/LicenseService'
 import { WeatherService } from './services/WeatherService'
 import { SonicFeedbackService } from './services/SonicFeedbackService'
 import { NotesService, NoteUpdate } from './services/NotesService'
@@ -46,7 +45,6 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
 
 let mediaService: MediaService | null = null
 let audioService: AudioService | null = null
-let licenseService: LicenseService | null = null
 let settingsService: SettingsService | null = null
 let weatherService: WeatherService | null = null
 let sonicFeedbackService: SonicFeedbackService | null = null
@@ -56,7 +54,7 @@ let beamService: BeamService | null = null
 
 let mainWindow: BrowserWindow | null = null
 let settingsWindow: BrowserWindow | null = null
-let onboardingWindow: BrowserWindow | null = null
+let welcomeWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let isNotchActive = false
 
@@ -263,15 +261,15 @@ function createSettingsWindow(): void {
   })
 }
 
-// Onboarding window
-function createOnboardingWindow(): void {
-  if (onboardingWindow) {
-    onboardingWindow.focus()
+// Welcome window
+function createWelcomeWindow(): void {
+  if (welcomeWindow) {
+    welcomeWindow.focus()
     return
   }
   const { width, height } = screen.getPrimaryDisplay().bounds
 
-  onboardingWindow = new BrowserWindow({
+  welcomeWindow = new BrowserWindow({
     width: 500,
     height: 510,
     x: Math.floor(width / 2 - 250),
@@ -290,69 +288,49 @@ function createOnboardingWindow(): void {
   })
 
   if (process.env['ELECTRON_RENDERER_URL']) {
-    onboardingWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/onboarding`)
+    welcomeWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/welcome`)
   } else {
-    onboardingWindow.loadFile(join(__dirname, '../renderer/index.html'), { hash: 'onboarding' })
+    welcomeWindow.loadFile(join(__dirname, '../renderer/index.html'), { hash: 'welcome' })
   }
 
-  onboardingWindow.once('ready-to-show', () => {
-    onboardingWindow?.show()
-    onboardingWindow?.focus()
+  welcomeWindow.once('ready-to-show', () => {
+    welcomeWindow?.show()
+    welcomeWindow?.focus()
   })
 
-  onboardingWindow.webContents.on('did-fail-load', () => {
-    console.error('[main] Onboarding window failed to load')
+  welcomeWindow.webContents.on('did-fail-load', () => {
+    console.error('[main] Welcome window failed to load')
   })
 
-  onboardingWindow.on('closed', () => {
-    onboardingWindow = null
+  welcomeWindow.on('closed', () => {
+    welcomeWindow = null
   })
 }
 
 function refreshTrayMenu(): void {
   if (!tray) return
 
-  const auth = licenseService?.getAuth()
-  const hasAccess = auth?.hasAccess ?? false
-
   const template: Electron.MenuItemConstructorOptions[] = [
-    { label: `Nivo Settings`, enabled: false },
-    { type: 'separator' }
-  ]
-
-  if (hasAccess) {
-    template.push({
+    { label: `Nivo`, enabled: false },
+    { type: 'separator' },
+    {
       label: 'Settings...',
       accelerator: 'Command+,',
       click: () => createSettingsWindow()
-    })
-  } else {
-    template.push({
-      label: 'Activate Nivo...',
-      click: () => createOnboardingWindow()
-    })
-  }
-
-  template.push(
+    },
     { type: 'separator' },
     {
       label: 'Quit Nivo',
       accelerator: 'Command+Q',
       click: () => app.quit()
     }
-  )
+  ]
 
   tray.setContextMenu(Menu.buildFromTemplate(template))
 }
 
 // App ready
 app.whenReady().then(() => {
-  try {
-    licenseService = new LicenseService()
-  } catch (err: any) {
-    console.error('[main] Failed to initialize LicenseService:', err.message)
-  }
-
   try {
     settingsService = new SettingsService()
     applyLaunchAtLogin(settingsService.get('launchAtLogin'))
@@ -389,7 +367,11 @@ app.whenReady().then(() => {
   }
 
   try {
-    weatherService = new WeatherService()
+    weatherService = new WeatherService(() => {
+      const s = settingsService?.getAll()
+      if (!s?.weatherLocation || (s.weatherLat === 0 && s.weatherLon === 0)) return null
+      return { name: s.weatherLocation, lat: s.weatherLat, lon: s.weatherLon }
+    })
   } catch (err: any) {
     console.error('[main] Failed to initialize WeatherService:', err.message)
   }
@@ -441,39 +423,13 @@ app.whenReady().then(() => {
     setNotchOpacity(1)
   })
 
-  if (licenseService?.hasAccess()) {
+  const hasSeenWelcome = settingsService?.get('hasSeenWelcome') ?? false
+  if (hasSeenWelcome) {
     createMainWindow()
   } else {
-    createOnboardingWindow()
+    createWelcomeWindow()
   }
-
-  // Monitor access (trial expiry) and switch windows if necessary
-  setInterval(() => {
-    const hasAccess = licenseService?.hasAccess() ?? false
-    if (hasAccess && !mainWindow && !onboardingWindow) {
-      createMainWindow()
-    } else if (!hasAccess && (mainWindow || settingsWindow)) {
-      if (mainWindow) {
-        mainWindow.destroy()
-        mainWindow = null
-      }
-      if (settingsWindow) {
-        settingsWindow.destroy()
-        settingsWindow = null
-      }
-      createOnboardingWindow()
-      refreshTrayMenu()
-    }
-  }, 5000)
 })
-
-function broadcastLicenseUpdate(): void {
-  const state = licenseService?.getAuth()
-  if (!state) return
-  for (const win of BrowserWindow.getAllWindows()) {
-    if (!win.isDestroyed()) win.webContents.send('license-update', state)
-  }
-}
 
 ipcMain.handle('get-audio-output', () => audioService?.getState())
 
@@ -483,59 +439,14 @@ ipcMain.handle('open-settings', () => {
   createSettingsWindow()
 })
 
-ipcMain.handle('activate-license', async (_event, key: string) => {
-  if (!licenseService) {
-    return { ok: false, error: 'License service unavailable. Please restart Nivo.' }
-  }
-
-  // Simulate network round-trip so the UI's "Activating…" state is visible.
-  await new Promise((resolve) => setTimeout(resolve, 3000))
-
-  const result = licenseService.activate(key)
-  if (!result.ok) return result
-
-  if (onboardingWindow) {
-    onboardingWindow.destroy()
-    onboardingWindow = null
+ipcMain.handle('welcome:start', () => {
+  if (welcomeWindow) {
+    welcomeWindow.destroy()
+    welcomeWindow = null
   }
   createMainWindow()
   refreshTrayMenu()
-  broadcastLicenseUpdate()
-
   return { ok: true }
-})
-
-ipcMain.handle('start-trial', () => {
-  if (!licenseService) {
-    return { ok: false, error: 'License service unavailable. Please restart Nivo.' }
-  }
-
-  const result = licenseService.startTrial()
-  if (!result.ok) return result
-
-  if (onboardingWindow) {
-    onboardingWindow.destroy()
-    onboardingWindow = null
-  }
-  createMainWindow()
-  refreshTrayMenu()
-  broadcastLicenseUpdate()
-
-  return result
-})
-
-ipcMain.handle('get-license-state', () => {
-  return (
-    licenseService?.getAuth() ?? {
-      licenseKey: null,
-      isActivated: false,
-      instanceId: null,
-      trialStartedAt: null,
-      trialEndsAt: null,
-      isInTrial: false,
-      hasAccess: false
-    }
-  )
 })
 
 type MediaCommand = 'playPause' | 'next' | 'previous'
@@ -578,6 +489,35 @@ ipcMain.handle('get-calendar-events', async () => {
 
 ipcMain.handle('get-weather', async () => {
   return weatherService?.getAtmosphere() ?? null
+})
+
+ipcMain.handle('weather:set-location', async (_event, query: string) => {
+  if (!weatherService || !settingsService) {
+    return { ok: false, error: 'Weather service unavailable.' }
+  }
+
+  const trimmed = (query || '').trim()
+  if (!trimmed) {
+    settingsService.set('weatherLocation', '')
+    settingsService.set('weatherLat', 0)
+    settingsService.set('weatherLon', 0)
+    return { ok: true, cleared: true }
+  }
+
+  const result = await weatherService.geocode(trimmed)
+  if (!result) {
+    return { ok: false, error: `Couldn't find "${trimmed}". Try a city or province name.` }
+  }
+
+  const label = result.admin1 && result.admin1 !== result.name
+    ? `${result.name}, ${result.admin1}`
+    : result.name
+
+  settingsService.set('weatherLocation', label)
+  settingsService.set('weatherLat', result.lat)
+  settingsService.set('weatherLon', result.lon)
+
+  return { ok: true, location: label, lat: result.lat, lon: result.lon }
 })
 
 ipcMain.on('calendar:join', (_event, url: string) => {

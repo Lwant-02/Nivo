@@ -85,6 +85,9 @@ export const ExpandedMediaView: React.FC<ExpandedMediaViewProps> = ({
             overflow: 'hidden',
             flexShrink: 0,
             background: 'rgba(0,0,0,0.2)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            boxShadow:
+              'inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 6px rgba(0,0,0,0.25)',
             position: 'relative'
           }}
         >

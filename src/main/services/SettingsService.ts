@@ -51,6 +51,9 @@ export interface Settings {
   showLottieOnPause: boolean
   lottieStyle: number
   showWeather: boolean
+  weatherLocation: string
+  weatherLat: number
+  weatherLon: number
   sonicFeedback: boolean
   sonicSoundPack: SonicSoundPackId
   hasSeenWelcome: boolean
@@ -62,10 +65,10 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'midnight',
   notchTheme: 'glass',
   launchAtLogin: false,
-  hideInFullscreen: true,
+  hideInFullscreen: false,
   hideFromScreenCapture: false,
   hapticFeedback: true,
-  hideWhenPaused: true,
+  hideWhenPaused: false,
   showAlbumArt: true,
   showVisualizer: true,
   enableCalendar: true,
@@ -74,7 +77,10 @@ export const DEFAULT_SETTINGS: Settings = {
   calendarReminderMin: 5,
   showLottieOnPause: false,
   lottieStyle: 0,
-  showWeather: true,
+  showWeather: false,
+  weatherLocation: '',
+  weatherLat: 0,
+  weatherLon: 0,
   sonicFeedback: false,
   sonicSoundPack: 'cherrymx-black-abs',
   hasSeenWelcome: false,
@@ -133,13 +139,16 @@ type Column =
   | 'show_lottie_on_pause'
   | 'lottie_style'
   | 'show_weather'
+  | 'weather_location'
+  | 'weather_lat'
+  | 'weather_lon'
   | 'sonic_feedback'
   | 'sonic_sound_pack'
   | 'has_seen_welcome'
   | 'enable_clipboard_history'
   | 'enable_beam'
 
-type Kind = 'bool' | 'int' | 'theme' | 'notchTheme' | 'sonicSoundPack'
+type Kind = 'bool' | 'int' | 'float' | 'string' | 'theme' | 'notchTheme' | 'sonicSoundPack'
 
 interface FieldSpec {
   column: Column
@@ -163,6 +172,9 @@ const FIELDS: { [K in keyof Settings]: FieldSpec } = {
   showLottieOnPause: { column: 'show_lottie_on_pause', kind: 'bool' },
   lottieStyle: { column: 'lottie_style', kind: 'int' },
   showWeather: { column: 'show_weather', kind: 'bool' },
+  weatherLocation: { column: 'weather_location', kind: 'string' },
+  weatherLat: { column: 'weather_lat', kind: 'float' },
+  weatherLon: { column: 'weather_lon', kind: 'float' },
   sonicFeedback: { column: 'sonic_feedback', kind: 'bool' },
   sonicSoundPack: { column: 'sonic_sound_pack', kind: 'sonicSoundPack' },
   hasSeenWelcome: { column: 'has_seen_welcome', kind: 'bool' },
@@ -192,6 +204,7 @@ function toStored<K extends keyof Settings>(key: K, value: Settings[K]): string 
     return v
   }
   if (kind === 'bool') return value ? 1 : 0
+  if (kind === 'string') return String(value ?? '')
   return Number(value)
 }
 
@@ -214,6 +227,7 @@ function fromStored<K extends keyof Settings>(key: K, raw: unknown): Settings[K]
       : DEFAULT_SETTINGS.sonicSoundPack) as Settings[K]
   }
   if (kind === 'bool') return (!!raw) as Settings[K]
+  if (kind === 'string') return (raw == null ? '' : String(raw)) as Settings[K]
   return Number(raw) as unknown as Settings[K]
 }
 

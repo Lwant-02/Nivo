@@ -1,6 +1,6 @@
 import type React from 'react'
 import NotchUI from './components/NotchUI'
-import { OnboardingUI } from './components/OnboardingUI'
+import { WelcomeUI } from './components/WelcomeUI'
 import SettingsUI from './components/SettingsUI'
 import { useSettings } from './hooks/useSettings'
 import { useAppliedTheme } from './hooks/useAppliedTheme'
@@ -17,8 +17,8 @@ export default function App(): React.JSX.Element {
     return <SettingsUI />
   }
 
-  if (hash.includes('onboarding')) {
-    return <OnboardingUI />
+  if (hash.includes('welcome')) {
+    return <WelcomeUI />
   }
 
   return <NotchUI />

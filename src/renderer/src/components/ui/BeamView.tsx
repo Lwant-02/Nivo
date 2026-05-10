@@ -10,6 +10,7 @@ import {
 import { useBeam } from '../../hooks/useBeam'
 import { BeamAddModal } from './BeamAddModal'
 import { DotLottieReact } from '@lottiefiles/dotlottie-react'
+import catFeelingLove from '@renderer/assets/lottie/Cat feeling love emotionsexpression. Emojisticker animation.lottie'
 
 const KIND_ICON: Record<BeamKind, React.ElementType> = {
   app: IconDeviceDesktop,
@@ -41,7 +42,7 @@ export const BeamView: React.FC = () => {
         <div className="h-fit flex justify-center items-center gap-0 flex-col" style={{ flex: 1 }}>
           <div className="relative size-[95px] shrink-0">
             <DotLottieReact
-              src="https://lottie.host/35d8a45e-69c7-47f2-b712-34a7d743d088/quPIsQA9QD.lottie"
+              src={catFeelingLove}
               loop
               autoplay
               style={{ width: '100%', height: '100%' }}
