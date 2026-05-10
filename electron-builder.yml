@@ -17,6 +17,14 @@ extraResources:
     to: bin
     filter:
       - "**/*"
+  - from: resources/lib
+    to: lib
+    filter:
+      - "**/*"
+  - from: resources/share
+    to: share
+    filter:
+      - "**/*"
 win:
   executableName: nivo
 nsis:
